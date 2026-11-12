@@ -1,0 +1,488 @@
+// Lygtebærer — UI. Regler ligger i engine.js, kort i cards.js.
+(function () {
+  "use strict";
+  var VERSION = "0.1.0";
+  var KEY = "lygtebaerer_save";
+  var D = window.DATA, E = window.ENG;
+  var app = document.getElementById("app");
+  var R = E.rng((Date.now() ^ (Math.random() * 1e9)) >>> 0);
+  try { Telemetri.init("lygtebaerer", VERSION); } catch (e) {}
+  function T(k, d) { try { Telemetri.log(k, d); } catch (e) {} }
+
+  // ---------- gem ----------
+  var S;
+  function load() {
+    var raw = null; try { raw = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+    S = raw ? E.migrate(raw) : null;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  var STARTER = ["g1", "g1", "g2", "g3", "t1", "t2", "t3", "r1", "r2", "r3", "n1", "n1"];
+
+  // ---------- lyd (WebAudio-syntese) ----------
+  var AC = null;
+  function ac() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state === "suspended") AC.resume(); return AC; }
+  function tone(f, dur, type, vol, slide, delay) {
+    var a = ac(); if (!a) return;
+    var t = a.currentTime + (delay || 0), o = a.createOscillator(), g = a.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.15, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function noise(dur, vol, delay) {
+    var a = ac(); if (!a) return;
+    var n = a.sampleRate * dur, buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+    for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    var s = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter();
+    f.type = "bandpass"; f.frequency.value = 1800; s.buffer = buf; g.gain.value = vol || 0.2;
+    s.connect(f); f.connect(g); g.connect(a.destination); s.start(a.currentTime + (delay || 0));
+  }
+  var SFX = {
+    tap: function () { tone(660, 0.06, "triangle", 0.08); },
+    tear: function () { noise(0.35, 0.35); tone(200, 0.3, "sawtooth", 0.05, 900); },
+    flip: function (r) {
+      var base = { c: 520, u: 660, r: 784, m: 988 }[r];
+      tone(base, 0.18, "triangle", 0.12);
+      if (r !== "c") tone(base * 1.5, 0.3, "sine", 0.1, null, 0.08);
+      if (r === "r" || r === "m") tone(base * 2, 0.5, "sine", 0.08, null, 0.16);
+      if (r === "m") { tone(base * 2.5, 0.7, "sine", 0.07, null, 0.26); tone(base * 3, 0.9, "sine", 0.05, null, 0.36); }
+    },
+    charge: function () { tone(220, 0.9, "sine", 0.06, 660); },
+    play: function () { tone(330, 0.12, "triangle", 0.12, 520); },
+    atk: function () { noise(0.08, 0.15); },
+    hit: function () { tone(140, 0.15, "square", 0.08, 70); },
+    die: function () { tone(300, 0.35, "sawtooth", 0.07, 60); },
+    face: function () { tone(110, 0.25, "square", 0.1, 55); noise(0.15, 0.2); },
+    heal: function () { tone(523, 0.15, "sine", 0.08); tone(784, 0.2, "sine", 0.06, null, 0.08); },
+    dodge: function () { tone(900, 0.12, "sine", 0.06, 1400); },
+    win: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.35, "triangle", 0.12, null, i * 0.12); }); },
+    lose: function () { [392, 330, 262, 196].forEach(function (f, i) { tone(f, 0.45, "sine", 0.1, null, i * 0.18); }); },
+  };
+
+  // ---------- hjælpere ----------
+  function h(html) { var d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstChild; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  var toastT;
+  function toast(msg) { var t = document.getElementById("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove("on"); }, 2200); }
+  function modal(html, buttons) {
+    var m = document.getElementById("modal");
+    m.innerHTML = '<div class="sheet">' + html + '<div class="row" style="width:100%"></div></div>';
+    var row = m.querySelector(".row");
+    return new Promise(function (res) {
+      buttons.forEach(function (b) {
+        var el = h('<button class="btn ' + (b.sec ? "sec" : "") + '" style="flex:1">' + b.t + "</button>");
+        el.onclick = function () { SFX.tap(); m.classList.add("hidden"); res(b.v); };
+        row.appendChild(el);
+      });
+      m.classList.remove("hidden");
+    });
+  }
+  function hash(s) { var x = 2166136261; for (var i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); } return x >>> 0; }
+
+  // Procedural ånde-kunst: hvert kort får sit eget lille lysvæsen.
+  var ARTC = {};
+  function art(id) {
+    if (ARTC[id]) return ARTC[id];
+    var c = D.BY[id], r = E.rng(hash(id) + 7);
+    var col = { glod: ["#ffb347", "#ff6a2a", "#fff1c9"], taage: ["#9fd8ff", "#4a7dff", "#eaf6ff"], rod: ["#8ff0a6", "#2f9c5a", "#eaffef"] }[c.el];
+    var big = 16 + c.c * 2.2 + r() * 4, cx = 50, cy = 52;
+    var parts = "";
+    var n = 3 + Math.floor(r() * 5);
+    for (var i = 0; i < n; i++) {
+      var ang = (i / n) * Math.PI * 2 + r(), len = big * (0.9 + r() * 0.9);
+      var x2 = cx + Math.cos(ang) * len * 1.4, y2 = cy + Math.sin(ang) * len;
+      var qx = cx + Math.cos(ang + 0.6) * len * 0.8, qy = cy + Math.sin(ang + 0.6) * len * 0.6;
+      parts += '<path d="M' + cx + " " + cy + " Q" + qx.toFixed(1) + " " + qy.toFixed(1) + " " + x2.toFixed(1) + " " + y2.toFixed(1) + '" stroke="' + col[1] + '" stroke-width="' + (2 + r() * 3).toFixed(1) + '" fill="none" stroke-linecap="round" opacity=".7"/>';
+    }
+    var eyeY = cy - big * 0.15, eyeDx = big * (0.25 + r() * 0.15), er = 2 + r() * 2.5;
+    var shape = c.el === "rod" ? '<rect x="' + (cx - big * 0.8) + '" y="' + (cy - big * 0.8) + '" width="' + big * 1.6 + '" height="' + big * 1.6 + '" rx="' + big * 0.5 + '" fill="url(#b' + id + ')"/>'
+      : c.el === "taage" ? '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + big * 1.05 + '" ry="' + big * 0.75 + '" fill="url(#b' + id + ')"/>'
+      : '<path d="M' + cx + " " + (cy - big * 1.2) + " C" + (cx + big) + " " + (cy - big * 0.2) + " " + (cx + big * 0.9) + " " + (cy + big * 0.9) + " " + cx + " " + (cy + big * 0.9) + " C" + (cx - big * 0.9) + " " + (cy + big * 0.9) + " " + (cx - big) + " " + (cy - big * 0.2) + " " + cx + " " + (cy - big * 1.2) + 'Z" fill="url(#b' + id + ')"/>';
+    var crown = c.r === "m" || c.r === "r" ? '<circle cx="' + cx + '" cy="' + cy + '" r="' + (big * 1.5) + '" fill="none" stroke="' + (c.r === "m" ? "#d48bff" : "#ffc861") + '" stroke-width="1.5" stroke-dasharray="3 5" opacity=".8"/>' : "";
+    var s = '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="b' + id + '" cx="40%" cy="35%"><stop offset="0" stop-color="' + col[2] + '"/><stop offset=".55" stop-color="' + col[0] + '"/><stop offset="1" stop-color="' + col[1] + '"/></radialGradient>' +
+      '<radialGradient id="h' + id + '"><stop offset="0" stop-color="' + col[0] + '" stop-opacity=".55"/><stop offset="1" stop-color="' + col[0] + '" stop-opacity="0"/></radialGradient></defs>' +
+      '<circle cx="50" cy="52" r="48" fill="url(#h' + id + ')"/>' + crown + parts + shape +
+      '<ellipse cx="' + (cx - eyeDx) + '" cy="' + eyeY + '" rx="' + er + '" ry="' + er * 1.3 + '" fill="#1a1030"/><ellipse cx="' + (cx + eyeDx) + '" cy="' + eyeY + '" rx="' + er + '" ry="' + er * 1.3 + '" fill="#1a1030"/>' +
+      '<circle cx="' + (cx - eyeDx + er * 0.3) + '" cy="' + (eyeY - er * 0.4) + '" r="' + er * 0.35 + '" fill="#fff"/><circle cx="' + (cx + eyeDx + er * 0.3) + '" cy="' + (eyeY - er * 0.4) + '" r="' + er * 0.35 + '" fill="#fff"/></svg>';
+    ARTC[id] = s; return s;
+  }
+  function kwText(c) {
+    var k = c.kw, out = [];
+    if (k.gnist) out.push("Gnist " + k.gnist); if (k.taage) out.push("Tåge"); if (k.flok) out.push("Flok");
+    if (k.rod) out.push("Rod " + k.rod); if (k.sluger) out.push("Sluger");
+    return out.join(" · ");
+  }
+  function cardHTML(id, o) {
+    o = o || {}; var c = D.BY[id];
+    var a = o.unit ? o.unit.a + (o.bonus || 0) : c.a, hp = o.unit ? o.unit.h : c.h;
+    return '<div class="card ' + c.el + " " + c.r + (o.cls ? " " + o.cls : "") + '" data-id="' + id + '"' + (o.attr || "") + ">" +
+      '<div class="art">' + art(id) + "</div>" +
+      (o.unit ? "" : '<div class="cost">' + c.c + "</div>") +
+      '<div class="nm">' + esc(c.n) + "</div>" +
+      '<div class="kw">' + kwText(c) + "</div>" +
+      '<div class="st at">' + a + '</div><div class="st hp' + (o.unit && hp < o.unit.mh ? " hurt" : "") + '">' + hp + "</div>" +
+      (o.unit && o.unit.shield ? '<div class="shield"></div>' : "") +
+      (o.badge ? '<div class="badge">' + o.badge + "</div>" : "") +
+      (o.isNew ? '<div class="new">NY!</div>' : "") + "</div>";
+  }
+  function cardInfo(id) {
+    var c = D.BY[id], s = "<b>" + esc(c.n) + "</b> · " + D.EL[c.el] + " · " + D.RAR[c.r] + " · koster " + c.c + " lys<br>";
+    var k = c.kw, parts = [];
+    Object.keys(k).forEach(function (key) { parts.push(D.KW[key].replace(" N", " " + k[key])); });
+    return s + (parts.length ? parts.join("<br>") : "<i>" + esc(c.t) + "</i>");
+  }
+  function flamesHTML() { var s = ""; for (var i = 0; i < 3; i++) s += '<i class="flame' + (i < S.flames ? "" : " out") + '"></i> '; return s; }
+  function owned(id) { return S.coll[id] || 0; }
+  function uniqueOwned() { return D.CARDS.filter(function (c) { return owned(c.id) > 0; }).length; }
+
+  // ---------- skærme ----------
+  function show(el) { app.innerHTML = ""; app.appendChild(el); }
+
+  function intro() {
+    var el = h('<div class="screen intro"><div class="grow" style="display:flex;flex-direction:column;justify-content:center;gap:8px">' +
+      '<div style="width:140px;margin:0 auto">' + document.createElement("div").outerHTML + "</div>" +
+      '<h1 style="text-align:center">Lygtebærer</h1>' +
+      "<p>Lyset er gået ud over <b>Mørkhavet</b>. Kun lysånderne er tilbage — små, vilde væsener af glød, tåge og rod.</p>" +
+      "<p>Du bærer den sidste lygte. Fang ånderne, byg dit deck, og sejl ø for ø mod <b>Den Sorte Fyr</b> for at tænde den igen.</p>" +
+      '<p class="dim">Du har 3 flammer. Taber du en kamp, slukkes en. Slukkes alle, må du starte rejsen forfra — men ånderne beholder du.</p>' +
+      '</div><div class="bottom"><button class="btn" id="go">Åbn din første pakke</button></div></div>');
+    el.querySelector("div[style*='140px']").innerHTML = '<img src="icon.svg" alt="" style="width:140px;filter:drop-shadow(0 0 30px #ffb34788)">';
+    el.querySelector("#go").onclick = function () {
+      SFX.tap();
+      S = E.newSave(); STARTER.forEach(function (id) { S.coll[id] = (S.coll[id] || 0) + 1; });
+      S.deck = STARTER.slice(); save(); T("progress", { step: "start" });
+      packScreen(true);
+    };
+    show(el);
+  }
+
+  function home() {
+    var el = h('<div class="screen"><div class="hud"><div class="flames">' + flamesHTML() + '</div><div class="row"><span class="pill">✦ ' + S.embers + ' gløder</span><span class="pill">' + uniqueOwned() + "/" + D.CARDS.length + " ånder</span></div></div>" +
+      '<h2 style="margin-top:10px">Mørkhavet' + (S.runs > 1 ? ' <span class="dim" style="font-size:14px">· rejse ' + S.runs + "</span>" : "") + '</h2><div class="map"></div>' +
+      '<div class="bottom"><div class="row"><button class="btn sec" id="deck">Deck (' + S.deck.length + ')</button><button class="btn sec" id="packs">Pakker (' + S.packs + ")</button></div>" +
+      '<button class="btn" id="sail">Sejl til ' + esc(D.ISLANDS[S.island].n) + "</button></div></div>");
+    var map = el.querySelector(".map");
+    D.ISLANDS.forEach(function (is, i) {
+      var cls = i < S.island ? "done" : i === S.island ? "cur" : "lock";
+      map.appendChild(h('<div class="isl ' + cls + '"><div class="dot">' + (i < S.island ? "✦" : i + 1) + '</div><div><b>' + esc(is.n) + '</b><br><span class="dim">' + (i <= S.island ? "Vogter: " + esc(is.foe) + " · " + is.hp + " liv" : "Ukendt") + "</span></div></div>"));
+    });
+    el.querySelector("#deck").onclick = function () { SFX.tap(); deckScreen(); };
+    var pb = el.querySelector("#packs"); pb.disabled = S.packs < 1 && S.embers < 12;
+    if (S.packs < 1 && S.embers >= 12) pb.textContent = "Køb pakke (12 ✦)";
+    pb.onclick = function () {
+      SFX.tap();
+      if (S.packs < 1 && S.embers >= 12) { S.embers -= 12; S.packs++; save(); }
+      if (S.packs > 0) packScreen(false);
+    };
+    el.querySelector("#sail").onclick = function () {
+      SFX.tap();
+      if (!E.validDeck(S.deck, S.coll)) { toast("Dit deck skal have 12–20 kort"); deckScreen(); return; }
+      battleScreen();
+    };
+    show(el);
+    setTimeout(function () { var c = map.querySelector(".cur"); if (c) c.scrollIntoView({ block: "center" }); }, 30);
+    if (S.packs > 0 && !S.seen.packhint) { S.seen.packhint = 1; save(); toast("Du har en uåbnet pakke!"); }
+  }
+
+  // ---------- pakke-ritualet ----------
+  var RORD = { c: 0, u: 1, r: 2, m: 3 };
+  function packScreen(first) {
+    if (S.packs < 1) return home();
+    var el = h('<div class="screen"><div class="hud"><span class="pill">Pakker: ' + S.packs + '</span><span class="pill">' + uniqueOwned() + "/" + D.CARDS.length + ' ånder</span></div>' +
+      '<div class="packzone"><div class="pack"><div class="lbl">MØRKHAVET<br><span style="font-size:13px;color:#dfe3ff">5 lysånder</span></div></div></div>' +
+      '<div class="bottom"><div class="dim" style="text-align:center" id="hint">Tryk på pakken for at rive den op</div><div class="row" id="btns"></div></div></div>');
+    var pack = el.querySelector(".pack"), zone = el.querySelector(".packzone");
+    var opened = false;
+    pack.onclick = function () {
+      if (opened) return; opened = true;
+      ac(); pack.classList.add("shake"); SFX.charge();
+      setTimeout(function () { pack.classList.remove("shake"); pack.classList.add("tear"); SFX.tear(); }, 520);
+      setTimeout(function () { reveal(); }, 950);
+    };
+    function reveal() {
+      S.packs--;
+      el.querySelector(".hud .pill").textContent = "Pakker: " + S.packs;
+      var ids = E.openPack(R).sort(function (a, b) { return RORD[D.BY[a].r] - RORD[D.BY[b].r]; });
+      var newOnes = {}, melted = 0;
+      ids.forEach(function (id) {
+        if (!owned(id)) newOnes[id] = 1;
+        S.coll[id] = owned(id) + 1;
+        var lim = E.deckLimit(id);
+        if (S.coll[id] > lim) { S.coll[id] = lim; melted += { c: 1, u: 2, r: 4, m: 8 }[D.BY[id].r]; }
+      });
+      S.embers += melted; save();
+      T("pack_open", { rar: ids.map(function (i) { return D.BY[i].r; }), ids: ids, uniq: uniqueOwned() });
+      zone.innerHTML = '<div class="reveal"></div>';
+      var rv = zone.querySelector(".reveal"), left = ids.length;
+      el.querySelector("#hint").textContent = "Tryk på kortene for at vende dem";
+      ids.forEach(function (id, i) {
+        var c = D.BY[id];
+        var sc = h('<div class="slotc ' + c.r + '"><div class="flip"><div class="back"></div>' + cardHTML(id, { isNew: newOnes[id] }) + "</div></div>");
+        sc.style.width = "var(--w)"; sc.querySelector(".flip").style.aspectRatio = "5/7";
+        sc.style.animation = "fadein .3s " + i * 0.08 + "s both";
+        var busy = false;
+        sc.onclick = function () {
+          if (busy || sc.classList.contains("open")) { if (sc.classList.contains("open")) toast(D.BY[id].n + " — " + D.BY[id].t); return; }
+          busy = true;
+          var wait0 = { c: 0, u: 350, r: 800, m: 1300 }[c.r];
+          if (wait0) { sc.classList.add("charge"); SFX.charge(); }
+          setTimeout(function () {
+            sc.classList.remove("charge"); sc.classList.add("open"); SFX.flip(c.r);
+            if (c.r === "m" || c.r === "r") { var f = h('<div class="flash"></div>'); if (c.r === "r") f.style.background = "radial-gradient(#ffc861aa,#ffc86100 60%)"; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 800); }
+            if (navigator.vibrate && c.r !== "c") try { navigator.vibrate(c.r === "m" ? [30, 40, 60] : 25); } catch (e) {}
+            left--; if (!left) done();
+          }, wait0);
+        };
+        rv.appendChild(sc);
+      });
+      var btns = el.querySelector("#btns");
+      var all = h('<button class="btn sec">Vend alle</button>');
+      all.onclick = function () {
+        var k = 0;
+        rv.querySelectorAll(".slotc:not(.open)").forEach(function (s) { setTimeout(function () { s.click(); }, k++ * 220); });
+      };
+      btns.appendChild(all);
+      function done() {
+        var nNew = Object.keys(newOnes).length;
+        el.querySelector("#hint").innerHTML = (nNew ? "<b style='color:var(--gold)'>" + nNew + " nye ånder!</b> " : "") + (melted ? "Dubletter smeltet til <b>" + melted + " ✦ gløder</b>." : "") + (!nNew && !melted ? "Flere ånder til samlingen." : "");
+        btns.innerHTML = "";
+        var next = h('<button class="btn">' + (S.packs > 0 ? "Næste pakke (" + S.packs + ")" : "Fortsæt") + "</button>");
+        next.onclick = function () {
+          SFX.tap();
+          if (S.packs > 0) return packScreen(first);
+          if (first) { S.deck = autoDeck(); save(); toast("Jeg har bygget et deck til dig — ret det, når du vil"); }
+          else if (Object.keys(newOnes).length) toast("Nye ånder kan lægges i dit deck under 'Deck'");
+          home();
+        };
+        btns.appendChild(next);
+      }
+    }
+    show(el);
+  }
+
+  // Automatisk deck: 15 kort, foretræk sjældne og en god kurve.
+  function autoDeck() {
+    var pool = [];
+    D.CARDS.forEach(function (c) { for (var i = 0; i < Math.min(owned(c.id), E.deckLimit(c.id)); i++) pool.push(c.id); });
+    pool.sort(function (a, b) {
+      var A = D.BY[a], B = D.BY[b];
+      return (RORD[B.r] * 3 + B.a + B.h - B.c * 1.6) - (RORD[A.r] * 3 + A.a + A.h - A.c * 1.6);
+    });
+    var deck = [], cheap = 0;
+    pool.forEach(function (id) { if (deck.length < 15) { deck.push(id); } });
+    // sørg for mindst 5 billige (≤2) kort
+    deck.forEach(function (id) { if (D.BY[id].c <= 2) cheap++; });
+    var rest = pool.slice(deck.length).filter(function (id) { return D.BY[id].c <= 2; });
+    for (var i = deck.length - 1; i >= 0 && cheap < 5 && rest.length; i--) { if (D.BY[deck[i]].c > 3) { deck[i] = rest.shift(); cheap++; } }
+    return deck;
+  }
+
+  // ---------- deckbygger ----------
+  function deckScreen() {
+    var filter = "all";
+    var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Dit deck</h2><div class="row"><div class="curve"></div><span class="pill" id="cnt"></span></div></div>' +
+      '<div class="dim" style="font-size:13px;margin:4px 0 8px">Tryk på en ånd for at lægge den i decket. Tryk på − for at tage den ud. 12–20 kort, maks 2 ens.</div>' +
+      '<div class="filters"><button class="chip on" data-f="all">Alle</button><button class="chip" data-f="deck">I decket</button><button class="chip" data-f="glod">Glød</button><button class="chip" data-f="taage">Tåge</button><button class="chip" data-f="rod">Rod</button><button class="chip" data-f="missing">Mangler</button></div>' +
+      '<div class="grid"></div><div class="info" id="dinfo">Tryk længe på et kort for at læse det.</div>' +
+      '<div class="bottom" style="margin-top:8px"><div class="row"><button class="btn sec" id="auto">Byg for mig</button><button class="btn" id="back">Færdig</button></div></div></div>');
+    var grid = el.querySelector(".grid");
+    function inDeck(id) { return S.deck.filter(function (x) { return x === id; }).length; }
+    function render() {
+      grid.innerHTML = "";
+      D.CARDS.forEach(function (c) {
+        var o = owned(c.id), d = inDeck(c.id);
+        if (filter === "deck" && !d) return;
+        if (filter === "missing" ? o : !o) return;
+        if (["glod", "taage", "rod"].indexOf(filter) >= 0 && c.el !== filter) return;
+        var wrap = h('<div style="position:relative">' + cardHTML(c.id, { cls: o ? (d ? "" : "notin") : "unowned", badge: o ? d + "/" + o : "?" }) + "</div>");
+        if (d) {
+          var minus = h('<button class="chip" style="position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);padding:2px 14px;font-size:18px;background:#5a1f12">−</button>');
+          minus.onclick = function (ev) { ev.stopPropagation(); S.deck.splice(S.deck.indexOf(c.id), 1); save(); SFX.tap(); render(); };
+          wrap.appendChild(minus);
+        }
+        wrap.onclick = function () {
+          el.querySelector("#dinfo").innerHTML = o ? cardInfo(c.id) : "Denne ånd har du ikke fanget endnu.";
+          if (!o) return;
+          if (d >= Math.min(o, E.deckLimit(c.id))) { toast(d >= E.deckLimit(c.id) ? "Maks " + E.deckLimit(c.id) + " ens i et deck" : "Du ejer kun " + o); return; }
+          if (S.deck.length >= 20) { toast("Decket er fuldt (20)"); return; }
+          S.deck.push(c.id); save(); SFX.play(); render();
+        };
+        grid.appendChild(wrap);
+      });
+      var n = S.deck.length, cnt = el.querySelector("#cnt");
+      cnt.textContent = n + " kort"; cnt.style.background = n < 12 || n > 20 ? "#5a1f12" : "#14402a";
+      var cv = [0, 0, 0, 0, 0, 0, 0]; S.deck.forEach(function (id) { cv[Math.min(6, D.BY[id].c - 1 < 0 ? 0 : D.BY[id].c - 1)]++; });
+      var mx = Math.max.apply(null, cv) || 1;
+      el.querySelector(".curve").innerHTML = cv.map(function (v) { return '<div style="height:' + (v / mx * 100) + '%"></div>'; }).join("");
+    }
+    el.querySelectorAll(".chip[data-f]").forEach(function (b) {
+      b.onclick = function () { el.querySelectorAll(".chip[data-f]").forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on"); filter = b.dataset.f; SFX.tap(); render(); };
+    });
+    el.querySelector("#auto").onclick = function () { S.deck = autoDeck(); save(); SFX.play(); render(); toast("Deck bygget"); };
+    el.querySelector("#back").onclick = function () {
+      if (S.deck.length < 12) { toast("Mindst 12 kort i decket"); return; }
+      SFX.tap(); home();
+    };
+    show(el); render();
+  }
+
+  // ---------- kamp ----------
+  function battleScreen() {
+    var isl = D.ISLANDS[S.island];
+    var b = E.newBattle(S.deck, S.island, (R() * 1e9) >>> 0);
+    E.startTurn(b);
+    var sel = -1, busy = false;
+    var el = h('<div class="screen battle">' +
+      '<div class="hero foe"><span>🌑 <b>' + esc(isl.foe) + '</b></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
+      '<div class="board" id="b1"></div><div class="mid" id="mid"></div><div class="board" id="b0"></div>' +
+      '<div class="hero me"><span class="lys"></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
+      '<div class="info" id="info"></div><div class="hand"></div>' +
+      '<div class="row"><button class="btn sec" id="quit" style="padding:12px 14px;font-size:15px">Flygt</button><div class="grow dim" style="font-size:13px;text-align:center" id="deckn"></div><button class="btn endbtn" id="end">Slut tur</button></div></div>');
+    var b0 = el.querySelector("#b0"), b1 = el.querySelector("#b1"), hand = el.querySelector(".hand"), info = el.querySelector("#info"), mid = el.querySelector("#mid");
+    for (var i = 0; i < 4; i++) { b0.appendChild(h('<div class="slot" data-s="' + i + '"></div>')); b1.appendChild(h('<div class="slot" data-s="' + i + '"></div>')); }
+    var view = null; // det viste brætstade (kan halte efter motoren under animation)
+    function snap() { view = JSON.parse(JSON.stringify({ s: b.s.map(function (p) { return { hp: p.hp, mhp: p.mhp, board: p.board }; }) })); }
+    snap();
+    function drawBoards() {
+      [b0, b1].forEach(function (bd, si) {
+        var side = view.s[si];
+        bd.querySelectorAll(".slot").forEach(function (sl, i) {
+          var u = side.board[i];
+          var bonus = 0;
+          if (u && D.BY[u.id].kw.flok) side.board.forEach(function (v, j) { if (v && j !== i && v.el === u.el) bonus++; });
+          sl.innerHTML = u ? cardHTML(u.id, { unit: u, bonus: bonus }) : "";
+          sl.classList.toggle("target", si === 0 && sel >= 0 && !u && !busy && E.canPlay(b, sel, i));
+        });
+      });
+      [["foe", 1], ["me", 0]].forEach(function (x) {
+        var p = view.s[x[1]], hero = el.querySelector(".hero." + x[0]);
+        hero.querySelector(".hpbar div").style.width = Math.max(0, p.hp / p.mhp * 100) + "%";
+        hero.querySelector(".num").textContent = Math.max(0, p.hp) + "/" + p.mhp;
+      });
+    }
+    function drawHand() {
+      var p = b.s[0];
+      el.querySelector(".lys").innerHTML = Array.from({ length: Math.min(b.turn, 8) }, function (_, i) { return '<i class="' + (i < p.lys ? "on" : "") + '"></i>'; }).join("");
+      hand.innerHTML = "";
+      p.hand.forEach(function (id, hi) {
+        var c = h(cardHTML(id, { cls: (hi === sel ? "sel " : "") + (D.BY[id].c > p.lys ? "cant" : "") }));
+        c.onclick = function () {
+          if (busy) return;
+          sel = sel === hi ? -1 : hi; SFX.tap();
+          info.innerHTML = sel >= 0 ? cardInfo(id) + (D.BY[id].c > p.lys ? "<br><span style='color:#ff8a8a'>Ikke nok lys endnu.</span>" : "<br><span style='color:var(--gold)'>Tryk på en tom plads.</span>") : "";
+          drawHand(); drawBoards();
+        };
+        hand.appendChild(c);
+      });
+      el.querySelector("#deckn").textContent = "Tur " + b.turn + " · " + p.deck.length + " i bunken";
+      el.querySelector("#end").disabled = busy;
+    }
+    function full() { snap(); drawBoards(); drawHand(); }
+    b0.onclick = function (ev) {
+      var sl = ev.target.closest(".slot"); if (!sl || busy) return;
+      var i = +sl.dataset.s;
+      if (sel >= 0) {
+        if (E.canPlay(b, sel, i)) {
+          var start = b.log.length; E.play(b, sel, i); sel = -1; info.innerHTML = "";
+          animate(b.log.slice(start)).then(after);
+        } else if (b.s[0].board[i]) { info.innerHTML = cardInfo(b.s[0].board[i].id); }
+        else toast("Ikke nok lys");
+      } else if (b.s[0].board[i]) info.innerHTML = cardInfo(b.s[0].board[i].id);
+    };
+    b1.onclick = function (ev) { var sl = ev.target.closest(".slot"); if (!sl) return; var u = b.s[1].board[+sl.dataset.s]; if (u) info.innerHTML = cardInfo(u.id); };
+    function slotEl(si, slot) { return (si ? b1 : b0).querySelectorAll(".slot")[slot]; }
+    function floatTxt(target, txt, cls) { var f = h('<div class="float ' + (cls || "") + '">' + txt + "</div>"); target.appendChild(f); setTimeout(function () { f.remove(); }, 800); }
+    // Afspil motorens hændelser én for én på det viste brætstade.
+    function animate(evs) {
+      busy = true; drawHand();
+      var p = Promise.resolve();
+      evs.forEach(function (e) {
+        p = p.then(function () {
+          var V = view.s;
+          if (e.t === "play") { V[e.si].board[e.slot] = JSON.parse(JSON.stringify(b.s[e.si].board[e.slot] || { id: e.id, a: D.BY[e.id].a, h: D.BY[e.id].h, mh: D.BY[e.id].h, shield: !!D.BY[e.id].kw.taage, el: D.BY[e.id].el })); var u0 = V[e.si].board[e.slot]; u0.h = D.BY[e.id].h; u0.a = D.BY[e.id].a; u0.mh = u0.h; u0.shield = !!D.BY[e.id].kw.taage; drawBoards(); var c = slotEl(e.si, e.slot).querySelector(".card"); if (c) c.classList.add("drop"); SFX.play(); if (e.si === 1) mid.textContent = esc(isl.foe) + " kalder " + D.BY[e.id].n; return wait(380); }
+          if (e.t === "atk") { var c2 = slotEl(e.si, e.slot).querySelector(".card"); if (c2) { c2.classList.remove("lunge0", "lunge1"); void c2.offsetWidth; c2.classList.add("lunge" + e.si); } SFX.atk(); return wait(200); }
+          if (e.t === "hit") { var u = V[e.si].board[e.slot]; if (u) u.h -= e.n; drawBoards(); var se = slotEl(e.si, e.slot), c3 = se.querySelector(".card"); if (c3) c3.classList.add("hitfx"); floatTxt(se, "−" + e.n); SFX.hit(); return wait(260); }
+          if (e.t === "dodge") { var u2 = V[e.si].board[e.slot]; if (u2) u2.shield = false; drawBoards(); floatTxt(slotEl(e.si, e.slot), "undveg!", "b"); SFX.dodge(); return wait(260); }
+          if (e.t === "die") { var c4 = slotEl(e.si, e.slot).querySelector(".card"); if (c4) c4.classList.add("die"); SFX.die(); return wait(330).then(function () { V[e.si].board[e.slot] = null; drawBoards(); }); }
+          if (e.t === "grow") { var u3 = V[e.si].board[e.slot]; if (u3) { u3.a++; u3.h++; u3.mh++; } drawBoards(); floatTxt(slotEl(e.si, e.slot), "+1/+1", "g"); SFX.heal(); return wait(260); }
+          if (e.t === "face") { V[e.si].hp -= e.n; drawBoards(); var he = el.querySelector(e.si ? ".hero.foe" : ".hero.me"); he.classList.remove("hit"); void he.offsetWidth; he.classList.add("hit"); floatTxt(he, "−" + e.n); SFX.face(); if (navigator.vibrate && e.si === 0) try { navigator.vibrate(30); } catch (x) {} return wait(300); }
+          if (e.t === "heal") { V[e.si].hp = Math.min(V[e.si].mhp, V[e.si].hp + e.n); drawBoards(); floatTxt(el.querySelector(e.si ? ".hero.foe" : ".hero.me"), "+" + e.n, "g"); SFX.heal(); return wait(220); }
+          return null;
+        });
+      });
+      return p.then(function () { busy = false; });
+    }
+    function after() {
+      if (b.over) return finish();
+      full();
+    }
+    el.querySelector("#end").onclick = function () {
+      if (busy || b.over) return;
+      SFX.tap(); sel = -1; info.innerHTML = "";
+      var start = b.log.length; E.endTurn(b);
+      mid.textContent = "Dine ånder angriber…";
+      animate(b.log.slice(start)).then(function () {
+        if (b.over) return finish();
+        mid.textContent = esc(isl.foe) + "s tur…";
+        return wait(350).then(function () {
+          var s2 = b.log.length; E.aiTurn(b);
+          return animate(b.log.slice(s2));
+        }).then(function () {
+          mid.textContent = b.over ? "" : "Din tur — lys: " + b.s[0].lys;
+          after();
+        });
+      });
+    };
+    el.querySelector("#quit").onclick = function () {
+      if (busy) return;
+      modal("<h2>Flygt fra kampen?</h2><p class='dim' style='text-align:center'>At flygte tæller som et nederlag — en flamme slukkes.</p>", [{ t: "Bliv", v: 0, sec: true }, { t: "Flygt", v: 1 }]).then(function (v) {
+        if (v) { b.over = "lose"; finish(true); }
+      });
+    };
+    function finish(fled) {
+      busy = true;
+      var won = b.over === "win";
+      T("battle_end", { won: won, fled: !!fled, island: S.island, turns: b.turn, deck: S.deck, hp: b.s[0].hp });
+      var msg;
+      if (won) {
+        S.wins++; S.packs++; S.island++; S.best = Math.max(S.best, S.island);
+        SFX.win();
+        if (S.island >= D.ISLANDS.length) {
+          T("progress", { step: "victory", runs: S.runs });
+          S.island = 0; S.flames = 3; S.runs++; S.packs += 2;
+          msg = "<h1>Den Sorte Fyr brænder!</h1><p style='text-align:center'>Du tændte lyset over hele Mørkhavet. Ånderne synger.<br><br>Du får 3 pakker. Mørket vil vende tilbage — en ny rejse venter.</p>";
+        } else {
+          T("progress", { island: S.island });
+          msg = "<h1>Sejr!</h1><p style='text-align:center'>" + esc(isl.foe) + " er besejret, og fyret på " + esc(isl.n) + " er tændt.<br>Du får <b>1 pakke</b>.</p>";
+        }
+      } else {
+        S.losses++; S.flames--; SFX.lose();
+        if (S.flames <= 0) {
+          T("progress", { step: "voyage_lost", reached: S.island });
+          S.island = 0; S.flames = 3; S.runs++;
+          msg = "<h1 style='color:#b46bff'>Lygten slukkes</h1><p style='text-align:center'>Din sidste flamme gik ud. Mørket tager øerne tilbage, og rejsen må begynde forfra.<br><br>Men ånderne er stadig dine.</p>";
+        } else {
+          msg = "<h1 style='color:#b46bff'>Nederlag</h1><p style='text-align:center'>" + esc(isl.foe) + " slukkede en af dine flammer.<br>" + S.flames + " flamme" + (S.flames === 1 ? "" : "r") + " tilbage.</p>";
+        }
+      }
+      save();
+      setTimeout(function () {
+        modal(msg, [{ t: won ? "Åbn pakken" : "Til kortet", v: 1 }]).then(function () { if (won) packScreen(false); else home(); });
+      }, 500);
+    }
+    show(el); full();
+    mid.textContent = "Vælg et kort, og læg det på en tom plads";
+    if (!S.seen.battlehint) {
+      S.seen.battlehint = 1; save();
+      modal("<h2>Sådan kæmper du</h2><p style='line-height:1.5'>1. Tryk på et kort i hånden, og tryk så på en tom plads.<br>2. Kort koster <b>lys</b> — du får mere lys hver tur.<br>3. Tryk <b>Slut tur</b>: hver af dine ånder angriber ånden lige overfor — eller fjendens lygte, hvis pladsen er tom.<br><br><b>Hvor</b> du lægger dine ånder, er hele kunsten.</p>", [{ t: "Forstået", v: 1 }]);
+    }
+  }
+
+  // ---------- start ----------
+  load();
+  if (!S) intro(); else home();
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
+  window.__lyg = { get S() { return S; } }; // til fejlsøgning i browseren
+})();

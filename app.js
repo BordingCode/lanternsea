@@ -1,18 +1,18 @@
-// Lygtebærer — UI. Regler ligger i engine.js, kort i cards.js.
+// Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.1.2";
-  var KEY = "lygtebaerer_save";
+  var VERSION = "0.2.0";
+  var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
   var R = E.rng((Date.now() ^ (Math.random() * 1e9)) >>> 0);
-  try { Telemetri.init("lygtebaerer", VERSION); } catch (e) {}
+  try { Telemetri.init("lanternsea", VERSION); } catch (e) {}
   function T(k, d) { try { Telemetri.log(k, d); } catch (e) {} }
 
   // ---------- gem ----------
   var S;
   function load() {
-    var raw = null; try { raw = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+    var raw = null; try { raw = JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(OLDKEY)); } catch (e) {}
     S = raw ? E.migrate(raw) : null;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
@@ -110,8 +110,8 @@
   }
   function kwText(c) {
     var k = c.kw, out = [];
-    if (k.gnist) out.push("Gnist " + k.gnist); if (k.taage) out.push("Tåge"); if (k.flok) out.push("Flok");
-    if (k.rod) out.push("Rod " + k.rod); if (k.sluger) out.push("Sluger");
+    if (k.gnist) out.push("Spark " + k.gnist); if (k.taage) out.push("Veil"); if (k.flok) out.push("Kin");
+    if (k.rod) out.push("Mend " + k.rod); if (k.sluger) out.push("Devour");
     return out.join(" · ");
   }
   function cardHTML(id, o) {
@@ -125,10 +125,10 @@
       '<div class="st at">' + a + '</div><div class="st hp' + (o.unit && hp < o.unit.mh ? " hurt" : "") + '">' + hp + "</div>" +
       (o.unit && o.unit.shield ? '<div class="shield"></div>' : "") +
       (o.badge ? '<div class="badge">' + o.badge + "</div>" : "") +
-      (o.isNew ? '<div class="new">NY!</div>' : "") + "</div>";
+      (o.isNew ? '<div class="new">NEW!</div>' : "") + "</div>";
   }
   function cardInfo(id) {
-    var c = D.BY[id], s = "<b>" + esc(c.n) + "</b> · " + D.EL[c.el] + " · " + D.RAR[c.r] + " · koster " + c.c + " lys<br>";
+    var c = D.BY[id], s = "<b>" + esc(c.n) + "</b> · " + D.EL[c.el] + " · " + D.RAR[c.r] + " · costs " + c.c + " light<br>";
     var k = c.kw, parts = [];
     Object.keys(k).forEach(function (key) { parts.push(D.KW[key].replace(/\bN\b/g, k[key])); });
     return s + (parts.length ? parts.join("<br>") : "<i>" + esc(c.t) + "</i>");
@@ -143,11 +143,11 @@
   function intro() {
     var el = h('<div class="screen intro"><div class="grow" style="display:flex;flex-direction:column;justify-content:center;gap:8px">' +
       '<div style="width:140px;margin:0 auto">' + document.createElement("div").outerHTML + "</div>" +
-      '<h1 style="text-align:center">Lygtebærer</h1>' +
-      "<p>Lyset er gået ud over <b>Mørkhavet</b>. Kun lysånderne er tilbage — små, vilde væsener af glød, tåge og rod.</p>" +
-      "<p>Du bærer den sidste lygte. Fang ånderne, byg dit deck, og sejl ø for ø mod <b>Den Sorte Fyr</b> for at tænde den igen.</p>" +
-      '<p class="dim">Du har 3 flammer. Taber du en kamp, slukkes en. Slukkes alle, må du starte rejsen forfra — men ånderne beholder du.</p>' +
-      '</div><div class="bottom"><button class="btn" id="go">Åbn din første pakke</button></div></div>');
+      '<h1 style="text-align:center">Lanternsea</h1>' +
+      "<p>The light has gone out over the <b>Dark Sea</b>. Only the light-spirits remain — small, wild creatures of blaze, mist and root.</p>" +
+      "<p>You carry the last lantern. Catch the spirits, build your deck, and sail island by island to <b>The Black Lighthouse</b> to light it again.</p>" +
+      '<p class="dim">You have 3 flames. Lose a battle and one goes out. Lose them all and your voyage starts over — but you keep your spirits.</p>' +
+      '</div><div class="bottom"><button class="btn" id="go">Open your first pack</button></div></div>');
     el.querySelector("div[style*='140px']").innerHTML = '<img src="icon.svg" alt="" style="width:140px;filter:drop-shadow(0 0 30px #ffb34788)">';
     el.querySelector("#go").onclick = function () {
       SFX.tap();
@@ -159,18 +159,18 @@
   }
 
   function home() {
-    var el = h('<div class="screen"><div class="hud"><div class="flames">' + flamesHTML() + '</div><div class="row"><span class="pill">✦ ' + S.embers + ' gløder</span><span class="pill">' + uniqueOwned() + "/" + D.CARDS.length + " ånder</span></div></div>" +
-      '<h2 style="margin-top:10px">Mørkhavet' + (S.runs > 1 ? ' <span class="dim" style="font-size:14px">· rejse ' + S.runs + "</span>" : "") + '</h2><div class="map"></div>' +
-      '<div class="bottom"><div class="row"><button class="btn sec" id="deck">Deck (' + S.deck.length + ')</button><button class="btn sec" id="packs">Pakker (' + S.packs + ")</button></div>" +
-      '<button class="btn" id="sail">Sejl til ' + esc(D.ISLANDS[S.island].n) + "</button></div></div>");
+    var el = h('<div class="screen"><div class="hud"><div class="flames">' + flamesHTML() + '</div><div class="row"><span class="pill">✦ ' + S.embers + ' glimmer</span><span class="pill">' + uniqueOwned() + "/" + D.CARDS.length + " spirits</span></div></div>" +
+      '<h2 style="margin-top:10px">The Dark Sea' + (S.runs > 1 ? ' <span class="dim" style="font-size:14px">· voyage ' + S.runs + "</span>" : "") + '</h2><div class="map"></div>' +
+      '<div class="bottom"><div class="row"><button class="btn sec" id="deck">Deck (' + S.deck.length + ')</button><button class="btn sec" id="packs">Packs (' + S.packs + ")</button></div>" +
+      '<button class="btn" id="sail">Sail to ' + esc(D.ISLANDS[S.island].n) + "</button></div></div>");
     var map = el.querySelector(".map");
     D.ISLANDS.forEach(function (is, i) {
       var cls = i < S.island ? "done" : i === S.island ? "cur" : "lock";
-      map.appendChild(h('<div class="isl ' + cls + '"><div class="dot">' + (i < S.island ? "✦" : i + 1) + '</div><div><b>' + esc(is.n) + '</b><br><span class="dim">' + (i <= S.island ? "Vogter: " + esc(is.foe) + " · " + is.hp + " liv" : "Ukendt") + "</span></div></div>"));
+      map.appendChild(h('<div class="isl ' + cls + '"><div class="dot">' + (i < S.island ? "✦" : i + 1) + '</div><div><b>' + esc(is.n) + '</b><br><span class="dim">' + (i <= S.island ? "Warden: " + esc(is.foe) + " · " + is.hp + " life" : "Unknown") + "</span></div></div>"));
     });
     el.querySelector("#deck").onclick = function () { SFX.tap(); deckScreen(); };
     var pb = el.querySelector("#packs"); pb.disabled = S.packs < 1 && S.embers < 12;
-    if (S.packs < 1 && S.embers >= 12) pb.textContent = "Køb pakke (12 ✦)";
+    if (S.packs < 1 && S.embers >= 12) pb.textContent = "Buy pack (12 ✦)";
     pb.onclick = function () {
       SFX.tap();
       if (S.packs < 1 && S.embers >= 12) { S.embers -= 12; S.packs++; save(); }
@@ -178,21 +178,21 @@
     };
     el.querySelector("#sail").onclick = function () {
       SFX.tap();
-      if (!E.validDeck(S.deck, S.coll)) { toast("Dit deck skal have 12–20 kort"); deckScreen(); return; }
+      if (!E.validDeck(S.deck, S.coll)) { toast("Your deck needs 12–20 cards"); deckScreen(); return; }
       battleScreen();
     };
     show(el);
     setTimeout(function () { var c = map.querySelector(".cur"); if (c) c.scrollIntoView({ block: "center" }); }, 30);
-    if (S.packs > 0 && !S.seen.packhint) { S.seen.packhint = 1; save(); toast("Du har en uåbnet pakke!"); }
+    if (S.packs > 0 && !S.seen.packhint) { S.seen.packhint = 1; save(); toast("You have an unopened pack!"); }
   }
 
   // ---------- pakke-ritualet ----------
   var RORD = { c: 0, u: 1, r: 2, m: 3 };
   function packScreen(first) {
     if (S.packs < 1) return home();
-    var el = h('<div class="screen"><div class="hud"><span class="pill">Pakker: ' + S.packs + '</span><span class="pill">' + uniqueOwned() + "/" + D.CARDS.length + ' ånder</span></div>' +
-      '<div class="packzone"><div class="pack"><div class="lbl">MØRKHAVET<br><span style="font-size:13px;color:#dfe3ff">5 lysånder</span></div></div></div>' +
-      '<div class="bottom"><div class="dim" style="text-align:center" id="hint">Tryk på pakken for at rive den op</div><div class="row" id="btns"></div></div></div>');
+    var el = h('<div class="screen"><div class="hud"><span class="pill">Packs: ' + S.packs + '</span><span class="pill">' + uniqueOwned() + "/" + D.CARDS.length + ' spirits</span></div>' +
+      '<div class="packzone"><div class="pack"><div class="lbl">THE DARK SEA<br><span style="font-size:13px;color:#dfe3ff">5 light-spirits</span></div></div></div>' +
+      '<div class="bottom"><div class="dim" style="text-align:center" id="hint">Tap the pack to tear it open</div><div class="row" id="btns"></div></div></div>');
     var pack = el.querySelector(".pack"), zone = el.querySelector(".packzone");
     var opened = false;
     pack.onclick = function () {
@@ -203,7 +203,7 @@
     };
     function reveal() {
       S.packs--;
-      el.querySelector(".hud .pill").textContent = "Pakker: " + S.packs;
+      el.querySelector(".hud .pill").textContent = "Packs: " + S.packs;
       var ids = E.openPack(R).sort(function (a, b) { return RORD[D.BY[a].r] - RORD[D.BY[b].r]; });
       var newOnes = {}, melted = 0;
       ids.forEach(function (id) {
@@ -216,7 +216,7 @@
       T("pack_open", { rar: ids.map(function (i) { return D.BY[i].r; }), ids: ids, uniq: uniqueOwned() });
       zone.innerHTML = '<div class="reveal"></div>';
       var rv = zone.querySelector(".reveal"), left = ids.length;
-      el.querySelector("#hint").textContent = "Tryk på kortene for at vende dem";
+      el.querySelector("#hint").textContent = "Tap the cards to turn them over";
       ids.forEach(function (id, i) {
         var c = D.BY[id];
         var sc = h('<div class="slotc ' + c.r + '"><div class="flip"><div class="back"></div>' + cardHTML(id, { isNew: newOnes[id] }) + "</div></div>");
@@ -238,7 +238,7 @@
         rv.appendChild(sc);
       });
       var btns = el.querySelector("#btns");
-      var all = h('<button class="btn sec">Vend alle</button>');
+      var all = h('<button class="btn sec">Reveal all</button>');
       all.onclick = function () {
         var k = 0;
         rv.querySelectorAll(".slotc:not(.open)").forEach(function (s) { setTimeout(function () { s.click(); }, k++ * 220); });
@@ -246,14 +246,14 @@
       btns.appendChild(all);
       function done() {
         var nNew = Object.keys(newOnes).length;
-        el.querySelector("#hint").innerHTML = (nNew ? "<b style='color:var(--gold)'>" + nNew + " nye ånder!</b> " : "") + (melted ? "Dubletter smeltet til <b>" + melted + " ✦ gløder</b>." : "") + (!nNew && !melted ? "Flere ånder til samlingen." : "");
+        el.querySelector("#hint").innerHTML = (nNew ? "<b style='color:var(--gold)'>" + nNew + " new spirits!</b> " : "") + (melted ? "Duplicates melted into <b>" + melted + " ✦ glimmer</b>." : "") + (!nNew && !melted ? "More spirits for your collection." : "");
         btns.innerHTML = "";
-        var next = h('<button class="btn">' + (S.packs > 0 ? "Næste pakke (" + S.packs + ")" : "Fortsæt") + "</button>");
+        var next = h('<button class="btn">' + (S.packs > 0 ? "Next pack (" + S.packs + ")" : "Continue") + "</button>");
         next.onclick = function () {
           SFX.tap();
           if (S.packs > 0) return packScreen(first);
-          if (first) { S.deck = autoDeck(); save(); toast("Jeg har bygget et deck til dig — ret det, når du vil"); }
-          else if (Object.keys(newOnes).length) toast("Nye ånder kan lægges i dit deck under 'Deck'");
+          if (first) { S.deck = autoDeck(); save(); toast("I built a deck for you — change it whenever you like"); }
+          else if (Object.keys(newOnes).length) toast("Add new spirits to your deck under 'Deck'");
           home();
         };
         btns.appendChild(next);
@@ -282,11 +282,11 @@
   // ---------- deckbygger ----------
   function deckScreen() {
     var filter = "all";
-    var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Dit deck</h2><div class="row"><div class="curve"></div><span class="pill" id="cnt"></span></div></div>' +
-      '<div class="dim" style="font-size:13px;margin:4px 0 8px">Tryk på en ånd for at lægge den i decket. Tryk på − for at tage den ud. 12–20 kort, maks 2 ens.</div>' +
-      '<div class="filters"><button class="chip on" data-f="all">Alle</button><button class="chip" data-f="deck">I decket</button><button class="chip" data-f="glod">Glød</button><button class="chip" data-f="taage">Tåge</button><button class="chip" data-f="rod">Rod</button><button class="chip" data-f="missing">Mangler</button></div>' +
-      '<div class="grid"></div><div class="info" id="dinfo">Tryk længe på et kort for at læse det.</div>' +
-      '<div class="bottom" style="margin-top:8px"><div class="row"><button class="btn sec" id="auto">Byg for mig</button><button class="btn" id="back">Færdig</button></div></div></div>');
+    var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Your deck</h2><div class="row"><div class="curve"></div><span class="pill" id="cnt"></span></div></div>' +
+      '<div class="dim" style="font-size:13px;margin:4px 0 8px">Tap a spirit to add it to your deck. Tap − to take it out. 12–20 cards, max 2 of each.</div>' +
+      '<div class="filters"><button class="chip on" data-f="all">All</button><button class="chip" data-f="deck">In deck</button><button class="chip" data-f="glod">Blaze</button><button class="chip" data-f="taage">Mist</button><button class="chip" data-f="rod">Root</button><button class="chip" data-f="missing">Missing</button></div>' +
+      '<div class="grid"></div><div class="info" id="dinfo">Tap a card to read it.</div>' +
+      '<div class="bottom" style="margin-top:8px"><div class="row"><button class="btn sec" id="auto">Build for me</button><button class="btn" id="back">Done</button></div></div></div>');
     var grid = el.querySelector(".grid");
     function inDeck(id) { return S.deck.filter(function (x) { return x === id; }).length; }
     function render() {
@@ -303,16 +303,16 @@
           wrap.appendChild(minus);
         }
         wrap.onclick = function () {
-          el.querySelector("#dinfo").innerHTML = o ? cardInfo(c.id) : "Denne ånd har du ikke fanget endnu.";
+          el.querySelector("#dinfo").innerHTML = o ? cardInfo(c.id) : "You haven't caught this spirit yet.";
           if (!o) return;
-          if (d >= Math.min(o, E.deckLimit(c.id))) { toast(d >= E.deckLimit(c.id) ? "Maks " + E.deckLimit(c.id) + " ens i et deck" : "Du ejer kun " + o); return; }
-          if (S.deck.length >= 20) { toast("Decket er fuldt (20)"); return; }
+          if (d >= Math.min(o, E.deckLimit(c.id))) { toast(d >= E.deckLimit(c.id) ? "Max " + E.deckLimit(c.id) + " of each in a deck" : "You only own " + o); return; }
+          if (S.deck.length >= 20) { toast("Deck is full (20)"); return; }
           S.deck.push(c.id); save(); SFX.play(); render();
         };
         grid.appendChild(wrap);
       });
       var n = S.deck.length, cnt = el.querySelector("#cnt");
-      cnt.textContent = n + " kort"; cnt.style.background = n < 12 || n > 20 ? "#5a1f12" : "#14402a";
+      cnt.textContent = n + " cards"; cnt.style.background = n < 12 || n > 20 ? "#5a1f12" : "#14402a";
       var cv = [0, 0, 0, 0, 0, 0, 0]; S.deck.forEach(function (id) { cv[Math.min(6, D.BY[id].c - 1 < 0 ? 0 : D.BY[id].c - 1)]++; });
       var mx = Math.max.apply(null, cv) || 1;
       el.querySelector(".curve").innerHTML = cv.map(function (v) { return '<div style="height:' + (v / mx * 100) + '%"></div>'; }).join("");
@@ -320,9 +320,9 @@
     el.querySelectorAll(".chip[data-f]").forEach(function (b) {
       b.onclick = function () { el.querySelectorAll(".chip[data-f]").forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on"); filter = b.dataset.f; SFX.tap(); render(); };
     });
-    el.querySelector("#auto").onclick = function () { S.deck = autoDeck(); save(); SFX.play(); render(); toast("Deck bygget"); };
+    el.querySelector("#auto").onclick = function () { S.deck = autoDeck(); save(); SFX.play(); render(); toast("Deck built"); };
     el.querySelector("#back").onclick = function () {
-      if (S.deck.length < 12) { toast("Mindst 12 kort i decket"); return; }
+      if (S.deck.length < 12) { toast("At least 12 cards in your deck"); return; }
       SFX.tap(); home();
     };
     show(el); render();
@@ -339,7 +339,7 @@
       '<div class="board" id="b1"></div><div class="mid" id="mid"></div><div class="lanes" id="lanes"></div><div class="board" id="b0"></div>' +
       '<div class="hero me"><span class="lys"></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
       '<div class="info" id="info"></div><div class="hand"></div>' +
-      '<div class="row"><button class="btn sec" id="quit" style="padding:12px 14px;font-size:15px">Flygt</button><div class="grow dim" style="font-size:13px;text-align:center" id="deckn"></div><button class="btn endbtn" id="end">Slut tur</button></div></div>');
+      '<div class="row"><button class="btn sec" id="quit" style="padding:12px 14px;font-size:15px">Flee</button><div class="grow dim" style="font-size:13px;text-align:center" id="deckn"></div><button class="btn endbtn" id="end">End turn</button></div></div>');
     var b0 = el.querySelector("#b0"), b1 = el.querySelector("#b1"), hand = el.querySelector(".hand"), info = el.querySelector("#info"), mid = el.querySelector("#mid"), lanesEl = el.querySelector("#lanes");
     for (var i = 0; i < 4; i++) { b0.appendChild(h('<div class="slot" data-s="' + i + '"></div>')); b1.appendChild(h('<div class="slot" data-s="' + i + '"></div>')); }
     var view = null; // det viste brætstade (kan halte efter motoren under animation)
@@ -363,10 +363,10 @@
         if (mine) {
           var am = mine.a; if (D.BY[mine.id].kw.flok) view.s[0].board.forEach(function (v, j) { if (v && j !== L && v.el === mine.el) am++; });
           if (am <= 0) txt = "<span class='dim'>—</span>";
-          else if (!theirs) txt = "<b style='color:var(--gold)'>↑" + am + "</b><br><span class='dim'>lygten</span>";
-          else if (theirs.shield) txt = "↑" + am + "<br><span style='color:var(--taage)'>undviger</span>";
-          else txt = "↑" + am + "<br>" + (am >= theirs.h ? "<span style='color:#8dffb0'>dræber</span>" : "<span class='dim'>" + theirs.h + " liv</span>");
-        } else if (theirs && theirs.a > 0) txt = "<span style='color:#ff8a8a'>↓" + theirs.a + "</span><br><span class='dim'>åben</span>";
+          else if (!theirs) txt = "<b style='color:var(--gold)'>↑" + am + "</b><br><span class='dim'>lantern</span>";
+          else if (theirs.shield) txt = "↑" + am + "<br><span style='color:var(--taage)'>veiled</span>";
+          else txt = "↑" + am + "<br>" + (am >= theirs.h ? "<span style='color:#8dffb0'>kills</span>" : "<span class='dim'>" + theirs.h + " life</span>");
+        } else if (theirs && theirs.a > 0) txt = "<span style='color:#ff8a8a'>↓" + theirs.a + "</span><br><span class='dim'>open</span>";
         lanes += "<div>" + txt + "</div>";
       }
       lanesEl.innerHTML = lanes;
@@ -385,12 +385,12 @@
         c.onclick = function () {
           if (busy) return;
           sel = sel === hi ? -1 : hi; SFX.tap();
-          info.innerHTML = sel >= 0 ? cardInfo(id) + (D.BY[id].c > p.lys ? "<br><span style='color:#ff8a8a'>Ikke nok lys endnu.</span>" : "<br><span style='color:var(--gold)'>Tryk på en tom plads.</span>") : "";
+          info.innerHTML = sel >= 0 ? cardInfo(id) + (D.BY[id].c > p.lys ? "<br><span style='color:#ff8a8a'>Not enough light yet.</span>" : "<br><span style='color:var(--gold)'>Tap an empty space.</span>") : "";
           drawHand(); drawBoards();
         };
         hand.appendChild(c);
       });
-      el.querySelector("#deckn").textContent = "Tur " + b.turn + " · " + p.deck.length + " i bunken";
+      el.querySelector("#deckn").textContent = "Turn " + b.turn + " · " + p.deck.length + " in deck";
       el.querySelector("#end").disabled = busy;
     }
     function full() { snap(); drawBoards(); drawHand(); }
@@ -402,7 +402,7 @@
           var start = b.log.length; E.play(b, sel, i); sel = -1; info.innerHTML = "";
           animate(b.log.slice(start)).then(after);
         } else if (b.s[0].board[i]) { info.innerHTML = cardInfo(b.s[0].board[i].id); }
-        else toast("Ikke nok lys");
+        else toast("Not enough light");
       } else if (b.s[0].board[i]) info.innerHTML = cardInfo(b.s[0].board[i].id);
     };
     b1.onclick = function (ev) { var sl = ev.target.closest(".slot"); if (!sl) return; var u = b.s[1].board[+sl.dataset.s]; if (u) info.innerHTML = cardInfo(u.id); };
@@ -415,10 +415,10 @@
       evs.forEach(function (e) {
         p = p.then(function () {
           var V = view.s;
-          if (e.t === "play") { V[e.si].board[e.slot] = JSON.parse(JSON.stringify(b.s[e.si].board[e.slot] || { id: e.id, a: D.BY[e.id].a, h: D.BY[e.id].h, mh: D.BY[e.id].h, shield: !!D.BY[e.id].kw.taage, el: D.BY[e.id].el })); var u0 = V[e.si].board[e.slot]; u0.h = D.BY[e.id].h; u0.a = D.BY[e.id].a; u0.mh = u0.h; u0.shield = !!D.BY[e.id].kw.taage; drawBoards(); var c = slotEl(e.si, e.slot).querySelector(".card"); if (c) c.classList.add("drop"); SFX.play(); if (e.si === 1) mid.textContent = esc(isl.foe) + " kalder " + D.BY[e.id].n; return wait(380); }
+          if (e.t === "play") { V[e.si].board[e.slot] = JSON.parse(JSON.stringify(b.s[e.si].board[e.slot] || { id: e.id, a: D.BY[e.id].a, h: D.BY[e.id].h, mh: D.BY[e.id].h, shield: !!D.BY[e.id].kw.taage, el: D.BY[e.id].el })); var u0 = V[e.si].board[e.slot]; u0.h = D.BY[e.id].h; u0.a = D.BY[e.id].a; u0.mh = u0.h; u0.shield = !!D.BY[e.id].kw.taage; drawBoards(); var c = slotEl(e.si, e.slot).querySelector(".card"); if (c) c.classList.add("drop"); SFX.play(); if (e.si === 1) mid.textContent = isl.foe + " calls " + D.BY[e.id].n; return wait(380); }
           if (e.t === "atk") { var c2 = slotEl(e.si, e.slot).querySelector(".card"); if (c2) { c2.classList.remove("lunge0", "lunge1"); void c2.offsetWidth; c2.classList.add("lunge" + e.si); } SFX.atk(); return wait(200); }
           if (e.t === "hit") { var u = V[e.si].board[e.slot]; if (u) u.h -= e.n; drawBoards(); var se = slotEl(e.si, e.slot), c3 = se.querySelector(".card"); if (c3) c3.classList.add("hitfx"); floatTxt(se, "−" + e.n); SFX.hit(); return wait(260); }
-          if (e.t === "dodge") { var u2 = V[e.si].board[e.slot]; if (u2) u2.shield = false; drawBoards(); floatTxt(slotEl(e.si, e.slot), "undveg!", "b"); SFX.dodge(); return wait(260); }
+          if (e.t === "dodge") { var u2 = V[e.si].board[e.slot]; if (u2) u2.shield = false; drawBoards(); floatTxt(slotEl(e.si, e.slot), "veiled!", "b"); SFX.dodge(); return wait(260); }
           if (e.t === "die") { var c4 = slotEl(e.si, e.slot).querySelector(".card"); if (c4) c4.classList.add("die"); SFX.die(); return wait(330).then(function () { V[e.si].board[e.slot] = null; drawBoards(); }); }
           if (e.t === "grow") { var u3 = V[e.si].board[e.slot]; if (u3) { u3.a++; u3.h++; u3.mh++; } drawBoards(); floatTxt(slotEl(e.si, e.slot), "+1/+1", "g"); SFX.heal(); return wait(260); }
           if (e.t === "face") { V[e.si].hp -= e.n; drawBoards(); var he = el.querySelector(e.si ? ".hero.foe" : ".hero.me"); he.classList.remove("hit"); void he.offsetWidth; he.classList.add("hit"); floatTxt(he, "−" + e.n); SFX.face(); if (navigator.vibrate && e.si === 0) try { navigator.vibrate(30); } catch (x) {} return wait(300); }
@@ -436,22 +436,22 @@
       if (busy || b.over) return;
       SFX.tap(); sel = -1; info.innerHTML = "";
       var start = b.log.length; E.endTurn(b);
-      mid.textContent = "Dine ånder angriber…";
+      mid.textContent = "Your spirits attack…";
       animate(b.log.slice(start)).then(function () {
         if (b.over) return finish();
-        mid.textContent = esc(isl.foe) + "s tur…";
+        mid.textContent = isl.foe + "'s turn…";
         return wait(350).then(function () {
           var s2 = b.log.length; E.aiTurn(b);
           return animate(b.log.slice(s2));
         }).then(function () {
-          mid.textContent = b.over ? "" : "Din tur — lys: " + b.s[0].lys;
+          mid.textContent = b.over ? "" : "Your turn — light: " + b.s[0].lys;
           after();
         });
       });
     };
     el.querySelector("#quit").onclick = function () {
       if (busy) return;
-      modal("<h2>Flygt fra kampen?</h2><p class='dim' style='text-align:center'>At flygte tæller som et nederlag — en flamme slukkes.</p>", [{ t: "Bliv", v: 0, sec: true }, { t: "Flygt", v: 1 }]).then(function (v) {
+      modal("<h2>Flee the battle?</h2><p class='dim' style='text-align:center'>Fleeing counts as a defeat — one flame goes out.</p>", [{ t: "Stay", v: 0, sec: true }, { t: "Flee", v: 1 }]).then(function (v) {
         if (v) { b.over = "lose"; finish(true); }
       });
     };
@@ -466,31 +466,31 @@
         if (S.island >= D.ISLANDS.length) {
           T("progress", { step: "victory", runs: S.runs });
           S.island = 0; S.flames = 3; S.runs++; S.packs += 2;
-          msg = "<h1>Den Sorte Fyr brænder!</h1><p style='text-align:center'>Du tændte lyset over hele Mørkhavet. Ånderne synger.<br><br>Du får 3 pakker. Mørket vil vende tilbage — en ny rejse venter.</p>";
+          msg = "<h1>The Black Lighthouse burns!</h1><p style='text-align:center'>You lit the whole Dark Sea. The spirits sing.<br><br>You get 3 packs. The Dark will return — a new voyage awaits.</p>";
         } else {
           T("progress", { island: S.island });
-          msg = "<h1>Sejr!</h1><p style='text-align:center'>" + esc(isl.foe) + " er besejret, og fyret på " + esc(isl.n) + " er tændt.<br>Du får <b>1 pakke</b>.</p>";
+          msg = "<h1>Victory!</h1><p style='text-align:center'>" + esc(isl.foe) + " is defeated, and the lighthouse on " + esc(isl.n) + " is lit.<br>You get <b>1 pack</b>.</p>";
         }
       } else {
         S.losses++; S.flames--; SFX.lose();
         if (S.flames <= 0) {
           T("progress", { step: "voyage_lost", reached: S.island });
           S.island = 0; S.flames = 3; S.runs++;
-          msg = "<h1 style='color:#b46bff'>Lygten slukkes</h1><p style='text-align:center'>Din sidste flamme gik ud. Mørket tager øerne tilbage, og rejsen må begynde forfra.<br><br>Men ånderne er stadig dine.</p>";
+          msg = "<h1 style='color:#b46bff'>The lantern goes out</h1><p style='text-align:center'>Your last flame died. The Dark takes the islands back, and the voyage must begin again.<br><br>But the spirits are still yours.</p>";
         } else {
-          msg = "<h1 style='color:#b46bff'>Nederlag</h1><p style='text-align:center'>" + esc(isl.foe) + " slukkede en af dine flammer.<br>" + S.flames + " flamme" + (S.flames === 1 ? "" : "r") + " tilbage.</p>";
+          msg = "<h1 style='color:#b46bff'>Defeat</h1><p style='text-align:center'>" + esc(isl.foe) + " put out one of your flames.<br>" + S.flames + " flame" + (S.flames === 1 ? "" : "s") + " left.</p>";
         }
       }
       save();
       setTimeout(function () {
-        modal(msg, [{ t: won ? "Åbn pakken" : "Til kortet", v: 1 }]).then(function () { if (won) packScreen(false); else home(); });
+        modal(msg, [{ t: won ? "Open the pack" : "To the map", v: 1 }]).then(function () { if (won) packScreen(false); else home(); });
       }, 500);
     }
     show(el); full();
-    mid.textContent = "Vælg et kort, og læg det på en tom plads";
+    mid.textContent = "Pick a card and place it on an empty space";
     if (!S.seen.battlehint) {
       S.seen.battlehint = 1; save();
-      modal("<h2>Sådan kæmper du</h2><p style='line-height:1.5'>1. Tryk på et kort i hånden, og tryk så på en tom plads.<br>2. Kort koster <b>lys</b> — du får mere lys hver tur.<br>3. Tryk <b>Slut tur</b>: hver af dine ånder angriber ånden lige overfor — eller fjendens lygte, hvis pladsen er tom.<br><br><b>Hvor</b> du lægger dine ånder, er hele kunsten.</p>", [{ t: "Forstået", v: 1 }]);
+      modal("<h2>How to fight</h2><p style='line-height:1.5'>1. Tap a card in your hand, then tap an empty space.<br>2. Cards cost <b>light</b> — you get more light every turn.<br>3. Tap <b>End turn</b>: each of your spirits attacks the spirit straight across — or the enemy lantern if that space is empty.<br><br><b>Where</b> you place your spirits is the whole art.</p>", [{ t: "Got it", v: 1 }]);
     }
   }
 
@@ -498,5 +498,5 @@
   load();
   if (!S) intro(); else home();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
-  window.__lyg = { get S() { return S; } }; // til fejlsøgning i browseren
+  window.__ls = { get S() { return S; } }; // til fejlsøgning i browseren
 })();

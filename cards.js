@@ -1,54 +1,54 @@
-// Sæt 1: Mørkhavet. el: glod|taage|rod. r: c|u|r|m. kw: nøgleord.
+// Set 1: The Dark Sea. el: glod(Blaze)|taage(Mist)|rod(Root) — internal ids kept for save compatibility. r: c|u|r|m. kw: keywords.
 (function (root) {
   var CARDS = [
-    // Glød — angreb
-    { id: "g1", n: "Gnistfnug", el: "glod", r: "c", c: 1, a: 1, h: 1, kw: { gnist: 1 }, t: "Lille, men bider straks." },
-    { id: "g2", n: "Kulungen", el: "glod", r: "c", c: 2, a: 2, h: 2, kw: { flok: 1 }, t: "Brænder klarere i flok." },
-    { id: "g3", n: "Askeløber", el: "glod", r: "c", c: 2, a: 3, h: 1, kw: {}, t: "Hurtig og skrøbelig." },
-    { id: "g4", n: "Emberulv", el: "glod", r: "u", c: 3, a: 3, h: 3, kw: { sluger: 1 }, t: "Vokser af hvert bytte." },
-    { id: "g5", n: "Flammevæver", el: "glod", r: "u", c: 4, a: 2, h: 3, kw: { gnist: 3 }, t: "Kaster en flammepil, når den kommer." },
-    { id: "g6", n: "Glødekongen", el: "glod", r: "r", c: 5, a: 4, h: 4, kw: { flok: 1, sluger: 1 }, t: "Hele ilden bøjer sig." },
-    { id: "g7", n: "Solhjerte", el: "glod", r: "m", c: 7, a: 6, h: 6, kw: { gnist: 4 }, t: "Et stykke af den gamle sol." },
-    // Tåge — list
-    { id: "t1", n: "Dugslør", el: "taage", r: "c", c: 1, a: 1, h: 1, kw: { taage: 1 }, t: "Svær at ramme." },
-    { id: "t2", n: "Tågeål", el: "taage", r: "c", c: 2, a: 2, h: 1, kw: { taage: 1 }, t: "Glider af hvert slag." },
-    { id: "t3", n: "Spejlmåge", el: "taage", r: "c", c: 3, a: 2, h: 3, kw: { flok: 1 }, t: "Hvor én flyver, flyver flere." },
-    { id: "t4", n: "Skumringsrokke", el: "taage", r: "u", c: 3, a: 3, h: 2, kw: { taage: 1, flok: 1 }, t: "Svømmer i stimer gennem tågen." },
-    { id: "t5", n: "Drømmefanger", el: "taage", r: "u", c: 4, a: 3, h: 3, kw: { taage: 1, gnist: 1 }, t: "Stjæler et øjeblik fra fjenden." },
-    { id: "t6", n: "Nattens Kvinde", el: "taage", r: "r", c: 5, a: 4, h: 3, kw: { taage: 1, sluger: 1 }, t: "Hun tager dem, én efter én." },
-    { id: "t7", n: "Havets Hukommelse", el: "taage", r: "m", c: 6, a: 5, h: 5, kw: { taage: 1, flok: 1 }, t: "Alt, havet har slugt, husker hun." },
-    // Rod — liv
-    { id: "r1", n: "Mosspire", el: "rod", r: "c", c: 1, a: 0, h: 3, kw: { rod: 1 }, t: "Tålmodig. Helende." },
-    { id: "r2", n: "Barkbille", el: "rod", r: "c", c: 2, a: 1, h: 4, kw: {}, t: "Et skjold med ben." },
-    { id: "r3", n: "Rodslange", el: "rod", r: "c", c: 3, a: 2, h: 4, kw: { flok: 1 }, t: "Rødderne finder hinanden." },
-    { id: "r4", n: "Kildeånd", el: "rod", r: "u", c: 3, a: 2, h: 3, kw: { rod: 2 }, t: "Hvor den står, springer vand." },
-    { id: "r5", n: "Stenhjort", el: "rod", r: "u", c: 4, a: 3, h: 6, kw: {}, t: "Ældre end øerne." },
-    { id: "r6", n: "Moderegen", el: "rod", r: "r", c: 5, a: 3, h: 7, kw: { rod: 2, flok: 1 }, t: "Alt levende søger hendes skygge." },
-    { id: "r7", n: "Verdenstræets Frø", el: "rod", r: "m", c: 6, a: 4, h: 9, kw: { rod: 3 }, t: "Første og sidste træ." },
-    // Neutrale (alle lys)
-    { id: "n1", n: "Lygtemøl", el: "glod", r: "c", c: 1, a: 1, h: 2, kw: {}, t: "Drages mod alt lys." },
-    { id: "n2", n: "Fyrvogter", el: "rod", r: "u", c: 2, a: 1, h: 2, kw: { gnist: 1, rod: 1 }, t: "Holder flammen i live." },
-    { id: "n3", n: "Mørkfisker", el: "taage", r: "r", c: 4, a: 4, h: 2, kw: { gnist: 2, taage: 1 }, t: "Fisker i det sorte vand." },
+    // Blaze — attack
+    { id: "g1", n: "Spark Mote", el: "glod", r: "c", c: 1, a: 1, h: 1, kw: { gnist: 1 }, t: "Small, but it bites at once." },
+    { id: "g2", n: "Coalcub", el: "glod", r: "c", c: 2, a: 2, h: 2, kw: { flok: 1 }, t: "Burns brighter with kin." },
+    { id: "g3", n: "Ashrunner", el: "glod", r: "c", c: 2, a: 3, h: 1, kw: {}, t: "Fast and fragile." },
+    { id: "g4", n: "Cinderwolf", el: "glod", r: "u", c: 3, a: 3, h: 3, kw: { sluger: 1 }, t: "Grows with every kill." },
+    { id: "g5", n: "Flameweaver", el: "glod", r: "u", c: 4, a: 2, h: 3, kw: { gnist: 3 }, t: "Throws a flame-dart as it arrives." },
+    { id: "g6", n: "The Cinder King", el: "glod", r: "r", c: 5, a: 4, h: 4, kw: { flok: 1, sluger: 1 }, t: "All fire bows to him." },
+    { id: "g7", n: "Sunheart", el: "glod", r: "m", c: 7, a: 6, h: 6, kw: { gnist: 4 }, t: "A shard of the old sun." },
+    // Mist — trickery
+    { id: "t1", n: "Dewveil", el: "taage", r: "c", c: 1, a: 1, h: 1, kw: { taage: 1 }, t: "Hard to hit." },
+    { id: "t2", n: "Mist Eel", el: "taage", r: "c", c: 2, a: 2, h: 1, kw: { taage: 1 }, t: "Slips off every blow." },
+    { id: "t3", n: "Mirror Gull", el: "taage", r: "c", c: 3, a: 2, h: 3, kw: { flok: 1 }, t: "Where one flies, more follow." },
+    { id: "t4", n: "Dusk Ray", el: "taage", r: "u", c: 3, a: 3, h: 2, kw: { taage: 1, flok: 1 }, t: "Swims in shoals through the mist." },
+    { id: "t5", n: "Dreamthief", el: "taage", r: "u", c: 4, a: 3, h: 3, kw: { taage: 1, gnist: 1 }, t: "Steals a moment from the foe." },
+    { id: "t6", n: "Lady of Night", el: "taage", r: "r", c: 5, a: 4, h: 3, kw: { taage: 1, sluger: 1 }, t: "She takes them, one by one." },
+    { id: "t7", n: "Memory of the Sea", el: "taage", r: "m", c: 6, a: 5, h: 5, kw: { taage: 1, flok: 1 }, t: "All the sea has swallowed, she remembers." },
+    // Root — life
+    { id: "r1", n: "Mossprout", el: "rod", r: "c", c: 1, a: 0, h: 3, kw: { rod: 1 }, t: "Patient. Healing." },
+    { id: "r2", n: "Barkbeetle", el: "rod", r: "c", c: 2, a: 1, h: 4, kw: {}, t: "A shield with legs." },
+    { id: "r3", n: "Rootsnake", el: "rod", r: "c", c: 3, a: 2, h: 4, kw: { flok: 1 }, t: "Roots find each other." },
+    { id: "r4", n: "Wellspring", el: "rod", r: "u", c: 3, a: 2, h: 3, kw: { rod: 2 }, t: "Where it stands, water rises." },
+    { id: "r5", n: "Stonestag", el: "rod", r: "u", c: 4, a: 3, h: 6, kw: {}, t: "Older than the islands." },
+    { id: "r6", n: "Mother Oak", el: "rod", r: "r", c: 5, a: 3, h: 7, kw: { rod: 2, flok: 1 }, t: "All living things seek her shade." },
+    { id: "r7", n: "Seed of the First Tree", el: "rod", r: "m", c: 6, a: 4, h: 9, kw: { rod: 3 }, t: "First tree, and last." },
+    // Wanderers
+    { id: "n1", n: "Lantern Moth", el: "glod", r: "c", c: 1, a: 1, h: 2, kw: {}, t: "Drawn to every light." },
+    { id: "n2", n: "Lampkeeper", el: "rod", r: "u", c: 2, a: 1, h: 2, kw: { gnist: 1, rod: 1 }, t: "Keeps the flame alive." },
+    { id: "n3", n: "Darkfisher", el: "taage", r: "r", c: 4, a: 4, h: 2, kw: { gnist: 2, taage: 1 }, t: "Fishes the black water." },
   ];
   var BY = {}; CARDS.forEach(function (c) { BY[c.id] = c; });
-  var EL = { glod: "Glød", taage: "Tåge", rod: "Rod" };
-  var RAR = { c: "Almindelig", u: "Ualmindelig", r: "Sjælden", m: "Mytisk" };
+  var EL = { glod: "Blaze", taage: "Mist", rod: "Root" };
+  var RAR = { c: "Common", u: "Uncommon", r: "Rare", m: "Mythic" };
   var KW = {
-    gnist: "Gnist N: når den lægges, N skade på ånden overfor (eller fjendens lygte).",
-    taage: "Tåge: ignorerer den første skade, den får.",
-    flok: "Flok: +1 angreb for hver anden af dine ånder med samme lys.",
-    rod: "Rod N: heler din lygte N, når du slutter din tur.",
-    sluger: "Sluger: får +1/+1, når den dræber en ånd.",
+    gnist: "Spark N: when played, deal N damage to the spirit opposite (or the enemy lantern).",
+    taage: "Veil: ignores the first damage it takes.",
+    flok: "Kin: +1 attack for each other spirit of yours with the same light.",
+    rod: "Mend N: heals your lantern N when you end your turn.",
+    sluger: "Devour: gains +1/+1 when it kills a spirit.",
   };
-  // Øerne: vogtere med faste decks
+  // The islands: wardens with fixed decks
   var ISLANDS = [
-    { n: "Skærstenen", foe: "Den Sultne Måge", hp: 10, deck: ["n1","n1","g1","g1","t1","t1","r2","r2","g3","t2","n1","g2"] },
-    { n: "Tangskoven", foe: "Rodheksen", hp: 14, deck: ["r1","r1","r2","r2","r3","r3","r4","n2","r5","g2","r2","r3"] },
-    { n: "Askeholmen", foe: "Kulfogeden", hp: 14, deck: ["g1","g1","g2","g2","g3","g3","g4","g4","g5","n1","g2","g6"] },
-    { n: "Stormskæret", foe: "Tvillingerne", hp: 17, deck: ["g2","g2","t3","t3","g4","t4","g5","t5","n3","g6","r5","r5","g3","t2"] },
-    { n: "Tågesundet", foe: "Den Blinde Lods", hp: 12, deck: ["t1","t1","t2","t2","t3","t3","t4","n1","t5","n1","t6","t3"] },
-    { n: "Dødvandet", foe: "Druknekongen", hp: 24, deck: ["r3","r3","r5","r5","t4","t4","t6","r6","n3","t5","r4","r4","g5","t7"] },
-    { n: "Den Sorte Fyr", foe: "Mørket", hp: 30, deck: ["g4","g4","t4","t4","r5","r5","g5","t5","t6","g6","r6","n3","g7","r7","t7","n2"] },
+    { n: "Skerrystone", foe: "The Hungry Gull", hp: 10, deck: ["n1","n1","g1","g1","t1","t1","r2","r2","g3","t2","n1","g2"] },
+    { n: "Kelpwood", foe: "The Root Witch", hp: 14, deck: ["r1","r1","r2","r2","r3","r3","r4","n2","r5","g2","r2","r3"] },
+    { n: "Ash Holm", foe: "The Coal Reeve", hp: 14, deck: ["g1","g1","g2","g2","g3","g3","g4","g4","g5","n1","g2","g6"] },
+    { n: "Storm Skerry", foe: "The Twins", hp: 17, deck: ["g2","g2","t3","t3","g4","t4","g5","t5","n3","g6","r5","r5","g3","t2"] },
+    { n: "Mist Sound", foe: "The Blind Pilot", hp: 12, deck: ["t1","t1","t2","t2","t3","t3","t4","n1","t5","n1","t6","t3"] },
+    { n: "Deadwater", foe: "The Drowned King", hp: 24, deck: ["r3","r3","r5","r5","t4","t4","t6","r6","n3","t5","r4","r4","g5","t7"] },
+    { n: "The Black Lighthouse", foe: "The Dark", hp: 30, deck: ["g4","g4","t4","t4","r5","r5","g5","t5","t6","g6","r6","n3","g7","r7","t7","n2"] },
   ];
   var api = { CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
   if (typeof module !== "undefined") module.exports = api; else root.DATA = api;

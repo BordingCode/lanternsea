@@ -50,3 +50,11 @@ deck-grænsen smeltes til **gløder**; 12 gløder = en ekstra pakke.
 1. Kort intro (2 linjer) → åbn 2 start-pakker (ritual).
 2. Færdigt start-deck foreslået automatisk → første kamp mod en let vogter (lærer placering).
 3. Sejr → pakke → "Tilføj til deck?" → ø 2.
+
+## Vogter-evner (0.4.0, nat 2)
+Hver vogter (undtagen den første) har én regel, der ændrer, hvordan man skal spille — inspireret af
+princippet om "tilfældighed/variation man kan handle på" (viden/designere-principper.md):
+Kelpwood **Regrowth** (hendes ånder heler 1 → dræb i ét slag) · Ash Holm **Live Coals** (Blaze-ånder ankommer
+med Spark 1 → hold dine skrøbelige ånder væk fra hans planlagte baner) · Storm Skerry **Gale** (bane 1 lukket →
+3 baner) · Mist Sound **Fog** (du kan ikke se planen) · Deadwater **High Tide** (lygten heler 2 → pres hårdt) ·
+Black Lighthouse **Endless Night** (trækker 2 kort).

@@ -43,13 +43,22 @@
   // The islands: wardens with fixed decks
   var ISLANDS = [
     { n: "Skerrystone", foe: "The Hungry Gull", hp: 10, deck: ["n1","n1","g1","g1","t1","t1","r2","r2","g3","t2","n1","g2"] },
-    { n: "Kelpwood", foe: "The Root Witch", hp: 22, deck: ["r1","r2","r2","r3","r3","r3","r4","n2","r5","r5","g2","g3","g2","n1"] },
-    { n: "Ash Holm", foe: "The Coal Reeve", hp: 16, deck: ["g1","g1","g2","g2","g3","g3","g4","g4","g5","n1","g2","g6"] },
-    { n: "Storm Skerry", foe: "The Twins", hp: 21, deck: ["g2","g2","t3","t3","g4","t4","g5","t5","n3","g6","r5","r5","g3","t2"] },
-    { n: "Mist Sound", foe: "The Blind Pilot", hp: 15, deck: ["t1","t1","t2","t2","t3","t3","t4","n1","t5","n1","t6","t3"] },
-    { n: "Deadwater", foe: "The Drowned King", hp: 28, deck: ["r3","r3","r5","r5","t4","t4","t6","r6","n3","t5","r4","r4","g5","t7"] },
-    { n: "The Black Lighthouse", foe: "The Dark", hp: 36, deck: ["g4","g4","t4","t4","r5","r5","g5","t5","t6","g6","r6","n3","g7","r7","t7","n2"] },
+    { n: "Kelpwood", foe: "The Root Witch", hp: 18, trait: "regrow", deck: ["r1","r2","r2","r3","r3","r3","r4","n2","r5","r5","g2","g3","g2","n1"] },
+    { n: "Ash Holm", foe: "The Coal Reeve", hp: 12, trait: "embers", deck: ["g1","g1","g2","g2","g3","g3","g4","g4","g5","n1","g2","g6"] },
+    { n: "Storm Skerry", foe: "The Twins", hp: 30, trait: "gale", deck: ["g2","g2","t3","t3","g4","t4","g5","t5","n3","g6","g4","t4","g3","t2"] },
+    { n: "Mist Sound", foe: "The Blind Pilot", hp: 15, trait: "fog", deck: ["t1","t1","t2","t2","t3","t3","t4","n1","t5","n1","t6","t3"] },
+    { n: "Deadwater", foe: "The Drowned King", hp: 28, trait: "tide", deck: ["r3","r3","r5","r5","t4","t4","t6","r6","n3","t5","r4","r4","g5","t7"] },
+    { n: "The Black Lighthouse", foe: "The Dark", hp: 42, trait: "night", deck: ["g4","g4","t4","t4","r5","r5","g5","t5","t6","g6","r6","n3","g7","r7","t7","n2"] },
   ];
-  var api = { CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
+  // Vogter-evner: én enkel regel pr. ø, der ændrer hvordan man skal spille (navn + max ~8 ord).
+  var TRAITS = {
+    regrow: { n: "Regrowth", t: "Her spirits heal 1 after her turn." },
+    embers: { n: "Live Coals", t: "His Blaze spirits arrive with Spark 1." },
+    gale: { n: "Gale", t: "The leftmost lane is closed." },
+    fog: { n: "Fog", t: "You can't see the pilot's next move." },
+    tide: { n: "High Tide", t: "His lantern heals 2 after his turn." },
+    night: { n: "Endless Night", t: "The Dark draws 2 cards each turn." },
+  };
+  var api = { TRAITS: TRAITS, CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
   if (typeof module !== "undefined") module.exports = api; else root.DATA = api;
 })(this);

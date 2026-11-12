@@ -146,3 +146,6 @@ h2{margin:4px 0 8px;font-size:20px}
 #app.quake{animation:quake .35s}
 @keyframes quake{20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-4px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-1px)}}
 .card .st.at.boosted{background:var(--gold)!important;color:#2a1606;box-shadow:0 0 10px var(--gold)}
+.trait{color:#ffb08c;font-weight:700}
+.slot.closed{border-color:transparent!important;background:repeating-linear-gradient(-45deg,#ffffff08 0 8px,transparent 8px 16px);position:relative}
+.slot.closed::after{content:"≋";position:absolute;inset:0;display:grid;place-items:center;color:#6fc3ff55;font-size:28px}

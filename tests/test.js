@@ -10,6 +10,17 @@ E.endTurn(b); ok(b.s[1].hp === 8, "angreb rammer lygte");
 b = E.newBattle(Array(12).fill("t1"), 0, 1); E.startTurn(b); b.s[1].board[0] = {id:"t1",a:1,h:1,mh:1,shield:true,el:"taage"};
 b.s[0].board[0] = {id:"g3",a:3,h:1,mh:1,shield:false,el:"glod"}; b.s[0].hand=[]; E.endTurn(b);
 ok(b.s[1].board[0] && !b.s[1].board[0].shield, "tåge tog første slag");
+// vogter-evner
+const isl = n => D.ISLANDS.findIndex(i => i.trait === n);
+b = E.newBattle(Array(12).fill("g1"), isl("gale"), 3); E.startTurn(b); ok(!E.canPlay(b, 0, 0) && E.canPlay(b, 0, 1), "gale lukker bane 1");
+ok(b.plan.every(m => m.slot !== 0), "gale: vogterens plan bruger ikke bane 1");
+b = E.newBattle(Array(12).fill("r2"), isl("embers"), 3); E.startTurn(b); E.endTurn(b);
+b.s[1].hand = ["n1"]; b.s[1].lys = 1; const hp0 = b.s[0].hp; E.play(b, 0, 2); ok(b.s[0].hp === hp0 - 1, "embers: Blaze-ånd får Spark 1");
+b = E.newBattle(Array(12).fill("r2"), isl("regrow"), 3); E.startTurn(b); E.endTurn(b);
+b.s[1].board[1] = {id:"r2",a:1,h:2,mh:4,shield:false,el:"rod"}; b.s[1].hand = []; b.plan = []; E.aiTurn(b); ok(b.s[1].board[1].h === 3, "regrow heler 1");
+b = E.newBattle(Array(12).fill("r2"), isl("tide"), 3); E.startTurn(b); E.endTurn(b); b.s[1].hp = 10; b.s[1].hand = []; b.plan = []; E.aiTurn(b); ok(b.s[1].hp === 12, "tide heler lygten 2");
+b = E.newBattle(Array(12).fill("r2"), isl("night"), 3); E.startTurn(b); const h1 = b.s[1].hand.length; E.endTurn(b); ok(b.s[1].hand.length === h1 + 2, "night trækker 2");
+D.ISLANDS.forEach(i => ok(!i.trait || D.TRAITS[i.trait], "evne findes " + i.n));
 // pakker
 const r = E.rng(7); for (let i = 0; i < 200; i++) { const p = E.openPack(r); ok(p.length === 5 && p.every(id => D.BY[id]), "pakke gyldig"); }
 // AI-decks gyldige

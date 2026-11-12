@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.3.3";
+  var VERSION = "0.4.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -183,7 +183,7 @@
     var map = el.querySelector(".map");
     D.ISLANDS.forEach(function (is, i) {
       var cls = i < S.island ? "done" : i === S.island ? "cur" : "lock";
-      map.appendChild(h('<div class="isl ' + cls + '"><div class="dot">' + (i < S.island ? "✦" : i + 1) + '</div><div><b>' + esc(is.n) + '</b><br><span class="dim">' + (i <= S.island ? "Warden: " + esc(is.foe) + " · " + is.hp + " life" : "Unknown") + "</span></div></div>"));
+      map.appendChild(h('<div class="isl ' + cls + '"><div class="dot">' + (i < S.island ? "✦" : i + 1) + '</div><div><b>' + esc(is.n) + '</b><br><span class="dim">' + (i <= S.island ? "Warden: " + esc(is.foe) + " · " + is.hp + " life" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") : "Unknown") + "</span></div></div>"));
     });
     el.querySelector("#deck").onclick = function () { SFX.tap(); deckScreen(); };
     var pb = el.querySelector("#packs"); pb.disabled = S.packs < 1 && S.embers < 12;
@@ -380,7 +380,7 @@
     snap();
     // Vogterens plan for næste tur (vises kun i din tur, mens intet animeres).
     function ghostAt(slot) {
-      if (busy || b.over || b.who !== 0 || !b.plan) return null;
+      if (busy || b.over || b.who !== 0 || !b.plan || b.trait === "fog") return null;
       for (var k = 0; k < b.plan.length; k++) if (b.plan[k].slot === slot) return b.plan[k].id;
       return null;
     }
@@ -394,6 +394,7 @@
           var g = !u && si === 1 ? ghostAt(i) : null;
           sl.innerHTML = u ? cardHTML(u.id, { unit: u, bonus: bonus }) : g ? cardHTML(g, { cls: "ghost", badge: "next" }) : "";
           sl.classList.toggle("target", si === 0 && sel >= 0 && !u && !busy && E.canPlay(b, sel, i));
+          sl.classList.toggle("closed", E.closed(b, i));
         });
       });
       // Forhåndsvisning pr. bane: hvad sker der, når du trykker "Slut tur"?
@@ -446,6 +447,9 @@
         else toast("Not enough light");
       } else if (b.s[0].board[i]) info.innerHTML = cardInfo(b.s[0].board[i].id);
     };
+    el.querySelector(".hero.foe").onclick = function () {
+      info.innerHTML = "<b>" + esc(isl.foe) + "</b> · " + isl.hp + " life" + (b.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) : "");
+    };
     b1.onclick = function (ev) {
       var sl = ev.target.closest(".slot"); if (!sl) return; var u = b.s[1].board[+sl.dataset.s], g = ghostAt(+sl.dataset.s);
       if (u) info.innerHTML = cardInfo(u.id);
@@ -476,6 +480,7 @@
           if (e.t === "die") { var c4 = slotEl(e.si, e.slot).querySelector(".card"); if (c4) c4.classList.add("die"); SFX.die(); return wait(330).then(function () { V[e.si].board[e.slot] = null; drawBoards(); }); }
           if (e.t === "grow") { var u3 = V[e.si].board[e.slot]; if (u3) { u3.a++; u3.h++; u3.mh++; } drawBoards(); floatTxt(slotEl(e.si, e.slot), "+1/+1", "g"); SFX.heal(); return wait(260); }
           if (e.t === "face") { V[e.si].hp -= e.n; drawBoards(); var he = el.querySelector(e.si ? ".hero.foe" : ".hero.me"); he.classList.remove("hit"); void he.offsetWidth; he.classList.add("hit"); floatTxt(he, "−" + e.n); SFX.face(); if (navigator.vibrate && e.si === 0) try { navigator.vibrate(30); } catch (x) {} return wait(300); }
+          if (e.t === "regrow") { var u5 = V[e.si].board[e.slot]; if (u5) u5.h = Math.min(u5.mh, u5.h + 1); drawBoards(); floatTxt(slotEl(e.si, e.slot), "+1", "g"); SFX.heal(); return wait(200); }
           if (e.t === "heal") { V[e.si].hp = Math.min(V[e.si].mhp, V[e.si].hp + e.n); drawBoards(); floatTxt(el.querySelector(e.si ? ".hero.foe" : ".hero.me"), "+" + e.n, "g"); SFX.heal(); return wait(220); }
           return null;
         });
@@ -498,7 +503,7 @@
           var s2 = b.log.length; E.aiTurn(b);
           return animate(b.log.slice(s2));
         }).then(function () {
-          mid.textContent = b.over ? "" : (b.plan && b.plan.length ? "Faded cards: the warden's next move" : "Your turn — light: " + b.s[0].lys);
+          mid.textContent = b.over ? "" : b.trait === "fog" ? "Fog hides the pilot's plan" : (b.plan && b.plan.length ? "Faded cards: the warden's next move" : "Your turn — light: " + b.s[0].lys);
           after();
         });
       });
@@ -541,7 +546,8 @@
       }, 500);
     }
     show(el); full();
-    mid.textContent = "Pick a card and place it on an empty space";
+    if (b.trait) { mid.innerHTML = "<div><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) + "</div>"; }
+    else mid.textContent = "Pick a card and place it on an empty space";
     if (!S.seen.battlehint) {
       S.seen.battlehint = 1; save();
       modal("<h2>How to fight</h2><p style='line-height:1.5'>1. Tap a card in your hand, then tap an empty space.<br>2. Cards cost <b>light</b> — you get more light every turn.<br>3. Tap <b>End turn</b>: each of your spirits attacks the spirit straight across — or the enemy lantern if that space is empty.<br>4. <b>Faded cards</b> show where the warden will play next turn.<br><br><b>Where</b> you place your spirits is the whole art.</p>", [{ t: "Got it", v: 1 }]);

@@ -14,7 +14,7 @@
   function newBattle(playerDeck, island, seed) {
     var r = rng(seed || Date.now());
     var isl = D.ISLANDS[island];
-    var b = { r: r, turn: 1, who: 0, over: null, log: [], plan: null,
+    var b = { r: r, turn: 1, who: 0, over: null, log: [], plan: null, trait: isl.trait || null,
       s: [side(playerDeck, 15, r), side(isl.deck, isl.hp, r)] };
     planFoe(b);
     return b;
@@ -34,19 +34,22 @@
   function startTurn(b) {
     var p = b.s[b.who];
     p.lys = Math.min(b.turn, MAXLYS);
-    if (!(b.turn === 1 && b.who === 0)) { if (p.deck.length) p.hand.push(p.deck.shift()); else damageHero(b, b.who, 1); }
+    var draws = b.who === 1 && b.trait === "night" ? 2 : 1;
+    if (!(b.turn === 1 && b.who === 0)) for (var k = 0; k < draws; k++) { if (p.deck.length) p.hand.push(p.deck.shift()); else damageHero(b, b.who, 1); }
   }
+  function closed(b, slot) { return b.trait === "gale" && slot === 0; }
   function canPlay(b, hi, slot) {
     var p = b.s[b.who], id = p.hand[hi];
-    return !b.over && id != null && slot >= 0 && slot < SLOTS && !p.board[slot] && D.BY[id].c <= p.lys;
+    return !b.over && id != null && slot >= 0 && slot < SLOTS && !closed(b, slot) && !p.board[slot] && D.BY[id].c <= p.lys;
   }
   function play(b, hi, slot) {
     if (!canPlay(b, hi, slot)) return false;
     var p = b.s[b.who], id = p.hand.splice(hi, 1)[0], c = D.BY[id];
     p.lys -= c.c; p.board[slot] = unit(id); ev(b, { t: "play", si: b.who, slot: slot, id: id });
-    if (c.kw.gnist) {
+    var spark = (c.kw.gnist || 0) + (b.who === 1 && b.trait === "embers" && c.el === "glod" ? 1 : 0);
+    if (spark) {
       var o = 1 - b.who;
-      if (b.s[o].board[slot]) damageUnit(b, o, slot, c.kw.gnist); else damageHero(b, o, c.kw.gnist);
+      if (b.s[o].board[slot]) damageUnit(b, o, slot, spark); else damageHero(b, o, spark);
     }
     return true;
   }
@@ -72,6 +75,8 @@
       } else damageHero(b, o, a);
     }
     P.board.forEach(function (u) { if (u && D.BY[u.id].kw.rod) { var n = D.BY[u.id].kw.rod; P.hp = Math.min(P.mhp, P.hp + n); ev(b, { t: "heal", si: me, n: n }); } });
+    if (me === 1 && b.trait === "tide" && P.hp < P.mhp) { P.hp = Math.min(P.mhp, P.hp + 2); ev(b, { t: "heal", si: 1, n: 2 }); }
+    if (me === 1 && b.trait === "regrow") P.board.forEach(function (u, i) { if (u && u.h < u.mh) { u.h++; ev(b, { t: "regrow", si: 1, slot: i }); } });
     if (b.over) return;
     b.who = o; if (o === 0) b.turn++;
     startTurn(b);
@@ -79,7 +84,7 @@
   // AI: vælg træk (uden at ændre noget) for side si med lys `lys`. Dyreste først; foretræk at
   // slå spillerens ånder, ellers tomme baner. Returnerer [{id, slot}].
   function chooseMoves(b, si, lys) {
-    var p = b.s[si], opp = b.s[1 - si], hand = p.hand.slice(), taken = p.board.map(Boolean), out = [];
+    var p = b.s[si], opp = b.s[1 - si], hand = p.hand.slice(), taken = p.board.map(function (u, i) { return !!u || closed(b, i); }), out = [];
     for (var guard = 0; guard < 8; guard++) {
       var best = -1, bestSlot = -1, bestScore = -1e9;
       hand.forEach(function (id, hi) {
@@ -140,6 +145,6 @@
     s.sv = SAVE_VERSION;
     return s;
   }
-  var api = { SLOTS: SLOTS, chooseMoves: chooseMoves, planFoe: planFoe, rng: rng, newBattle: newBattle, startTurn: startTurn, canPlay: canPlay, play: play, endTurn: endTurn, aiTurn: aiTurn, attackOf: attackOf, openPack: openPack, deckLimit: deckLimit, validDeck: validDeck, newSave: newSave, migrate: migrate, SAVE_VERSION: SAVE_VERSION };
+  var api = { SLOTS: SLOTS, closed: closed, chooseMoves: chooseMoves, planFoe: planFoe, rng: rng, newBattle: newBattle, startTurn: startTurn, canPlay: canPlay, play: play, endTurn: endTurn, aiTurn: aiTurn, attackOf: attackOf, openPack: openPack, deckLimit: deckLimit, validDeck: validDeck, newSave: newSave, migrate: migrate, SAVE_VERSION: SAVE_VERSION };
   if (typeof module !== "undefined") module.exports = api; else root.ENG = api;
 })(this);

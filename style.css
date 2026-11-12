@@ -127,3 +127,7 @@ h2{margin:4px 0 8px;font-size:20px}
 .slot .card{font-size:11.5cqw}
 .lanes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;font-size:13px;line-height:1.2;min-height:34px}
 @media (min-width:700px){.lanes{max-width:560px;margin:0 auto;width:100%;font-size:15px}}
+/* vogterens plan: spøgelseskort */
+.card.ghost{opacity:.5;border-style:dashed;filter:saturate(.6);animation:ghostpulse 1.6s ease-in-out infinite}
+.card.ghost .badge{background:#5a1f12;text-transform:uppercase;font-size:.7em}
+@keyframes ghostpulse{50%{opacity:.32}}

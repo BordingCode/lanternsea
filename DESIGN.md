@@ -1,4 +1,12 @@
-# Lygtebærer — design (nat 1)
+# Lanternsea — design (nat 1, opdateret nat 2)
+
+> Nat 2: spillet er omdøbt fra Lygtebærer til **Lanternsea**, al spiltekst på engelsk (regel 13).
+> Navne: Mørkhavet = The Dark Sea · Glød/Tåge/Rod = Blaze/Mist/Root · nøgleord Gnist/Tåge/Flok/Rod/Sluger =
+> Spark/Veil/Kin/Mend/Devour · gløder = glimmer · Den Sorte Fyr = The Black Lighthouse. Interne id'er (glod/taage/rod) er uændrede, så gemte data virker.
+>
+> **Vogterens hensigt (0.3.0):** vogteren planlægger sin næste tur, og planen vises som falmede
+> spøgelseskort i dens felter + ⚠ i banen. Den følger planen ærligt (ingen skjulte ekstra kort).
+> Så bliver hver tur et lille puslespil: sæt en blokker overfor, eller udnyt den åbne bane.
 
 ## Verden
 Mørkhavet: et øhav hvor lyset er gået ud. Du er Lygtebærer — du fanger *lysånder* (kortene) i din

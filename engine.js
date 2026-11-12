@@ -14,8 +14,10 @@
   function newBattle(playerDeck, island, seed) {
     var r = rng(seed || Date.now());
     var isl = D.ISLANDS[island];
-    return { r: r, turn: 1, who: 0, over: null, log: [],
+    var b = { r: r, turn: 1, who: 0, over: null, log: [], plan: null,
       s: [side(playerDeck, 15, r), side(isl.deck, isl.hp, r)] };
+    planFoe(b);
+    return b;
   }
   function ev(b, e) { b.log.push(e); }
   function damageUnit(b, si, slot, n) {
@@ -74,15 +76,16 @@
     b.who = o; if (o === 0) b.turn++;
     startTurn(b);
   }
-  // Simpel AI: læg det dyreste der passer; foretræk pladser overfor spillerens ånder hvis den kan vinde, ellers tomme baner.
-  function aiTurn(b) {
-    var p = b.s[b.who], opp = b.s[1 - b.who];
+  // AI: vælg træk (uden at ændre noget) for side si med lys `lys`. Dyreste først; foretræk at
+  // slå spillerens ånder, ellers tomme baner. Returnerer [{id, slot}].
+  function chooseMoves(b, si, lys) {
+    var p = b.s[si], opp = b.s[1 - si], hand = p.hand.slice(), taken = p.board.map(Boolean), out = [];
     for (var guard = 0; guard < 8; guard++) {
       var best = -1, bestSlot = -1, bestScore = -1e9;
-      p.hand.forEach(function (id, hi) {
-        var c = D.BY[id]; if (c.c > p.lys) return;
+      hand.forEach(function (id, hi) {
+        var c = D.BY[id]; if (c.c > lys) return;
         for (var s = 0; s < SLOTS; s++) {
-          if (p.board[s]) continue;
+          if (taken[s]) continue;
           var foe = opp.board[s], sc = c.c * 10;
           if (foe) { sc += (c.a >= foe.h ? 8 : 0) + (c.h > foe.a ? 4 : -3) + (c.kw.gnist ? 6 : 0); }
           else sc += 3;
@@ -90,10 +93,25 @@
         }
       });
       if (best < 0) break;
-      play(b, best, bestSlot);
-      if (b.over) return;
+      var id = hand.splice(best, 1)[0]; lys -= D.BY[id].c; taken[bestSlot] = true;
+      out.push({ id: id, slot: bestSlot });
     }
+    return out;
+  }
+  // Vogterens hensigt: hvad den lægger og hvor i sin NÆSTE tur. Vises for spilleren og følges ærligt.
+  function planFoe(b) { b.plan = b.over ? [] : chooseMoves(b, 1, Math.min(b.turn, MAXLYS)); }
+  function aiTurn(b) {
+    var si = b.who, p = b.s[si];
+    var moves = si === 1 && b.plan ? b.plan : chooseMoves(b, si, p.lys);
+    moves.forEach(function (m) {
+      if (b.over) return;
+      var hi = p.hand.indexOf(m.id);
+      if (hi >= 0) play(b, hi, m.slot);
+    });
+    if (si === 1) b.plan = null;
+    if (b.over) return;
     endTurn(b);
+    if (si === 1) planFoe(b);
   }
   // Pakker
   function openPack(r) {
@@ -122,6 +140,6 @@
     s.sv = SAVE_VERSION;
     return s;
   }
-  var api = { SLOTS: SLOTS, rng: rng, newBattle: newBattle, startTurn: startTurn, canPlay: canPlay, play: play, endTurn: endTurn, aiTurn: aiTurn, attackOf: attackOf, openPack: openPack, deckLimit: deckLimit, validDeck: validDeck, newSave: newSave, migrate: migrate, SAVE_VERSION: SAVE_VERSION };
+  var api = { SLOTS: SLOTS, chooseMoves: chooseMoves, planFoe: planFoe, rng: rng, newBattle: newBattle, startTurn: startTurn, canPlay: canPlay, play: play, endTurn: endTurn, aiTurn: aiTurn, attackOf: attackOf, openPack: openPack, deckLimit: deckLimit, validDeck: validDeck, newSave: newSave, migrate: migrate, SAVE_VERSION: SAVE_VERSION };
   if (typeof module !== "undefined") module.exports = api; else root.ENG = api;
 })(this);

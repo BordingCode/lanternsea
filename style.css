@@ -131,3 +131,17 @@ h2{margin:4px 0 8px;font-size:20px}
 .card.ghost{opacity:.5;border-style:dashed;filter:saturate(.6);animation:ghostpulse 1.6s ease-in-out infinite}
 .card.ghost .badge{background:#5a1f12;text-transform:uppercase;font-size:.7em}
 @keyframes ghostpulse{50%{opacity:.32}}
+/* pakke-drama (0.3.0+): sjældne bagsider gløder svagt før de vendes, burst + banner ved sjælden/mytisk */
+.slotc.u:not(.open) .back{border-color:var(--u)}
+.slotc.r:not(.open) .back{border-color:var(--r);animation:hint 2s ease-in-out infinite;--g:var(--r)}
+.slotc.m:not(.open) .back{border-color:var(--m);animation:hint 1.4s ease-in-out infinite;--g:var(--m)}
+@keyframes hint{0%,100%{box-shadow:0 0 4px var(--g)}50%{box-shadow:0 0 16px 2px var(--g)}}
+.slotc.charge .back{animation:charge .5s infinite}
+.slotc.charge.m .back{animation:charge .25s infinite, rattle .12s infinite}
+@keyframes rattle{25%{transform:translateX(-2px) rotate(-1deg)}75%{transform:translateX(2px) rotate(1deg)}}
+.spark{position:fixed;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:31;animation:spark .9s ease-out forwards}
+@keyframes spark{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.rarebanner{position:fixed;left:50%;top:17%;transform:translate(-50%,-50%);font-weight:900;font-size:42px;letter-spacing:4px;pointer-events:none;z-index:32;animation:banner 1.8s ease-out forwards;text-shadow:0 0 20px currentColor,0 3px 0 #000}
+@keyframes banner{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}20%{transform:translate(-50%,-50%) scale(1.15);opacity:1}70%{opacity:1}100%{transform:translate(-50%,-90%) scale(1);opacity:0}}
+#app.quake{animation:quake .35s}
+@keyframes quake{20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-4px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-1px)}}

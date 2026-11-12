@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.3.0";
+  var VERSION = "0.3.1";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -46,6 +46,7 @@
       tone(base, 0.18, "triangle", 0.12);
       if (r !== "c") tone(base * 1.5, 0.3, "sine", 0.1, null, 0.08);
       if (r === "r" || r === "m") tone(base * 2, 0.5, "sine", 0.08, null, 0.16);
+      if (r === "r" || r === "m") noise(0.3, 0.22, 0.02);
       if (r === "m") { tone(base * 2.5, 0.7, "sine", 0.07, null, 0.26); tone(base * 3, 0.9, "sine", 0.05, null, 0.36); }
     },
     charge: function () { tone(220, 0.9, "sine", 0.06, 660); },
@@ -230,7 +231,7 @@
           if (wait0) { sc.classList.add("charge"); SFX.charge(); }
           setTimeout(function () {
             sc.classList.remove("charge"); sc.classList.add("open"); SFX.flip(c.r);
-            if (c.r === "m" || c.r === "r") { var f = h('<div class="flash"></div>'); if (c.r === "r") f.style.background = "radial-gradient(#ffc861aa,#ffc86100 60%)"; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 800); }
+            if (c.r === "m" || c.r === "r") { var f = h('<div class="flash"></div>'); if (c.r === "r") f.style.background = "radial-gradient(#ffc861aa,#ffc86100 60%)"; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 800); burst(sc, c.r); }
             if (navigator.vibrate && c.r !== "c") try { navigator.vibrate(c.r === "m" ? [30, 40, 60] : 25); } catch (e) {}
             left--; if (!left) done();
           }, wait0);
@@ -260,6 +261,22 @@
       }
     }
     show(el);
+  }
+
+  // Gnister + banner + rystelse, når et sjældent/mytisk kort vendes.
+  function burst(target, r) {
+    var col = r === "m" ? ["#d48bff", "#fff", "#9fd8ff"] : ["#ffc861", "#fff1c9", "#ff9a3d"];
+    var rc = target.getBoundingClientRect(), cx = rc.left + rc.width / 2, cy = rc.top + rc.height / 2, n = r === "m" ? 28 : 16;
+    for (var i = 0; i < n; i++) {
+      var sp = document.createElement("div"), ang = Math.random() * Math.PI * 2, d = 60 + Math.random() * (r === "m" ? 160 : 100);
+      sp.className = "spark"; sp.style.left = cx + "px"; sp.style.top = cy + "px"; sp.style.background = col[i % 3];
+      sp.style.setProperty("--dx", Math.cos(ang) * d + "px"); sp.style.setProperty("--dy", Math.sin(ang) * d + "px");
+      sp.style.animationDelay = Math.random() * 0.12 + "s"; document.body.appendChild(sp);
+      (function (e) { setTimeout(function () { e.remove(); }, 1200); })(sp);
+    }
+    var bn = h('<div class="rarebanner">' + (r === "m" ? "MYTHIC!" : "RARE!") + "</div>");
+    bn.style.color = r === "m" ? "var(--m)" : "var(--r)"; document.body.appendChild(bn); setTimeout(function () { bn.remove(); }, 1900);
+    app.classList.remove("quake"); void app.offsetWidth; app.classList.add("quake");
   }
 
   // Automatisk deck: 15 kort, foretræk sjældne og en god kurve.

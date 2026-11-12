@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.4.0";
+  var VERSION = "0.4.1";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -280,16 +280,19 @@
   }
 
   // Gnister + banner + rystelse, når et sjældent/mytisk kort vendes.
-  function burst(target, r) {
-    var col = r === "m" ? ["#d48bff", "#fff", "#9fd8ff"] : ["#ffc861", "#fff1c9", "#ff9a3d"];
-    var rc = target.getBoundingClientRect(), cx = rc.left + rc.width / 2, cy = rc.top + rc.height / 2, n = r === "m" ? 28 : 16;
+  function particles(target, col, n, reach) {
+    var rc = target.getBoundingClientRect(), cx = rc.left + rc.width / 2, cy = rc.top + rc.height / 2;
     for (var i = 0; i < n; i++) {
-      var sp = document.createElement("div"), ang = Math.random() * Math.PI * 2, d = 60 + Math.random() * (r === "m" ? 160 : 100);
+      var sp = document.createElement("div"), ang = Math.random() * Math.PI * 2, d = reach * (0.4 + Math.random() * 0.6);
       sp.className = "spark"; sp.style.left = cx + "px"; sp.style.top = cy + "px"; sp.style.background = col[i % 3];
       sp.style.setProperty("--dx", Math.cos(ang) * d + "px"); sp.style.setProperty("--dy", Math.sin(ang) * d + "px");
       sp.style.animationDelay = Math.random() * 0.12 + "s"; document.body.appendChild(sp);
       (function (e) { setTimeout(function () { e.remove(); }, 1200); })(sp);
     }
+  }
+  var ELCOL = { glod: ["#ffb347", "#ff6a2a", "#fff1c9"], taage: ["#9fd8ff", "#4a7dff", "#eaf6ff"], rod: ["#8ff0a6", "#2f9c5a", "#eaffef"] };
+  function burst(target, r) {
+    particles(target, r === "m" ? ["#d48bff", "#fff", "#9fd8ff"] : ["#ffc861", "#fff1c9", "#ff9a3d"], r === "m" ? 28 : 16, r === "m" ? 220 : 160);
     var bn = h('<div class="rarebanner">' + (r === "m" ? "MYTHIC!" : "RARE!") + "</div>");
     bn.style.color = r === "m" ? "var(--m)" : "var(--r)"; document.body.appendChild(bn); setTimeout(function () { bn.remove(); }, 1900);
     app.classList.remove("quake"); void app.offsetWidth; app.classList.add("quake");
@@ -434,6 +437,8 @@
       });
       el.querySelector("#deckn").textContent = "Turn " + b.turn + " · " + p.deck.length + " in deck";
       el.querySelector("#end").disabled = busy;
+      var canAny = p.hand.some(function (id, hi) { for (var k = 0; k < 4; k++) if (E.canPlay(b, hi, k)) return true; return false; });
+      el.querySelector("#end").classList.toggle("ready", !busy && !b.over && b.who === 0 && !canAny);
     }
     function full() { snap(); drawBoards(); drawHand(); }
     b0.onclick = function (ev) {
@@ -477,9 +482,11 @@
           if (e.t === "atk") { var c2 = slotEl(e.si, e.slot).querySelector(".card"); if (c2) { c2.classList.remove("lunge0", "lunge1"); void c2.offsetWidth; c2.classList.add("lunge" + e.si); } SFX.atk(); return wait(200); }
           if (e.t === "hit") { var u = V[e.si].board[e.slot]; if (u) u.h -= e.n; drawBoards(); var se = slotEl(e.si, e.slot), c3 = se.querySelector(".card"); if (c3) c3.classList.add("hitfx"); floatTxt(se, "−" + e.n); SFX.hit(); return wait(260); }
           if (e.t === "dodge") { var u2 = V[e.si].board[e.slot]; if (u2) u2.shield = false; drawBoards(); floatTxt(slotEl(e.si, e.slot), "veiled!", "b"); SFX.dodge(); return wait(260); }
-          if (e.t === "die") { var c4 = slotEl(e.si, e.slot).querySelector(".card"); if (c4) c4.classList.add("die"); SFX.die(); return wait(330).then(function () { V[e.si].board[e.slot] = null; drawBoards(); }); }
+          if (e.t === "die") { var c4 = slotEl(e.si, e.slot).querySelector(".card"); if (c4) { c4.classList.add("die"); particles(c4, ELCOL[D.BY[e.id].el], 12, 70); } SFX.die(); return wait(330).then(function () { V[e.si].board[e.slot] = null; drawBoards(); }); }
           if (e.t === "grow") { var u3 = V[e.si].board[e.slot]; if (u3) { u3.a++; u3.h++; u3.mh++; } drawBoards(); floatTxt(slotEl(e.si, e.slot), "+1/+1", "g"); SFX.heal(); return wait(260); }
-          if (e.t === "face") { V[e.si].hp -= e.n; drawBoards(); var he = el.querySelector(e.si ? ".hero.foe" : ".hero.me"); he.classList.remove("hit"); void he.offsetWidth; he.classList.add("hit"); floatTxt(he, "−" + e.n); SFX.face(); if (navigator.vibrate && e.si === 0) try { navigator.vibrate(30); } catch (x) {} return wait(300); }
+          if (e.t === "face") { V[e.si].hp -= e.n; drawBoards(); var he = el.querySelector(e.si ? ".hero.foe" : ".hero.me"); he.classList.remove("hit"); void he.offsetWidth; he.classList.add("hit"); floatTxt(he, "−" + e.n); SFX.face();
+            if (e.si === 0) { var vg = h('<div class="vignette"></div>'); document.body.appendChild(vg); setTimeout(function () { vg.remove(); }, 520); app.classList.remove("quake"); void app.offsetWidth; app.classList.add("quake"); }
+            else particles(he, ["#ffc861", "#fff1c9", "#ff9a3d"], 10, 60); if (navigator.vibrate && e.si === 0) try { navigator.vibrate(30); } catch (x) {} return wait(300); }
           if (e.t === "regrow") { var u5 = V[e.si].board[e.slot]; if (u5) u5.h = Math.min(u5.mh, u5.h + 1); drawBoards(); floatTxt(slotEl(e.si, e.slot), "+1", "g"); SFX.heal(); return wait(200); }
           if (e.t === "heal") { V[e.si].hp = Math.min(V[e.si].mhp, V[e.si].hp + e.n); drawBoards(); floatTxt(el.querySelector(e.si ? ".hero.foe" : ".hero.me"), "+" + e.n, "g"); SFX.heal(); return wait(220); }
           return null;

@@ -11,7 +11,7 @@
     { id: "g7", n: "Solhjerte", el: "glod", r: "m", c: 7, a: 6, h: 6, kw: { gnist: 4 }, t: "Et stykke af den gamle sol." },
     // Tåge — list
     { id: "t1", n: "Dugslør", el: "taage", r: "c", c: 1, a: 1, h: 1, kw: { taage: 1 }, t: "Svær at ramme." },
-    { id: "t2", n: "Tågeål", el: "taage", r: "c", c: 2, a: 2, h: 2, kw: { taage: 1 }, t: "Glider af hvert slag." },
+    { id: "t2", n: "Tågeål", el: "taage", r: "c", c: 2, a: 2, h: 1, kw: { taage: 1 }, t: "Glider af hvert slag." },
     { id: "t3", n: "Spejlmåge", el: "taage", r: "c", c: 3, a: 2, h: 3, kw: { flok: 1 }, t: "Hvor én flyver, flyver flere." },
     { id: "t4", n: "Skumringsrokke", el: "taage", r: "u", c: 3, a: 3, h: 2, kw: { taage: 1, flok: 1 }, t: "Svømmer i stimer gennem tågen." },
     { id: "t5", n: "Drømmefanger", el: "taage", r: "u", c: 4, a: 3, h: 3, kw: { taage: 1, gnist: 1 }, t: "Stjæler et øjeblik fra fjenden." },
@@ -43,12 +43,12 @@
   // Øerne: vogtere med faste decks
   var ISLANDS = [
     { n: "Skærstenen", foe: "Den Sultne Måge", hp: 10, deck: ["n1","n1","g1","g1","t1","t1","r2","r2","g3","t2","n1","g2"] },
-    { n: "Tangskoven", foe: "Rodheksen", hp: 13, deck: ["r1","r1","r2","r2","r3","r3","r4","n2","r5","g2","r2","r3"] },
+    { n: "Tangskoven", foe: "Rodheksen", hp: 14, deck: ["r1","r1","r2","r2","r3","r3","r4","n2","r5","g2","r2","r3"] },
     { n: "Askeholmen", foe: "Kulfogeden", hp: 14, deck: ["g1","g1","g2","g2","g3","g3","g4","g4","g5","n1","g2","g6"] },
-    { n: "Tågesundet", foe: "Den Blinde Lods", hp: 15, deck: ["t1","t1","t2","t2","t3","t3","t4","t4","t5","n3","t6","t3"] },
-    { n: "Stormskæret", foe: "Tvillingerne", hp: 16, deck: ["g2","g2","t3","t3","g4","t4","g5","t5","n3","g6","r5","r5","g3","t2"] },
-    { n: "Dødvandet", foe: "Druknekongen", hp: 18, deck: ["r3","r3","r5","r5","t4","t4","t6","r6","n3","t5","r4","r4","g5","t7"] },
-    { n: "Den Sorte Fyr", foe: "Mørket", hp: 22, deck: ["g4","g4","t4","t4","r5","r5","g5","t5","t6","g6","r6","n3","g7","r7","t7","n2"] },
+    { n: "Stormskæret", foe: "Tvillingerne", hp: 17, deck: ["g2","g2","t3","t3","g4","t4","g5","t5","n3","g6","r5","r5","g3","t2"] },
+    { n: "Tågesundet", foe: "Den Blinde Lods", hp: 12, deck: ["t1","t1","t2","t2","t3","t3","t4","n1","t5","n1","t6","t3"] },
+    { n: "Dødvandet", foe: "Druknekongen", hp: 24, deck: ["r3","r3","r5","r5","t4","t4","t6","r6","n3","t5","r4","r4","g5","t7"] },
+    { n: "Den Sorte Fyr", foe: "Mørket", hp: 30, deck: ["g4","g4","t4","t4","r5","r5","g5","t5","t6","g6","r6","n3","g7","r7","t7","n2"] },
   ];
   var api = { CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
   if (typeof module !== "undefined") module.exports = api; else root.DATA = api;

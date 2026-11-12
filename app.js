@@ -1,7 +1,7 @@
 // Lygtebærer — UI. Regler ligger i engine.js, kort i cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.1.1";
+  var VERSION = "0.1.2";
   var KEY = "lygtebaerer_save";
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -336,11 +336,11 @@
     var sel = -1, busy = false;
     var el = h('<div class="screen battle">' +
       '<div class="hero foe"><span>🌑 <b>' + esc(isl.foe) + '</b></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
-      '<div class="board" id="b1"></div><div class="mid" id="mid"></div><div class="board" id="b0"></div>' +
+      '<div class="board" id="b1"></div><div class="mid" id="mid"></div><div class="lanes" id="lanes"></div><div class="board" id="b0"></div>' +
       '<div class="hero me"><span class="lys"></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
       '<div class="info" id="info"></div><div class="hand"></div>' +
       '<div class="row"><button class="btn sec" id="quit" style="padding:12px 14px;font-size:15px">Flygt</button><div class="grow dim" style="font-size:13px;text-align:center" id="deckn"></div><button class="btn endbtn" id="end">Slut tur</button></div></div>');
-    var b0 = el.querySelector("#b0"), b1 = el.querySelector("#b1"), hand = el.querySelector(".hand"), info = el.querySelector("#info"), mid = el.querySelector("#mid");
+    var b0 = el.querySelector("#b0"), b1 = el.querySelector("#b1"), hand = el.querySelector(".hand"), info = el.querySelector("#info"), mid = el.querySelector("#mid"), lanesEl = el.querySelector("#lanes");
     for (var i = 0; i < 4; i++) { b0.appendChild(h('<div class="slot" data-s="' + i + '"></div>')); b1.appendChild(h('<div class="slot" data-s="' + i + '"></div>')); }
     var view = null; // det viste brætstade (kan halte efter motoren under animation)
     function snap() { view = JSON.parse(JSON.stringify({ s: b.s.map(function (p) { return { hp: p.hp, mhp: p.mhp, board: p.board }; }) })); }
@@ -356,6 +356,20 @@
           sl.classList.toggle("target", si === 0 && sel >= 0 && !u && !busy && E.canPlay(b, sel, i));
         });
       });
+      // Forhåndsvisning pr. bane: hvad sker der, når du trykker "Slut tur"?
+      var lanes = "";
+      for (var L = 0; L < 4; L++) {
+        var mine = view.s[0].board[L], theirs = view.s[1].board[L], txt = "";
+        if (mine) {
+          var am = mine.a; if (D.BY[mine.id].kw.flok) view.s[0].board.forEach(function (v, j) { if (v && j !== L && v.el === mine.el) am++; });
+          if (am <= 0) txt = "<span class='dim'>—</span>";
+          else if (!theirs) txt = "<b style='color:var(--gold)'>↑" + am + "</b><br><span class='dim'>lygten</span>";
+          else if (theirs.shield) txt = "↑" + am + "<br><span style='color:var(--taage)'>undviger</span>";
+          else txt = "↑" + am + "<br>" + (am >= theirs.h ? "<span style='color:#8dffb0'>dræber</span>" : "<span class='dim'>" + theirs.h + " liv</span>");
+        } else if (theirs && theirs.a > 0) txt = "<span style='color:#ff8a8a'>↓" + theirs.a + "</span><br><span class='dim'>åben</span>";
+        lanes += "<div>" + txt + "</div>";
+      }
+      lanesEl.innerHTML = lanes;
       [["foe", 1], ["me", 0]].forEach(function (x) {
         var p = view.s[x[1]], hero = el.querySelector(".hero." + x[0]);
         hero.querySelector(".hpbar div").style.width = Math.max(0, p.hp / p.mhp * 100) + "%";

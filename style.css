@@ -125,3 +125,5 @@ h2{margin:4px 0 8px;font-size:20px}
 @media (min-width:700px){.board{max-width:560px;margin:0 auto;width:100%}.hand{--w:100px;min-height:150px;justify-content:center}.grid{--w:120px}.reveal{--w:150px}.pack{width:240px;height:340px}}
 .slot{container-type:inline-size}
 .slot .card{font-size:11.5cqw}
+.lanes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;font-size:13px;line-height:1.2;min-height:34px}
+@media (min-width:700px){.lanes{max-width:560px;margin:0 auto;width:100%;font-size:15px}}

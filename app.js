@@ -1,7 +1,7 @@
 // Lygtebærer — UI. Regler ligger i engine.js, kort i cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.1.0";
+  var VERSION = "0.1.1";
   var KEY = "lygtebaerer_save";
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -130,7 +130,7 @@
   function cardInfo(id) {
     var c = D.BY[id], s = "<b>" + esc(c.n) + "</b> · " + D.EL[c.el] + " · " + D.RAR[c.r] + " · koster " + c.c + " lys<br>";
     var k = c.kw, parts = [];
-    Object.keys(k).forEach(function (key) { parts.push(D.KW[key].replace(" N", " " + k[key])); });
+    Object.keys(k).forEach(function (key) { parts.push(D.KW[key].replace(/\bN\b/g, k[key])); });
     return s + (parts.length ? parts.join("<br>") : "<i>" + esc(c.t) + "</i>");
   }
   function flamesHTML() { var s = ""; for (var i = 0; i < 3; i++) s += '<i class="flame' + (i < S.flames ? "" : " out") + '"></i> '; return s; }
@@ -298,7 +298,7 @@
         if (["glod", "taage", "rod"].indexOf(filter) >= 0 && c.el !== filter) return;
         var wrap = h('<div style="position:relative">' + cardHTML(c.id, { cls: o ? (d ? "" : "notin") : "unowned", badge: o ? d + "/" + o : "?" }) + "</div>");
         if (d) {
-          var minus = h('<button class="chip" style="position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);padding:2px 14px;font-size:18px;background:#5a1f12">−</button>');
+          var minus = h('<button class="chip" style="position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);padding:0 16px;line-height:24px;font-size:18px;background:#5a1f12">−</button>');
           minus.onclick = function (ev) { ev.stopPropagation(); S.deck.splice(S.deck.indexOf(c.id), 1); save(); SFX.tap(); render(); };
           wrap.appendChild(minus);
         }

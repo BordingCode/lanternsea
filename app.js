@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.3.2";
+  var VERSION = "0.3.3";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -20,7 +20,23 @@
 
   // ---------- lyd (WebAudio-syntese) ----------
   var AC = null;
-  function ac() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state === "suspended") AC.resume(); return AC; }
+  var OUT = null; // fælles forstærker → kompressor → højttaler (lydene var for svage før 0.3.3)
+  function ac() {
+    if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+    if (AC && AC.state === "suspended") AC.resume();
+    return AC;
+  }
+  function out() {
+    var a = ac(); if (!a) return null;
+    if (!OUT || OUT.ctx !== a) {
+      try {
+        var g = a.createGain(), cmp = a.createDynamicsCompressor();
+        g.gain.value = 2.6; cmp.threshold.value = -14; cmp.knee.value = 8; cmp.ratio.value = 6; cmp.attack.value = 0.003; cmp.release.value = 0.2;
+        g.connect(cmp); cmp.connect(a.destination); OUT = g; OUT.ctx = a;
+      } catch (e) { return a.destination; }
+    }
+    return OUT;
+  }
   function tone(f, dur, type, vol, slide, delay) {
     var a = ac(); if (!a) return;
     var t = a.currentTime + (delay || 0), o = a.createOscillator(), g = a.createGain();
@@ -28,7 +44,7 @@
     if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.15, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+    o.connect(g); g.connect(out()); o.start(t); o.stop(t + dur + 0.05);
   }
   function noise(dur, vol, delay) {
     var a = ac(); if (!a) return;
@@ -36,27 +52,27 @@
     for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
     var s = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter();
     f.type = "bandpass"; f.frequency.value = 1800; s.buffer = buf; g.gain.value = vol || 0.2;
-    s.connect(f); f.connect(g); g.connect(a.destination); s.start(a.currentTime + (delay || 0));
+    s.connect(f); f.connect(g); g.connect(out()); s.start(a.currentTime + (delay || 0));
   }
   var SFX = {
-    tap: function () { tone(660, 0.06, "triangle", 0.08); },
+    tap: function () { tone(660, 0.06, "triangle", 0.14); },
     tear: function () { noise(0.35, 0.35); tone(200, 0.3, "sawtooth", 0.05, 900); },
     flip: function (r) {
       var base = { c: 520, u: 660, r: 784, m: 988 }[r];
       tone(base, 0.18, "triangle", 0.12);
       if (r !== "c") tone(base * 1.5, 0.3, "sine", 0.1, null, 0.08);
       if (r === "r" || r === "m") tone(base * 2, 0.5, "sine", 0.08, null, 0.16);
-      if (r === "r" || r === "m") noise(0.3, 0.22, 0.02);
+      if (r === "r" || r === "m") { noise(0.3, 0.35, 0.02); tone(base / 2, 0.6, "sine", 0.2, base / 4); }
       if (r === "m") { tone(base * 2.5, 0.7, "sine", 0.07, null, 0.26); tone(base * 3, 0.9, "sine", 0.05, null, 0.36); }
     },
     charge: function () { tone(220, 0.9, "sine", 0.06, 660); },
-    play: function () { tone(330, 0.12, "triangle", 0.12, 520); },
-    atk: function () { noise(0.08, 0.15); },
-    hit: function () { tone(140, 0.15, "square", 0.08, 70); },
-    die: function () { tone(300, 0.35, "sawtooth", 0.07, 60); },
+    play: function () { tone(330, 0.12, "triangle", 0.2, 520); },
+    atk: function () { noise(0.08, 0.35); },
+    hit: function () { tone(140, 0.15, "square", 0.16, 70); noise(0.06, 0.25); },
+    die: function () { tone(300, 0.35, "sawtooth", 0.14, 60); },
     face: function () { tone(110, 0.25, "square", 0.1, 55); noise(0.15, 0.2); },
     heal: function () { tone(523, 0.15, "sine", 0.08); tone(784, 0.2, "sine", 0.06, null, 0.08); },
-    dodge: function () { tone(900, 0.12, "sine", 0.06, 1400); },
+    dodge: function () { tone(900, 0.14, "sine", 0.14, 1400); },
     win: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.35, "triangle", 0.12, null, i * 0.12); }); },
     lose: function () { [392, 330, 262, 196].forEach(function (f, i) { tone(f, 0.45, "sine", 0.1, null, i * 0.18); }); },
   };
@@ -536,5 +552,5 @@
   load();
   if (!S) intro(); else home();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
-  window.__ls = { get S() { return S; } }; // til fejlsøgning i browseren
+  window.__ls = { get S() { return S; }, SFX: SFX, resetAudio: function () { OUT = null; } }; // til fejlsøgning i browseren
 })();

@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.3.1";
+  var VERSION = "0.3.2";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -123,7 +123,7 @@
       (o.unit ? "" : '<div class="cost">' + c.c + "</div>") +
       '<div class="nm">' + esc(c.n) + "</div>" +
       '<div class="kw">' + kwText(c) + "</div>" +
-      '<div class="st at">' + a + '</div><div class="st hp' + (o.unit && hp < o.unit.mh ? " hurt" : "") + '">' + hp + "</div>" +
+      '<div class="st at' + (o.bonus > 0 ? " boosted" : "") + '">' + a + '</div><div class="st hp' + (o.unit && hp < o.unit.mh ? " hurt" : "") + '">' + hp + "</div>" +
       (o.unit && o.unit.shield ? '<div class="shield"></div>' : "") +
       (o.badge ? '<div class="badge">' + o.badge + "</div>" : "") +
       (o.isNew ? '<div class="new">NEW!</div>' : "") + "</div>";
@@ -437,6 +437,15 @@
     };
     function slotEl(si, slot) { return (si ? b1 : b0).querySelectorAll(".slot")[slot]; }
     function floatTxt(target, txt, cls) { var f = h('<div class="float ' + (cls || "") + '">' + txt + "</div>"); target.appendChild(f); setTimeout(function () { f.remove(); }, 800); }
+    // Synlig synergi: når en ånd lander, blinker "Kin +1" over alle med samme lys og Kin.
+    function kinPing(si, slot) {
+      var side = view.s[si], u = side.board[slot]; if (!u) return;
+      side.board.forEach(function (v, j) {
+        if (!v) return;
+        var gets = (j !== slot && v.el === u.el && D.BY[v.id].kw.flok) || (j === slot && D.BY[v.id].kw.flok && side.board.some(function (w, k) { return w && k !== j && w.el === v.el; }));
+        if (gets) floatTxt(slotEl(si, j), "Kin ↑", "g");
+      });
+    }
     // Afspil motorens hændelser én for én på det viste brætstade.
     function animate(evs) {
       busy = true; drawHand();
@@ -444,7 +453,7 @@
       evs.forEach(function (e) {
         p = p.then(function () {
           var V = view.s;
-          if (e.t === "play") { V[e.si].board[e.slot] = JSON.parse(JSON.stringify(b.s[e.si].board[e.slot] || { id: e.id, a: D.BY[e.id].a, h: D.BY[e.id].h, mh: D.BY[e.id].h, shield: !!D.BY[e.id].kw.taage, el: D.BY[e.id].el })); var u0 = V[e.si].board[e.slot]; u0.h = D.BY[e.id].h; u0.a = D.BY[e.id].a; u0.mh = u0.h; u0.shield = !!D.BY[e.id].kw.taage; drawBoards(); var c = slotEl(e.si, e.slot).querySelector(".card"); if (c) c.classList.add("drop"); SFX.play(); if (e.si === 1) mid.textContent = isl.foe + " calls " + D.BY[e.id].n; return wait(380); }
+          if (e.t === "play") { V[e.si].board[e.slot] = JSON.parse(JSON.stringify(b.s[e.si].board[e.slot] || { id: e.id, a: D.BY[e.id].a, h: D.BY[e.id].h, mh: D.BY[e.id].h, shield: !!D.BY[e.id].kw.taage, el: D.BY[e.id].el })); var u0 = V[e.si].board[e.slot]; u0.h = D.BY[e.id].h; u0.a = D.BY[e.id].a; u0.mh = u0.h; u0.shield = !!D.BY[e.id].kw.taage; drawBoards(); var c = slotEl(e.si, e.slot).querySelector(".card"); if (c) c.classList.add("drop"); SFX.play(); if (e.si === 1) mid.textContent = isl.foe + " calls " + D.BY[e.id].n; kinPing(e.si, e.slot); return wait(380); }
           if (e.t === "atk") { var c2 = slotEl(e.si, e.slot).querySelector(".card"); if (c2) { c2.classList.remove("lunge0", "lunge1"); void c2.offsetWidth; c2.classList.add("lunge" + e.si); } SFX.atk(); return wait(200); }
           if (e.t === "hit") { var u = V[e.si].board[e.slot]; if (u) u.h -= e.n; drawBoards(); var se = slotEl(e.si, e.slot), c3 = se.querySelector(".card"); if (c3) c3.classList.add("hitfx"); floatTxt(se, "−" + e.n); SFX.hit(); return wait(260); }
           if (e.t === "dodge") { var u2 = V[e.si].board[e.slot]; if (u2) u2.shield = false; drawBoards(); floatTxt(slotEl(e.si, e.slot), "veiled!", "b"); SFX.dodge(); return wait(260); }

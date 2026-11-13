@@ -11,11 +11,13 @@
     var d = shuffle(deck.slice(), r);
     return { hp: hp, mhp: hp, deck: d, hand: d.splice(0, 4), board: [null, null, null, null], lys: 0 };
   }
-  function newBattle(playerDeck, island, seed) {
-    var r = rng(seed || Date.now());
-    var isl = D.ISLANDS[island];
+  // island: index i D.ISLANDS eller et møde-objekt {hp, deck, trait}. opt (valgfri): {hp: ±lygteliv, draw: ekstra startkort}.
+  function newBattle(playerDeck, island, seed, opt) {
+    var r = rng(seed || Date.now()); opt = opt || {};
+    var isl = typeof island === "number" ? D.ISLANDS[island] : island;
     var b = { r: r, turn: 1, who: 0, over: null, log: [], plan: null, trait: isl.trait || null,
-      s: [side(playerDeck, 15, r), side(isl.deck, isl.hp, r)] };
+      s: [side(playerDeck, Math.max(1, 15 + (opt.hp || 0)), r), side(isl.deck, isl.hp, r)] };
+    for (var k = 0; k < (opt.draw || 0) && b.s[0].deck.length; k++) b.s[0].hand.push(b.s[0].deck.shift());
     planFoe(b);
     return b;
   }
@@ -127,7 +129,7 @@
   // el (valgfri): temapakke — almindelige og ualmindelige kommer fra det lys; den sjældne kan være hvad som helst.
   function openPack(r, el) {
     function pick(rar) {
-      var pool = D.CARDS.filter(function (c) { return c.r === rar && (!el || rar === "r" || rar === "m" || c.el === el); });
+      var pool = D.CARDS.filter(function (c) { return c.r === rar && !c.sea && (!el || rar === "r" || rar === "m" || c.el === el); });
       return pool[Math.floor(r() * pool.length)].id;
     }
     var top = r() < 1 / 6 ? "m" : "r";
@@ -143,7 +145,7 @@
   }
   // Gemt tilstand + migrering
   var SAVE_VERSION = 1;
-  function newSave() { return { sv: SAVE_VERSION, coll: {}, deck: [], island: 0, flames: 3, best: 0, packs: 2, packq: [], miles: {}, embers: 0, wins: 0, losses: 0, runs: 1, seen: {} }; }
+  function newSave() { return { sv: SAVE_VERSION, coll: {}, deck: [], island: 0, flames: 3, best: 0, packs: 2, packq: [], miles: {}, voy: null, embers: 0, wins: 0, losses: 0, runs: 1, seen: {} }; }
   function migrate(s) {
     if (!s || typeof s !== "object") return newSave();
     var base = newSave();

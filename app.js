@@ -1,9 +1,9 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.7.2";
+  var VERSION = "0.8.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
-  var D = window.DATA, E = window.ENG;
+  var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
   var R = E.rng((Date.now() ^ (Math.random() * 1e9)) >>> 0);
   try { Telemetri.init("lanternsea", VERSION); } catch (e) {}
@@ -133,9 +133,9 @@
   function owned(id) { return S.coll[id] || 0; }
   function uniqueOwned() { return D.CARDS.filter(function (c) { return owned(c.id) > 0; }).length; }
   // Samle-milepæle: et langsigtet mål ved siden af rejsen. Belønninger gives automatisk (og indhentes, hvis de blev sprunget over).
-  var MILES = [10, 15, 20, 25, 30];
+  var MILES = [10, 15, 20, 25, 30, 36]; // 36 = alle, også drifterne fra havet (0.8.0)
   var LURE = { c: 5, u: 10, r: 22, m: 40 }; // glimmer-pris for at lokke en bestemt ånd (som Hearthstones dust)
-  function mileReward(m) { return m === 30 ? 3 : 1; }
+  function mileReward(m) { return m === 30 ? 3 : m === 36 ? 2 : 1; }
   function claimMiles() {
     var n = uniqueOwned(), got = [];
     S.miles = S.miles || {};
@@ -157,6 +157,14 @@
     var path = "M" + ISLPOS[0][0] + " " + ISLPOS[0][1];
     for (var i = 1; i < ISLPOS.length; i++) { var a0 = ISLPOS[i - 1], a1 = ISLPOS[i]; path += " Q" + ((a0[0] + a1[0]) / 2 + (i % 2 ? 14 : -14)) + " " + ((a0[1] + a1[1]) / 2) + " " + a1[0] + " " + a1[1]; }
     W += '<path d="' + path + '" stroke="#c9a86a" stroke-opacity=".45" stroke-width=".7" stroke-dasharray="1.6 2" fill="none"/>';
+    // Overfartens to stop (sejladsen mellem øerne) som små lys på ruten.
+    if (S.island > 0) {
+      var q0 = ISLPOS[S.island - 1], q2 = ISLPOS[S.island], q1 = [(q0[0] + q2[0]) / 2 + (S.island % 2 ? 14 : -14), (q0[1] + q2[1]) / 2], vy = S.voy && S.voy.to === S.island ? S.voy : null;
+      [1 / 3, 2 / 3].forEach(function (t, k) {
+        var x = (1 - t) * (1 - t) * q0[0] + 2 * t * (1 - t) * q1[0] + t * t * q2[0], y = (1 - t) * (1 - t) * q0[1] + 2 * t * (1 - t) * q1[1] + t * t * q2[1], done = vy && vy.step > k;
+        W += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.2" fill="' + (done ? "#ffd27a" : "#0b1020") + '" stroke="#c9a86a" stroke-width=".5"/>' + (done ? "" : '<text x="' + x.toFixed(1) + '" y="' + (y + 1.1).toFixed(1) + '" font-size="2.8" text-anchor="middle" fill="#c9a86a">?</text>');
+      });
+    }
     D.ISLANDS.forEach(function (is, i) {
       var p = ISLPOS[i], st = i < S.island ? "done" : i === S.island ? "cur" : "lock", rr = E.rng(hash(is.n));
       var n = 9, R = i === 6 ? 9.5 : 7.5 + rr() * 1.5, pts = [];
@@ -179,10 +187,12 @@
   }
 
   // Kampens baggrund: horisont, bølger og vogterens ø med et slukket fyrtårn. Tændes ved sejr.
-  function battleScene() {
-    var r = E.rng(hash(D.ISLANDS[S.island].n)), waves = "";
+  function battleScene(wild) {
+    var r = E.rng(hash(wild ? "open sea " + wild : D.ISLANDS[S.island].n)), waves = "";
     for (var k = 0; k < 14; k++) { var x = r() * 96, y = 26 + r() * 13; waves += '<path d="M' + x.toFixed(1) + " " + y.toFixed(1) + ' q1.5 -1 3 0 t3 0" stroke="#6fc3ff" stroke-opacity="' + (0.08 + (y - 26) / 100).toFixed(2) + '" stroke-width=".35" fill="none"/>'; }
     var iw = 18 + r() * 8, top = 20 - r() * 3;
+    if (wild) return '<svg class="scene" viewBox="0 0 100 40" preserveAspectRatio="xMidYMid slice"><rect width="100" height="24.5" fill="#0b1020" fill-opacity=".3"/><rect y="24.5" width="100" height="16" fill="#0d1430"/>' +
+      '<circle cx="' + (20 + r() * 60).toFixed(1) + '" cy="9" r="3" fill="#eef0ff" fill-opacity=".5"/>' + waves + waves.replace(/stroke-opacity="[^"]*"/g, 'stroke-opacity=".12" transform="translate(4 -3)"') + "</svg>";
     return '<svg class="scene" viewBox="0 0 100 40" preserveAspectRatio="xMidYMid slice"><defs>' +
       '<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1020" stop-opacity="0"/><stop offset="1" stop-color="#1a2348"/></linearGradient>' +
       '<radialGradient id="beam"><stop offset="0" stop-color="#fff1a8" stop-opacity=".9"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient></defs>' +
@@ -219,14 +229,15 @@
     var el = h('<div class="screen"><div class="hud"><div class="flames">' + flamesHTML() + '</div><div class="row"><span class="pill">✦ ' + S.embers + ' glimmer</span><button class="pill" id="binder">📖 ' + uniqueOwned() + "/" + D.CARDS.length + " spirits</button></div></div>" +
       '<h2 style="margin-top:10px">The Dark Sea' + (S.runs > 1 ? ' <span class="dim" style="font-size:14px">· voyage ' + S.runs + "</span>" : "") + '</h2><div class="map"></div><div class="info" id="islinfo" style="min-height:64px"></div>' +
       '<div class="bottom"><div class="row"><button class="btn sec" id="deck">Deck (' + S.deck.length + ')</button><button class="btn sec" id="packs">Packs (' + S.packs + ")</button></div>" +
-      '<button class="btn" id="sail">Sail to ' + esc(D.ISLANDS[S.island].n) + "</button></div></div>");
+      '<button class="btn" id="sail">' + (legDone() ? "Land on " : "Set sail for ") + esc(D.ISLANDS[S.island].n) + "</button></div></div>");
     var map = el.querySelector(".map");
     map.innerHTML = seaChart();
     var islInfo = el.querySelector("#islinfo");
     function showIsl(i) {
       var is = D.ISLANDS[i], known = i <= S.island;
       islInfo.innerHTML = "<b>" + (i + 1) + ". " + esc(is.n) + "</b>" + (i < S.island ? " <span style='color:var(--gold)'>· lit ✦</span>" : i === S.island ? " <span style='color:var(--gold)'>· next</span>" : "") + "<br>" +
-        (known ? "<span class='dim'>Warden: " + esc(is.foe) + " · " + is.hp + " life</span>" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") : "<span class='dim'>Beyond the dark. Unknown.</span>");
+        (known ? "<span class='dim'>Warden: " + esc(is.foe) + " · " + is.hp + " life</span>" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") : "<span class='dim'>Beyond the dark. Unknown.</span>") +
+        (i === S.island && S.voy && S.voy.to === i && S.voy.boon && VOY.boonText(S.voy.boon) ? "<br><span style='color:#8dffb0'>✧ Voyage: " + VOY.boonText(S.voy.boon) + "</span>" : "");
       map.querySelectorAll(".mi").forEach(function (g) { g.classList.toggle("picked", +g.dataset.i === i); });
     }
     map.onclick = function (ev) { var g = ev.target.closest(".mi"); if (g) { SFX.tap(); showIsl(+g.dataset.i); } };
@@ -243,6 +254,7 @@
     el.querySelector("#sail").onclick = function () {
       SFX.tap();
       if (!E.validDeck(S.deck, S.coll)) { toast("Your deck needs 12–20 cards"); deckScreen(); return; }
+      if (!legDone()) return voyageScreen();
       battleScreen();
     };
     show(el);
@@ -413,11 +425,12 @@
     var grid = el.querySelector(".grid"), binfo = el.querySelector("#binfo");
     D.CARDS.forEach(function (c) {
       var o = owned(c.id);
-      var w = h('<div>' + (o ? cardHTML(c.id, { badge: "×" + o }) : '<div class="card unknown ' + c.r + '"><div class="q">?</div><div class="nm">' + D.RAR[c.r] + "</div></div>") + "</div>");
+      var w = h('<div>' + (o ? cardHTML(c.id, { badge: "×" + o }) : '<div class="card unknown ' + c.r + (c.sea ? " sea" : "") + '"><div class="q">' + (c.sea ? "🌊" : "?") + '</div><div class="nm">' + (c.sea ? "Found at sea" : D.RAR[c.r]) + "</div></div>") + "</div>");
       w.onclick = function () {
         SFX.tap();
-        binfo.innerHTML = (o ? cardInfo(c.id) : "<span class='dim'>Not caught yet:</span><br>" + cardInfo(c.id));
-        if (o < E.deckLimit(c.id)) {
+        if (c.sea && !o) { binfo.innerHTML = "<b>A drifter.</b> <span class='dim'>Some spirits never come in packs. Look for them on the voyage between islands — catch wild spirits, trade with the Fog Trader, or brave strange waters.</span>"; return; }
+        binfo.innerHTML = (o ? cardInfo(c.id) : "<span class='dim'>Not caught yet:</span><br>" + cardInfo(c.id)) + (c.sea ? "<br><span style='color:#6fc3ff'>🌊 Drifter — found only at sea.</span>" : "");
+        if (o < E.deckLimit(c.id) && !c.sea) {
           var cost = LURE[c.r], btn = h('<button class="btn lure"' + (S.embers < cost ? " disabled" : "") + ">Lure it · " + cost + " ✦</button>");
           if (S.embers < cost) btn.textContent = "Lure it · " + cost + " ✦ (you have " + S.embers + ")";
           btn.onclick = function (ev) {
@@ -489,14 +502,16 @@
   }
 
   // ---------- kamp ----------
-  function battleScreen() {
-    var isl = D.ISLANDS[S.island];
-    var b = E.newBattle(S.deck, S.island, (R() * 1e9) >>> 0);
+  // enc: et vildt møde på havet (VOY.wildEncounter); ellers øens vogter.
+  function battleScreen(enc) {
+    var wild = !!enc, isl = enc || D.ISLANDS[S.island], opt = null;
+    if (!wild && S.voy && S.voy.to === S.island && S.voy.boon) { opt = S.voy.boon; S.voy.boon = null; save(); }
+    var b = E.newBattle(S.deck, wild ? enc : S.island, (R() * 1e9) >>> 0, opt);
     E.startTurn(b);
     var sel = -1, busy = false;
     var el = h('<div class="screen battle">' +
-      '<div class="hero foe"><span>🌑 <b>' + esc(isl.foe) + '</b></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
-      '<div class="board" id="b1"></div><div class="midwrap">' + battleScene() + '<div class="mid" id="mid"></div></div><div class="lanes" id="lanes"></div><div class="board" id="b0"></div>' +
+      '<div class="hero foe"><span>' + (wild ? "🌊" : "🌑") + ' <b>' + esc(isl.foe) + '</b></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
+      '<div class="board" id="b1"></div><div class="midwrap">' + battleScene(wild && enc.el) + '<div class="mid" id="mid"></div></div><div class="lanes" id="lanes"></div><div class="board" id="b0"></div>' +
       '<div class="hero me"><span class="lys"></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
       '<div class="info" id="info"></div><div class="hand"></div>' +
       '<div class="row"><button class="btn sec" id="quit" style="padding:12px 14px;font-size:15px">Flee</button><div class="grow dim" style="font-size:13px;text-align:center" id="deckn"></div><button class="btn endbtn" id="end">End turn</button></div></div>');
@@ -541,12 +556,13 @@
       [["foe", 1], ["me", 0]].forEach(function (x) {
         var p = view.s[x[1]], hero = el.querySelector(".hero." + x[0]);
         hero.querySelector(".hpbar div").style.width = Math.max(0, p.hp / p.mhp * 100) + "%";
-        hero.querySelector(".num").textContent = Math.max(0, p.hp) + "/" + p.mhp;
+        hero.querySelector(".num").textContent = "♥ " + Math.max(0, p.hp) + "/" + p.mhp;
       });
     }
     function drawHand() {
       var p = b.s[0];
-      el.querySelector(".lys").innerHTML = Array.from({ length: Math.min(b.turn, 8) }, function (_, i) { return '<i class="' + (i < p.lys ? "on" : "") + '"></i>'; }).join("");
+      // Lys (mana) som et stort tal + prikker — før 0.8.0 lignede lygtens livsbar lyset (dommer, nat 2).
+      el.querySelector(".lys").innerHTML = '<span class="lysn">' + p.lys + "<small>/" + Math.min(b.turn, 8) + '</small></span><span class="lysw">light<span class="dots">' + Array.from({ length: Math.min(b.turn, 8) }, function (_, i) { return '<i class="' + (i < p.lys ? "on" : "") + '"></i>'; }).join("") + "</span></span>";
       hand.innerHTML = "";
       p.hand.forEach(function (id, hi) {
         var c = h(cardHTML(id, { cls: (hi === sel ? "sel " : "") + (D.BY[id].c > p.lys ? "cant" : "") }));
@@ -602,7 +618,7 @@
       evs.forEach(function (e) {
         p = p.then(function () {
           var V = view.s;
-          if (e.t === "play") { V[e.si].board[e.slot] = JSON.parse(JSON.stringify(b.s[e.si].board[e.slot] || { id: e.id, a: D.BY[e.id].a, h: D.BY[e.id].h, mh: D.BY[e.id].h, shield: !!D.BY[e.id].kw.taage, el: D.BY[e.id].el })); var u0 = V[e.si].board[e.slot]; u0.h = D.BY[e.id].h; u0.a = D.BY[e.id].a; u0.mh = u0.h; u0.shield = !!D.BY[e.id].kw.taage; drawBoards(); var c = slotEl(e.si, e.slot).querySelector(".card"); if (c) c.classList.add("drop"); SFX.play(); if (e.si === 1) mid.textContent = isl.foe + " calls " + D.BY[e.id].n; kinPing(e.si, e.slot); return wait(380); }
+          if (e.t === "play") { V[e.si].board[e.slot] = JSON.parse(JSON.stringify(b.s[e.si].board[e.slot] || { id: e.id, a: D.BY[e.id].a, h: D.BY[e.id].h, mh: D.BY[e.id].h, shield: !!D.BY[e.id].kw.taage, el: D.BY[e.id].el })); var u0 = V[e.si].board[e.slot]; u0.h = D.BY[e.id].h; u0.a = D.BY[e.id].a; u0.mh = u0.h; u0.shield = !!D.BY[e.id].kw.taage; drawBoards(); var c = slotEl(e.si, e.slot).querySelector(".card"); if (c) c.classList.add("drop"); SFX.play(); if (e.si === 1) mid.textContent = wild ? "A wild " + D.BY[e.id].n + " joins the fight" : isl.foe + " calls " + D.BY[e.id].n; kinPing(e.si, e.slot); return wait(380); }
           if (e.t === "ambush") { var ca = slotEl(e.si, e.slot).querySelector(".card"); if (ca) { ca.classList.remove("lunge0", "lunge1"); void ca.offsetWidth; ca.classList.add("lunge" + e.si); } floatTxt(slotEl(e.si, e.slot), "Ambush!", "b"); SFX.atk(); return wait(320); }
           if (e.t === "atk") { var c2 = slotEl(e.si, e.slot).querySelector(".card"); if (c2) { c2.classList.remove("lunge0", "lunge1"); void c2.offsetWidth; c2.classList.add("lunge" + e.si); } SFX.atk(); return wait(200); }
           if (e.t === "hit") { var u = V[e.si].board[e.slot]; if (u) u.h -= e.n; drawBoards(); var se = slotEl(e.si, e.slot), c3 = se.querySelector(".card"); if (c3) c3.classList.add("hitfx"); floatTxt(se, "−" + e.n, e.n >= 4 ? "big" : ""); SFX.hit(); return wait(260); }
@@ -630,12 +646,12 @@
       mid.textContent = "Your spirits attack…";
       animate(b.log.slice(start)).then(function () {
         if (b.over) return finish();
-        mid.textContent = isl.foe + "'s turn…";
+        mid.textContent = wild ? "The wild spirits move…" : isl.foe + "'s turn…";
         return wait(350).then(function () {
           var s2 = b.log.length; E.aiTurn(b);
           return animate(b.log.slice(s2));
         }).then(function () {
-          mid.textContent = b.over ? "" : b.trait === "fog" ? "Fog hides the pilot's plan" : (b.plan && b.plan.length ? "Faded cards: the warden's next move" : "Your turn — light: " + b.s[0].lys);
+          mid.textContent = b.over ? "" : b.trait === "fog" ? "Fog hides the pilot's plan" : (b.plan && b.plan.length ? "Faded cards: " + (wild ? "the spirits’" : "the warden’s") + " next move" : "Your turn — light: " + b.s[0].lys);
           after();
         });
       });
@@ -650,14 +666,15 @@
       busy = true; mid.textContent = ""; lanesEl.innerHTML = "";
       if (b.over === "win") el.querySelector(".scene").classList.add("lit");
       var won = b.over === "win";
-      T("battle_end", { won: won, fled: !!fled, island: S.island, turns: b.turn, deck: S.deck, hp: b.s[0].hp });
+      T("battle_end", { won: won, fled: !!fled, island: S.island, turns: b.turn, deck: S.deck, hp: b.s[0].hp, wild: wild ? enc.el : undefined });
+      if (wild) return finishWild(won, enc);
       var msg;
       if (won) {
-        S.wins++; S.packs++; S.island++; S.best = Math.max(S.best, S.island);
+        S.wins++; S.packs++; S.island++; S.best = Math.max(S.best, S.island); S.voy = null;
         SFX.win();
         if (S.island >= D.ISLANDS.length) {
           T("progress", { step: "victory", runs: S.runs });
-          S.island = 0; S.flames = 3; S.runs++; S.packs += 2;
+          S.island = 0; S.flames = 3; S.runs++; S.packs += 2; S.voy = null;
           msg = "<h1>The Black Lighthouse burns!</h1><p style='text-align:center'>You lit the whole Dark Sea. The spirits sing.<br><br>You get 3 packs. The Dark will return — a new voyage awaits.</p>";
         } else {
           T("progress", { island: S.island });
@@ -667,7 +684,7 @@
         S.losses++; S.flames--; SFX.lose();
         if (S.flames <= 0) {
           T("progress", { step: "voyage_lost", reached: S.island });
-          S.island = 0; S.flames = 3; S.runs++;
+          S.island = 0; S.flames = 3; S.runs++; S.voy = null;
           msg = "<h1 style='color:#b46bff'>The lantern goes out</h1><p style='text-align:center'>Your last flame died. The Dark takes the islands back, and the voyage must begin again.<br><br>But the spirits are still yours.</p>" + tipHTML(isl);
         } else {
           msg = "<h1 style='color:#b46bff'>Defeat</h1><p style='text-align:center'>" + esc(isl.foe) + " put out one of your flames.<br>" + S.flames + " flame" + (S.flames === 1 ? "" : "s") + " left.</p>" + tipHTML(isl);
@@ -685,12 +702,177 @@
       }, 500);
     }
     show(el); full();
-    if (b.trait) { mid.innerHTML = "<div><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) + "</div>"; }
+    if (opt && VOY.boonText(opt)) toast("✧ Voyage: " + VOY.boonText(opt));
+    if (wild) mid.innerHTML = "<div>Win, and one of them joins you.</div>";
+    else if (b.trait) { mid.innerHTML = "<div><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) + "</div>"; }
     else mid.textContent = "Pick a card and place it on an empty space";
     if (!S.seen.battlehint) {
       S.seen.battlehint = 1; save();
       modal("<h2>How to fight</h2><p style='line-height:1.5'>1. Tap a card in your hand, then tap an empty space.<br>2. Cards cost <b>light</b> — you get more light every turn.<br>3. Tap <b>End turn</b>: each of your spirits attacks the spirit straight across — or the enemy lantern if that space is empty.<br>4. <b>Faded cards</b> show where the warden will play next turn.<br><br><b>Where</b> you place your spirits is the whole art.</p>", [{ t: "Got it", v: 1 }]);
     }
+  }
+
+  // ---------- sejladsen (The Voyage, 0.8.0) ----------
+  function legDone() { return S.island < 1 || !!(S.voy && S.voy.to === S.island && S.voy.step >= 2); }
+  function ensureLeg() {
+    if (!S.voy || S.voy.to !== S.island) { var seen = S.voy && S.voy.seenEv; S.voy = VOY.makeLeg(S.island, R); S.voy.seenEv = (seen || []).slice(-4); save(); }
+    return S.voy;
+  }
+  function nodeHTML(type, cls) { var N = VOY.NODES[type]; return '<button class="node ' + type + " " + (cls || "") + '" data-t="' + type + '"><span class="ni">' + N.i + '</span><b>' + N.n + "</b><small>" + N.t + "</small></button>"; }
+  function voyageScreen() {
+    var v = ensureLeg(), to = D.ISLANDS[S.island], from = D.ISLANDS[S.island - 1];
+    var rows = "";
+    for (var k = 1; k >= 0; k--) {
+      var pair = v.nodes[k].map(function (t) {
+        var cls = k < v.step ? (v.done[k] === t ? "took" : "skip") : k === v.step ? "open" : "ahead";
+        return nodeHTML(t, cls);
+      }).join("");
+      rows += '<div class="fork' + (k === v.step ? " now" : "") + '">' + pair + "</div>";
+    }
+    var done = v.step >= 2;
+    var el = h('<div class="screen voyage"><div class="hud"><div class="flames">' + flamesHTML() + '</div><span class="pill">✦ ' + S.embers + " glimmer</span></div>" +
+      '<h2 style="margin:8px 0 2px">' + (done ? "Land ho!" : "Crossing to " + esc(to.n)) + '</h2><p class="dim" style="margin:0 0 6px;font-size:14px">' + (done ? esc(to.foe) + " waits on the shore." : "Choose your course. You can see what lies ahead.") + "</p>" +
+      '<div class="route"><div class="port to">⚑ ' + esc(to.n) + "</div>" + rows + '<div class="port from">⛵ ' + esc(from.n) + "</div></div>" +
+      '<div class="info" id="vinfo">' + (v.boon && VOY.boonText(v.boon) ? "<span style='color:#8dffb0'>✧ For the next warden: " + VOY.boonText(v.boon) + "</span>" : "<span class='dim'>Tap a glowing waypoint to sail there.</span>") + "</div>" +
+      '<div class="bottom"><div class="row"><button class="btn sec" id="back">Chart</button>' + (done ? '<button class="btn" id="land">Land on ' + esc(to.n) + "</button>" : "") + "</div></div></div>");
+    el.querySelectorAll(".node.open").forEach(function (nb) {
+      nb.onclick = function () {
+        SFX.tap(); var t = nb.dataset.t;
+        v.done[v.step] = t; v.step++; save(); // forpligt valget med det samme (ingen gen-valg ved genindlæsning)
+        T("voyage", { to: S.island, node: t, step: v.step });
+        nodeScreen(t);
+      };
+    });
+    el.querySelectorAll(".node.ahead,.node.took,.node.skip").forEach(function (nb) { nb.onclick = function () { el.querySelector("#vinfo").innerHTML = "<b>" + VOY.NODES[nb.dataset.t].i + " " + VOY.NODES[nb.dataset.t].n + "</b> — " + VOY.NODES[nb.dataset.t].t; }; });
+    el.querySelector("#back").onclick = function () { SFX.tap(); home(); };
+    var land = el.querySelector("#land");
+    if (land) land.onclick = function () { SFX.tap(); if (!E.validDeck(S.deck, S.coll)) { toast("Your deck needs 12–20 cards"); deckScreen(); return; } battleScreen(); };
+    show(el);
+  }
+  // Fælles skærm for et stop på havet: ikon, titel, tekst, plads til kort og knapper.
+  function stopScreen(type, title, text, icon) {
+    var el = h('<div class="screen stop ' + type + '"><div class="hud"><div class="flames">' + flamesHTML() + '</div><span class="pill" id="emb">✦ ' + S.embers + " glimmer</span></div>" +
+      '<div class="grow stopbody"><div class="vista">' + battleScene(type + S.island) + '<div class="bigicon">' + (icon || VOY.NODES[type].i) + '</div></div><h2>' + esc(title) + '</h2><p class="lead">' + text + '</p><div class="stopcards"></div><p class="result"></p></div>' +
+      '<div class="bottom" id="sbtns"></div></div>');
+    show(el); return el;
+  }
+  function continueBtn(el, label) {
+    var b2 = el.querySelector("#sbtns"); b2.innerHTML = "";
+    var c = h('<button class="btn">' + (label || "Sail on") + "</button>");
+    c.onclick = function () { SFX.tap(); var got = claimMiles(); voyageScreen(); if (got.length) toast("🏆 Collection " + got[got.length - 1] + "/" + D.CARDS.length + " — bonus pack!"); };
+    b2.appendChild(c);
+  }
+  function showCard(el, id, isNew) {
+    var c = D.BY[id], box = el.querySelector(".stopcards");
+    box.innerHTML = '<div class="gift">' + cardHTML(id, { isNew: isNew }) + "</div>";
+    SFX.flip(c.r); if (c.r === "r" || c.r === "m") burst(box.firstChild, c.r); else particles(box.firstChild, ELCOL[c.el], 14, 90);
+    box.firstChild.onclick = function () { el.querySelector(".result").innerHTML = cardInfo(id); };
+  }
+  function nodeScreen(type) {
+    var v = S.voy, el, res;
+    if (type === "wild") {
+      var enc = VOY.wildEncounter(S.island, R);
+      el = stopScreen("wild", enc.foe + "!", "A shoal of wild spirits blocks your way. <b>Win</b>, and one of them joins you.<br><span style='color:#ff8a8a'>Lose, and a flame goes out.</span>");
+      el.querySelector(".stopcards").innerHTML = '<div class="peek">' + enc.deck.filter(function (id, i, a) { return a.indexOf(id) === i; }).slice(0, 4).map(function (id) { return cardHTML(id); }).join("") + "</div>";
+      var fb = h('<button class="btn">Fight · ' + enc.hp + " life</button>");
+      fb.onclick = function () { SFX.tap(); battleScreen(enc); };
+      el.querySelector("#sbtns").appendChild(fb);
+      return;
+    }
+    if (type === "event") {
+      var ev = VOY.pickEvent(S, R); v.seenEv = (v.seenEv || []).concat([ev.id]); save();
+      el = stopScreen("event", ev.n, esc(ev.t), ev.i);
+      var bx = el.querySelector("#sbtns");
+      ev.ch.forEach(function (ch) {
+        var ok = !ch.need || ch.need(S);
+        var cb = h('<button class="btn choice' + (ok ? "" : " sec") + '"' + (ok ? "" : " disabled") + '><b>' + esc(ch.t) + "</b><small>" + esc(ch.sub) + "</small></button>");
+        cb.onclick = function () {
+          if (!ok) return; SFX.tap();
+          var before = {}; for (var k in S.coll) before[k] = S.coll[k];
+          res = ch.fx(S, R); save();
+          T("voyage_event", { ev: ev.id, ch: ch.t, card: res.card || null });
+          el.querySelector(".result").innerHTML = esc(res.t);
+          el.querySelector("#emb").textContent = "✦ " + S.embers + " glimmer";
+          if (res.card) showCard(el, res.card, !before[res.card]);
+          continueBtn(el);
+        };
+        bx.appendChild(cb);
+      });
+      return;
+    }
+    if (type === "wreck") {
+      el = stopScreen("wreck", "A wreck", "Broken timbers and a cold lamp, half under water.");
+      var before = {}; for (var k in S.coll) before[k] = S.coll[k];
+      res = VOY.salvage(S, R); save();
+      el.querySelector(".result").innerHTML = esc(res.t);
+      if (res.card) showCard(el, res.card, !before[res.card]); else SFX.heal();
+      continueBtn(el); return;
+    }
+    if (type === "haven") {
+      el = stopScreen("haven", "A quiet haven", "A sheltered cove with a small, warm fire. Old keepers left it lit for travellers.");
+      res = VOY.rest(S); save();
+      el.querySelector(".result").innerHTML = esc(res.t); el.querySelector(".flames").innerHTML = flamesHTML(); SFX.heal();
+      continueBtn(el); return;
+    }
+    if (type === "trader") {
+      el = stopScreen("trader", "The Fog Trader", "A lantern-eyed figure in a small boat. “Spirits for glimmer. One each, sailor.”");
+      var stock = VOY.traderStock(S, R), box = el.querySelector(".stopcards");
+      box.innerHTML = '<div class="shop"></div>';
+      stock.forEach(function (id) {
+        var price = VOY.PRICE[D.BY[id].r], w = h('<div class="ware">' + cardHTML(id, { isNew: !owned(id) }) + '<button class="btn buy">' + price + " ✦</button></div>");
+        var bb = w.querySelector(".buy"); bb.disabled = S.embers < price;
+        w.querySelector(".card").onclick = function () { el.querySelector(".result").innerHTML = cardInfo(id); };
+        bb.onclick = function () {
+          if (S.embers < price) return;
+          S.embers -= price; var m = VOY.give(S, id); save(); T("voyage_buy", { id: id, price: price });
+          box.querySelectorAll(".buy").forEach(function (x) { x.disabled = true; });
+          bb.textContent = "Yours"; w.classList.add("bought");
+          SFX.flip(D.BY[id].r); particles(w, ELCOL[D.BY[id].el], 14, 90);
+          el.querySelector("#emb").textContent = "✦ " + S.embers + " glimmer";
+          el.querySelector(".result").innerHTML = esc(D.BY[id].n) + " climbs into your lantern." + (m ? " (A spare — melted into " + m + " ✦.)" : "");
+          continueBtn(el);
+        };
+        box.firstChild.appendChild(w);
+      });
+      if (S.embers < 4) el.querySelector(".result").innerHTML = "<span class='dim'>You have " + S.embers + " ✦. Win battles and open packs to gather more.</span>";
+      continueBtn(el, "Leave");
+      return;
+    }
+  }
+  // Efter en kamp mod vilde ånder.
+  function finishWild(won, enc) {
+    save();
+    if (won) {
+      SFX.win();
+      var ch = VOY.rewardChoices(enc.el, S.coll, R);
+      setTimeout(function () {
+        var el = stopScreen("wild", "Victory!", "The shoal scatters — but one spirit stays, curious. <b>Choose who joins you.</b>");
+        var box = el.querySelector(".stopcards"); box.innerHTML = '<div class="shop"></div>';
+        ch.forEach(function (id) {
+          var w = h('<div class="ware">' + cardHTML(id, { isNew: !owned(id) }) + "</div>");
+          w.onclick = function () {
+            if (el.dataset.took) return; el.dataset.took = 1;
+            var m = VOY.give(S, id); save(); T("voyage_catch", { id: id, el: enc.el });
+            box.querySelectorAll(".ware").forEach(function (x) { if (x !== w) x.classList.add("gone"); });
+            w.classList.add("bought"); SFX.flip(D.BY[id].r);
+            if (D.BY[id].r === "r" || D.BY[id].r === "m") burst(w, D.BY[id].r); else particles(w, ELCOL[D.BY[id].el], 16, 90);
+            el.querySelector(".result").innerHTML = esc(D.BY[id].n) + " joins you!" + (D.BY[id].sea ? " <span style='color:#6fc3ff'>🌊 A drifter — never found in packs.</span>" : "") + (m ? " (A spare — melted into " + m + " ✦.)" : "") + "<br><span class='dim'>Add it to your deck under ‘Deck’.</span>";
+            continueBtn(el);
+          };
+          box.firstChild.appendChild(w);
+        });
+      }, 700);
+      return;
+    }
+    S.losses++; S.flames--; SFX.lose();
+    var msg;
+    if (S.flames <= 0) {
+      T("progress", { step: "voyage_lost", reached: S.island, at: "sea" });
+      S.island = 0; S.flames = 3; S.runs++; S.voy = null;
+      msg = "<h1 style='color:#b46bff'>The lantern goes out</h1><p style='text-align:center'>The wild spirits put out your last flame. The Dark takes the islands back, and the voyage must begin again.<br><br>But the spirits are still yours.</p>";
+    } else msg = "<h1 style='color:#b46bff'>Driven off</h1><p style='text-align:center'>The wild spirits put out one of your flames.<br>" + S.flames + " flame" + (S.flames === 1 ? "" : "s") + " left. You sail on, shaken.</p>";
+    save();
+    setTimeout(function () { modal(msg, [{ t: S.voy ? "Sail on" : "To the map", v: 1 }]).then(function () { if (S.voy) voyageScreen(); else home(); }); }, 500);
   }
 
   // ---------- start ----------

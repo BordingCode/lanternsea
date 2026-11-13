@@ -12,6 +12,7 @@
     r1: ["orb:11", "sprout"], r2: ["beetle"], r3: ["snake", "sprout"], r4: ["orb:13", "fountain"], r5: ["beast", "antlers"],
     r6: ["tree"], r7: ["seed", "sprout", "rings"], r8: ["block", "sprout", "shield"], r9: ["willow"],
     n1: ["orb:10", "moth"], n2: ["drop", "hood", "lamp"], n3: ["fish", "lure"],
+    d1: ["drop", "hood", "veil"], d2: ["fish", "crown"], d3: ["bird", "rays"], d4: ["ray", "waves"], d5: ["drop", "hood", "lamp", "waves"], d6: ["orb:16", "rays", "crown"],
   };
   function f(n) { return n.toFixed(1); }
   function eyes(cx, cy, s, r) {

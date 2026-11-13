@@ -36,6 +36,13 @@
     { id: "n1", n: "Lantern Moth", el: "glod", r: "c", c: 1, a: 1, h: 2, kw: {}, t: "Drawn to every light." },
     { id: "n2", n: "Lampkeeper", el: "rod", r: "u", c: 2, a: 1, h: 2, kw: { gnist: 1, rod: 1 }, t: "Keeps the flame alive." },
     { id: "n3", n: "Darkfisher", el: "taage", r: "r", c: 4, a: 4, h: 2, kw: { ambush: 2, taage: 1 }, t: "Its lure waits for whatever swims close." },
+    // Drifters (0.8.0): found only at sea, on the voyage between islands — never in packs, can't be lured.
+    { id: "d1", n: "Wreckwisp", el: "taage", r: "u", c: 2, a: 2, h: 2, kw: { ambush: 1, taage: 1 }, t: "Haunts the hulls it sank.", sea: 1 },
+    { id: "d2", n: "Bellfish", el: "rod", r: "u", c: 3, a: 2, h: 4, kw: { ambush: 1, rally: 1 }, t: "Rings when danger swims near.", sea: 1 },
+    { id: "d3", n: "Stormpetrel", el: "glod", r: "u", c: 3, a: 3, h: 2, kw: { gnist: 2 }, t: "Rides the lightning home.", sea: 1 },
+    { id: "d4", n: "Whalesong", el: "taage", r: "r", c: 5, a: 3, h: 6, kw: { rally: 1, rod: 2 }, t: "Its song carries the whole shoal.", sea: 1 },
+    { id: "d5", n: "Drowned Lamplighter", el: "rod", r: "r", c: 4, a: 3, h: 4, kw: { gnist: 1, rod: 1, ambush: 1 }, t: "Still tending a lamp under the waves.", sea: 1 },
+    { id: "d6", n: "The Starfallen", el: "glod", r: "m", c: 6, a: 5, h: 5, kw: { gnist: 2, rally: 1 }, t: "It fell from the sky and kept burning.", sea: 1 },
   ];
   var BY = {}; CARDS.forEach(function (c) { BY[c.id] = c; });
   var EL = { glod: "Blaze", taage: "Mist", rod: "Root" };

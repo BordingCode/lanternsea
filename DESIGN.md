@@ -78,3 +78,17 @@ en "klog" bot (`node tests/balance.js 400 --klog`) vinder kun lidt mere → plan
 Svar på vogterens synlige plan: **Ambush N** — en fjende, der lander overfor, får N skade (Veil tager det).
 Giv til Darkfisher (Ambush 2 · Veil, før Spark 2) og Barkbeetle (Ambush 1). AI'en undgår at lande skrøbelige ånder
 overfor baghold. Næste: flere Ambush-kort, så "læg en fælde, hvor spøgelseskortet står" bliver en rigtig strategi.
+
+## The Voyage (0.8.0, nat 3) — svar på "Der er ikke nok eventyr"
+Telemetri (nat 2): Mathias nåede ø 4 på ~12 min med 26/30 ånder → rejsen var bare 7 kampe i træk, og samlingen
+løb tør. Nu sejler man **mellem øerne** (fra ø 2): hver overfart har 2 skillevejene × 2 synlige valg (`voyage.js`):
+- ⚔ **Wild spirits** — lille kamp mod en flok af ét lys (liv 7+2·ø). Vind → vælg 1 af 3 ånder (ofte en drifter).
+  Tab → en flamme går ud (reel indsats, men man valgte selv risikoen ved skillevejen). Bot: 96 % → 67 % (ø2→ø7), `tests/vild.js`.
+- ❓ **Strange waters** — 7 små historier med 2 valg (risiko/belønning): Drowned Bell, Whale of Lights, Lost Keeper,
+  Singing Rocks, Starfall, Eye of the Storm, Message in a Bottle. Nogle giver en **velsignelse/forbandelse** til næste
+  vogterkamp (±lygteliv, +1 startkort) — `S.voy.boon`, bruges når vogterkampen starter.
+- ⚓ **Wreck** (glimmer, 35 % en ånd) · 🏮 **Fog Trader** (køb 1 af 3 for glimmer — giver glimmer et formål) ·
+  🏝 **Haven** (tænd en mistet flamme; ellers +5 ✦ og +2 liv).
+- **Drifters**: 6 nye ånder (d1–d6), kun på havet — aldrig i pakker, kan ikke lokkes. Samlingen er nu 36.
+Gemt tilstand: `S.voy = {to, step, nodes, done, boon, seenEv}`; valget forpligtes, før stoppet vises (ingen gen-valg ved genindlæsning).
+Ø 1 har ingen overfart (de første minutter skal hurtigt frem til første kamp).

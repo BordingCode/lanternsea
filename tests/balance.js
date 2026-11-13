@@ -20,6 +20,8 @@ function smartTurn(b) {
       for (let s = 0; s < 4; s++) {
         if (!E.canPlay(b, hi, s)) continue;
         const f = foe.board[s] || ghost[s]; let sc = c.c * 10;
+        if (ghost[s] && c.kw.ambush) sc += 8 + (c.kw.ambush >= ghost[s].h ? 12 : 0);
+        const fa = foe.board[s] && D.BY[foe.board[s].id].kw.ambush; if (fa && c.h <= fa && !c.kw.taage) sc -= 25;
         if (f) sc += (c.a >= f.h ? 10 : 0) + (c.h > f.a ? 6 : -4) + (c.kw.gnist && foe.board[s] ? 6 : 0);
         else sc += 5 + c.a;
         if (sc > bestScore) { bestScore = sc; best = hi; bestSlot = s; }

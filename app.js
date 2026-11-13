@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.7.1";
+  var VERSION = "0.7.2";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -107,7 +107,7 @@
   function kwText(c) {
     var k = c.kw, out = [];
     if (k.gnist) out.push("Spark " + k.gnist); if (k.taage) out.push("Veil"); if (k.flok) out.push("Kin");
-    if (k.rod) out.push("Mend " + k.rod); if (k.sluger) out.push("Devour"); if (k.rally) out.push("Rally");
+    if (k.rod) out.push("Mend " + k.rod); if (k.sluger) out.push("Devour"); if (k.rally) out.push("Rally"); if (k.ambush) out.push("Ambush " + k.ambush);
     return out.join(" · ");
   }
   function cardHTML(id, o) {
@@ -533,7 +533,7 @@
           else if (!theirs) txt = "<b style='color:var(--gold)'>↑" + am + "</b><br><span class='dim'>lantern</span>";
           else if (theirs.shield) txt = "↑" + am + "<br><span style='color:var(--taage)'>veiled</span>";
           else txt = "↑" + am + "<br>" + (am >= theirs.h ? "<span style='color:#8dffb0'>kills</span>" : "<span class='dim'>" + theirs.h + " life</span>");
-        } else if (theirs && theirs.a > 0) txt = "<span style='color:#ff8a8a'>↓" + theirs.a + "</span><br><span class='dim'>open</span>";
+        } else if (theirs && (theirs.a > 0 || D.BY[theirs.id].kw.ambush)) { var amb = D.BY[theirs.id].kw.ambush; txt = "<span style='color:#ff8a8a'>↓" + theirs.a + "</span><br><span class='" + (amb ? "trait" : "dim") + "'>" + (amb ? "ambush " + amb : "open") + "</span>"; }
         else if (gh && D.BY[gh].a > 0) txt = "<span style='color:#ff8a8a'>⚠ ↓" + D.BY[gh].a + "</span><br><span class='dim'>next turn</span>";
         lanes += "<div>" + txt + "</div>";
       }
@@ -603,6 +603,7 @@
         p = p.then(function () {
           var V = view.s;
           if (e.t === "play") { V[e.si].board[e.slot] = JSON.parse(JSON.stringify(b.s[e.si].board[e.slot] || { id: e.id, a: D.BY[e.id].a, h: D.BY[e.id].h, mh: D.BY[e.id].h, shield: !!D.BY[e.id].kw.taage, el: D.BY[e.id].el })); var u0 = V[e.si].board[e.slot]; u0.h = D.BY[e.id].h; u0.a = D.BY[e.id].a; u0.mh = u0.h; u0.shield = !!D.BY[e.id].kw.taage; drawBoards(); var c = slotEl(e.si, e.slot).querySelector(".card"); if (c) c.classList.add("drop"); SFX.play(); if (e.si === 1) mid.textContent = isl.foe + " calls " + D.BY[e.id].n; kinPing(e.si, e.slot); return wait(380); }
+          if (e.t === "ambush") { var ca = slotEl(e.si, e.slot).querySelector(".card"); if (ca) { ca.classList.remove("lunge0", "lunge1"); void ca.offsetWidth; ca.classList.add("lunge" + e.si); } floatTxt(slotEl(e.si, e.slot), "Ambush!", "b"); SFX.atk(); return wait(320); }
           if (e.t === "atk") { var c2 = slotEl(e.si, e.slot).querySelector(".card"); if (c2) { c2.classList.remove("lunge0", "lunge1"); void c2.offsetWidth; c2.classList.add("lunge" + e.si); } SFX.atk(); return wait(200); }
           if (e.t === "hit") { var u = V[e.si].board[e.slot]; if (u) u.h -= e.n; drawBoards(); var se = slotEl(e.si, e.slot), c3 = se.querySelector(".card"); if (c3) c3.classList.add("hitfx"); floatTxt(se, "−" + e.n, e.n >= 4 ? "big" : ""); SFX.hit(); return wait(260); }
           if (e.t === "dodge") { var u2 = V[e.si].board[e.slot]; if (u2) u2.shield = false; drawBoards(); floatTxt(slotEl(e.si, e.slot), "veiled!", "b"); SFX.dodge(); return wait(260); }

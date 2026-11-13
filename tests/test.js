@@ -14,6 +14,10 @@ ok(b.s[1].board[0] && !b.s[1].board[0].shield, "tåge tog første slag");
 // rally
 { const side = { board: [{id:"g3",a:3,h:1,mh:1,el:"glod"}, {id:"r8",a:1,h:3,mh:3,el:"rod"}, null, {id:"g3",a:3,h:1,mh:1,el:"glod"}] };
   ok(E.attackOf(side, 0) === 4, "rally giver naboen +1"); ok(E.attackOf(side, 3) === 3, "rally rammer ikke ikke-naboer"); ok(E.attackOf(side, 1) === 1, "rally giver ikke sig selv"); }
+// ambush
+b = E.newBattle(Array(12).fill("g1"), 0, 5); E.startTurn(b); b.s[1].board[2] = {id:"r2",a:1,h:4,mh:4,shield:false,el:"rod"};
+b.s[0].hand = ["g3","t1"]; b.s[0].lys = 5; E.play(b, 0, 2); ok(!b.s[0].board[2], "ambush dræber Ashrunner (1 liv) der lander overfor");
+E.play(b, 0, 2); ok(b.s[0].board[2] && !b.s[0].board[2].shield, "Veil tager ambush-skaden");
 // vogter-evner
 const isl = n => D.ISLANDS.findIndex(i => i.trait === n);
 b = E.newBattle(Array(12).fill("g1"), isl("gale"), 3); E.startTurn(b); ok(!E.canPlay(b, 0, 0) && E.canPlay(b, 0, 1), "gale lukker bane 1");

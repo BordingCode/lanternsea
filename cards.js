@@ -19,7 +19,7 @@
     { id: "t7", n: "Memory of the Sea", el: "taage", r: "m", c: 6, a: 5, h: 5, kw: { taage: 1, flok: 1 }, t: "All the sea has swallowed, she remembers." },
     // Root — life
     { id: "r1", n: "Mossprout", el: "rod", r: "c", c: 1, a: 0, h: 3, kw: { rod: 1 }, t: "Patient. Healing." },
-    { id: "r2", n: "Barkbeetle", el: "rod", r: "c", c: 2, a: 1, h: 4, kw: {}, t: "A shield with legs." },
+    { id: "r2", n: "Barkbeetle", el: "rod", r: "c", c: 2, a: 1, h: 4, kw: { ambush: 1 }, t: "A shield with legs — and jaws." },
     { id: "r3", n: "Rootsnake", el: "rod", r: "c", c: 3, a: 2, h: 4, kw: { flok: 1 }, t: "Roots find each other." },
     { id: "r4", n: "Wellspring", el: "rod", r: "u", c: 3, a: 2, h: 3, kw: { rod: 2 }, t: "Where it stands, water rises." },
     { id: "r5", n: "Stonestag", el: "rod", r: "u", c: 4, a: 3, h: 6, kw: {}, t: "Older than the islands." },
@@ -35,7 +35,7 @@
     // Wanderers
     { id: "n1", n: "Lantern Moth", el: "glod", r: "c", c: 1, a: 1, h: 2, kw: {}, t: "Drawn to every light." },
     { id: "n2", n: "Lampkeeper", el: "rod", r: "u", c: 2, a: 1, h: 2, kw: { gnist: 1, rod: 1 }, t: "Keeps the flame alive." },
-    { id: "n3", n: "Darkfisher", el: "taage", r: "r", c: 4, a: 4, h: 2, kw: { gnist: 2, taage: 1 }, t: "Fishes the black water." },
+    { id: "n3", n: "Darkfisher", el: "taage", r: "r", c: 4, a: 4, h: 2, kw: { ambush: 2, taage: 1 }, t: "Its lure waits for whatever swims close." },
   ];
   var BY = {}; CARDS.forEach(function (c) { BY[c.id] = c; });
   var EL = { glod: "Blaze", taage: "Mist", rod: "Root" };
@@ -47,6 +47,7 @@
     rod: "Mend N: heals your lantern N when you end your turn.",
     sluger: "Devour: gains +1/+1 when it kills a spirit.",
     rally: "Rally: your spirits next to it get +1 attack.",
+    ambush: "Ambush N: an enemy landing opposite takes N damage.",
   };
   // The islands: wardens with fixed decks
   var ISLANDS = [

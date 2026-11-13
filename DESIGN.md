@@ -73,3 +73,8 @@ Black Lighthouse **Endless Night** (trækker 2 kort).
 ### Sværhedskurve (balance-bot, simpel spiller, 600 kampe/ø, 0.6.6+)
 ø1 100 % · ø2 87 % · ø3 69 % · ø4 75 % · ø5 57 % · ø6 49 % · ø7 44 %. Botten bruger ikke vogterens plan;
 en "klog" bot (`node tests/balance.js 400 --klog`) vinder kun lidt mere → planen giver endnu få svarmuligheder.
+
+## Ambush (0.7.2)
+Svar på vogterens synlige plan: **Ambush N** — en fjende, der lander overfor, får N skade (Veil tager det).
+Giv til Darkfisher (Ambush 2 · Veil, før Spark 2) og Barkbeetle (Ambush 1). AI'en undgår at lande skrøbelige ånder
+overfor baghold. Næste: flere Ambush-kort, så "læg en fælde, hvor spøgelseskortet står" bliver en rigtig strategi.

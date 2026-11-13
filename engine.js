@@ -46,6 +46,9 @@
     if (!canPlay(b, hi, slot)) return false;
     var p = b.s[b.who], id = p.hand.splice(hi, 1)[0], c = D.BY[id];
     p.lys -= c.c; p.board[slot] = unit(id); ev(b, { t: "play", si: b.who, slot: slot, id: id });
+    // Ambush: en ånd overfor rammer den, der lander (svaret på vogterens synlige plan).
+    var opp = b.s[1 - b.who].board[slot], amb = opp && D.BY[opp.id].kw.ambush;
+    if (amb) { ev(b, { t: "ambush", si: 1 - b.who, slot: slot }); if (damageUnit(b, b.who, slot, amb)) return true; }
     var spark = (c.kw.gnist || 0) + (b.who === 1 && b.trait === "embers" && c.el === "glod" ? 1 : 0);
     if (spark) {
       var o = 1 - b.who;
@@ -92,7 +95,8 @@
         var c = D.BY[id]; if (c.c > lys) return;
         for (var s = 0; s < SLOTS; s++) {
           if (taken[s]) continue;
-          var foe = opp.board[s], sc = c.c * 10;
+          var foe = opp.board[s], sc = c.c * 10, amb = foe && D.BY[foe.id].kw.ambush;
+          if (amb) sc -= c.h <= amb && !c.kw.taage ? 25 : 4;
           if (foe) { sc += (c.a >= foe.h ? 8 : 0) + (c.h > foe.a ? 4 : -3) + (c.kw.gnist ? 6 : 0); }
           else sc += 3;
           if (sc > bestScore) { bestScore = sc; best = hi; bestSlot = s; }

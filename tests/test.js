@@ -1,5 +1,5 @@
 const E = require("../engine.js"), D = require("../cards.js"), fs = require("fs"), path = require("path");
-for (const f of ["app.js","engine.js","cards.js","sw.js"]) { try { require("child_process").execFileSync(process.execPath, ["--check", require("path").join(__dirname, "..", f)]); } catch (e) { console.log("FEJL: syntaks i " + f + "\n" + e.stderr); process.exit(1); } }
+for (const f of ["app.js","engine.js","cards.js","sw.js","art.js"]) { try { require("child_process").execFileSync(process.execPath, ["--check", require("path").join(__dirname, "..", f)]); } catch (e) { console.log("FEJL: syntaks i " + f + "\n" + e.stderr); process.exit(1); } }
 let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("FEJL:", m); } };
 // regler
 let b = E.newBattle(["g1","g1","g1","g1","g1","g1","g1","g1","g1","g1","g1","g1"], 0, 42);

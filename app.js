@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.6.7";
+  var VERSION = "0.7.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -101,29 +101,8 @@
   // Procedural ånde-kunst: hvert kort får sit eget lille lysvæsen.
   var ARTC = {};
   function art(id) {
-    if (ARTC[id]) return ARTC[id];
-    var c = D.BY[id], r = E.rng(hash(id) + 7);
-    var col = { glod: ["#ffb347", "#ff6a2a", "#fff1c9"], taage: ["#9fd8ff", "#4a7dff", "#eaf6ff"], rod: ["#8ff0a6", "#2f9c5a", "#eaffef"] }[c.el];
-    var big = 16 + c.c * 2.2 + r() * 4, cx = 50, cy = 52;
-    var parts = "";
-    var n = 3 + Math.floor(r() * 5);
-    for (var i = 0; i < n; i++) {
-      var ang = (i / n) * Math.PI * 2 + r(), len = big * (0.9 + r() * 0.9);
-      var x2 = cx + Math.cos(ang) * len * 1.4, y2 = cy + Math.sin(ang) * len;
-      var qx = cx + Math.cos(ang + 0.6) * len * 0.8, qy = cy + Math.sin(ang + 0.6) * len * 0.6;
-      parts += '<path d="M' + cx + " " + cy + " Q" + qx.toFixed(1) + " " + qy.toFixed(1) + " " + x2.toFixed(1) + " " + y2.toFixed(1) + '" stroke="' + col[1] + '" stroke-width="' + (2 + r() * 3).toFixed(1) + '" fill="none" stroke-linecap="round" opacity=".7"/>';
-    }
-    var eyeY = cy - big * 0.15, eyeDx = big * (0.25 + r() * 0.15), er = 2 + r() * 2.5;
-    var shape = c.el === "rod" ? '<rect x="' + (cx - big * 0.8) + '" y="' + (cy - big * 0.8) + '" width="' + big * 1.6 + '" height="' + big * 1.6 + '" rx="' + big * 0.5 + '" fill="url(#b' + id + ')"/>'
-      : c.el === "taage" ? '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + big * 1.05 + '" ry="' + big * 0.75 + '" fill="url(#b' + id + ')"/>'
-      : '<path d="M' + cx + " " + (cy - big * 1.2) + " C" + (cx + big) + " " + (cy - big * 0.2) + " " + (cx + big * 0.9) + " " + (cy + big * 0.9) + " " + cx + " " + (cy + big * 0.9) + " C" + (cx - big * 0.9) + " " + (cy + big * 0.9) + " " + (cx - big) + " " + (cy - big * 0.2) + " " + cx + " " + (cy - big * 1.2) + 'Z" fill="url(#b' + id + ')"/>';
-    var crown = c.r === "m" || c.r === "r" ? '<circle cx="' + cx + '" cy="' + cy + '" r="' + (big * 1.5) + '" fill="none" stroke="' + (c.r === "m" ? "#d48bff" : "#ffc861") + '" stroke-width="1.5" stroke-dasharray="3 5" opacity=".8"/>' : "";
-    var s = '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="b' + id + '" cx="40%" cy="35%"><stop offset="0" stop-color="' + col[2] + '"/><stop offset=".55" stop-color="' + col[0] + '"/><stop offset="1" stop-color="' + col[1] + '"/></radialGradient>' +
-      '<radialGradient id="h' + id + '"><stop offset="0" stop-color="' + col[0] + '" stop-opacity=".55"/><stop offset="1" stop-color="' + col[0] + '" stop-opacity="0"/></radialGradient></defs>' +
-      '<circle cx="50" cy="52" r="48" fill="url(#h' + id + ')"/>' + crown + parts + shape +
-      '<ellipse cx="' + (cx - eyeDx) + '" cy="' + eyeY + '" rx="' + er + '" ry="' + er * 1.3 + '" fill="#1a1030"/><ellipse cx="' + (cx + eyeDx) + '" cy="' + eyeY + '" rx="' + er + '" ry="' + er * 1.3 + '" fill="#1a1030"/>' +
-      '<circle cx="' + (cx - eyeDx + er * 0.3) + '" cy="' + (eyeY - er * 0.4) + '" r="' + er * 0.35 + '" fill="#fff"/><circle cx="' + (cx + eyeDx + er * 0.3) + '" cy="' + (eyeY - er * 0.4) + '" r="' + er * 0.35 + '" fill="#fff"/></svg>';
-    ARTC[id] = s; return s;
+    if (!ARTC[id]) ARTC[id] = window.ART(id, D.BY[id], E.rng(hash(id) + 7)); // tegnes i art.js
+    return ARTC[id];
   }
   function kwText(c) {
     var k = c.kw, out = [];

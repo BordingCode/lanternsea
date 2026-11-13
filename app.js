@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.8.0";
+  var VERSION = "0.8.1";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -579,7 +579,21 @@
       var canAny = p.hand.some(function (id, hi) { for (var k = 0; k < 4; k++) if (E.canPlay(b, hi, k)) return true; return false; });
       el.querySelector("#end").classList.toggle("ready", !busy && !b.over && b.who === 0 && !canAny);
     }
-    function full() { snap(); drawBoards(); drawHand(); }
+    function full() { snap(); drawBoards(); drawHand(); teachKw(); }
+    // Første gang et nøgleord er på hånden: forklar det i info-feltet (dommer, nat 2: "Kin, Veil, Devour forklares ikke").
+    var KWN = { gnist: "Spark", taage: "Veil", flok: "Kin", rod: "Mend", sluger: "Devour", rally: "Rally", ambush: "Ambush" };
+    function teachKw() {
+      if (sel >= 0 || b.over || b.who !== 0) return;
+      for (var i = 0; i < b.s[0].hand.length; i++) {
+        var c = D.BY[b.s[0].hand[i]];
+        for (var k in c.kw) if (!S.seen["kw_" + k]) {
+          S.seen["kw_" + k] = 1; save();
+          info.innerHTML = "<span class='trait'>New word · </span><b>" + KWN[k] + "</b> <span class='dim'>(on " + esc(c.n) + ")</span><br>" + D.KW[k].replace(/\bN\b/g, c.kw[k]);
+          info.classList.remove("teach"); void info.offsetWidth; info.classList.add("teach");
+          return;
+        }
+      }
+    }
     b0.onclick = function (ev) {
       var sl = ev.target.closest(".slot"); if (!sl || busy) return;
       var i = +sl.dataset.s;
@@ -678,7 +692,7 @@
           msg = "<h1>The Black Lighthouse burns!</h1><p style='text-align:center'>You lit the whole Dark Sea. The spirits sing.<br><br>You get 3 packs. The Dark will return — a new voyage awaits.</p>";
         } else {
           T("progress", { island: S.island });
-          msg = "<h1>Victory!</h1><p style='text-align:center'>" + esc(isl.foe) + " is defeated, and the lighthouse on " + esc(isl.n) + " is lit.<br>You get <b>1 pack</b>.</p>";
+          msg = "<h1>Victory!</h1><p style='text-align:center'>" + esc(isl.foe) + " is defeated, and the lighthouse on " + esc(isl.n) + " is lit.<br>You get <b>1 pack</b>.</p>" + (isl.beaten ? "<p class='quote'>“" + esc(isl.beaten) + "”</p>" : "");
         }
       } else {
         S.losses++; S.flames--; SFX.lose();
@@ -703,6 +717,7 @@
     }
     show(el); full();
     if (opt && VOY.boonText(opt)) toast("✧ Voyage: " + VOY.boonText(opt));
+    if (!wild && isl.say) { var sp = h('<div class="speech"><b>' + esc(isl.foe) + ':</b> “' + esc(isl.say) + '”</div>'); el.querySelector(".midwrap").appendChild(sp); setTimeout(function () { sp.classList.add("gone"); }, 4200); setTimeout(function () { sp.remove(); }, 4800); }
     if (wild) mid.innerHTML = "<div>Win, and one of them joins you.</div>";
     else if (b.trait) { mid.innerHTML = "<div><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) + "</div>"; }
     else mid.textContent = "Pick a card and place it on an empty space";
@@ -792,7 +807,8 @@
           res = ch.fx(S, R); save();
           T("voyage_event", { ev: ev.id, ch: ch.t, card: res.card || null });
           el.querySelector(".result").innerHTML = esc(res.t);
-          el.querySelector("#emb").textContent = "✦ " + S.embers + " glimmer";
+          el.querySelector("#emb").textContent = "✦ " + S.embers + " glimmer"; el.querySelector(".flames").innerHTML = flamesHTML();
+          if (res.flameLost) { SFX.lose(); app.classList.remove("quake"); void app.offsetWidth; app.classList.add("quake"); }
           if (res.card) showCard(el, res.card, !before[res.card]);
           continueBtn(el);
         };

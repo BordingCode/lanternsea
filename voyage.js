@@ -126,6 +126,33 @@
           return { t: "“" + is.n + " is held by " + is.foe + ". " + (tr ? "Beware — " + tr.n + ": " + tr.t : "Strike its open lanes.") + "” (+3 ✦)" }; } },
         { t: "Keep the bottle", sub: "+5 ✦ glimmer (it’s pretty).", fx: function (S) { S.embers += 5; return { t: "It catches the light nicely. (+5 ✦)" }; } },
       ] },
+    { id: "ghost", i: "🚢", n: "The Ghost Ship", t: "A ship of pale lanterns drifts past. No one at the wheel. Something glows in the hold.",
+      ch: [
+        { t: "Board it", sub: "Likely a drifter spirit. But the crew may take a flame.", need: function (S) { return S.flames >= 2; }, fx: function (S, r) {
+          if (r() < 0.6) { var dr = D.CARDS.filter(function (c) { return c.sea && c.r !== "m"; }), id = pick(dr, r).id, m = give(S, id); return { t: "In the hold, a spirit no pack has ever held. It follows you home." + (m ? " (A spare — melted into " + m + " ✦.)" : ""), card: id }; }
+          S.flames--; return { t: "Cold hands in the dark. You escape — but one flame stays behind on the ship.", flameLost: 1 }; } },
+        { t: "Hail it", sub: "+4 ✦ — they toss you a few coins.", fx: function (S) { S.embers += 4; return { t: "A pale hand waves. A pouch lands on your deck. (+4 ✦)" }; } },
+      ] },
+    { id: "shrine", i: "⛩️", n: "The Old Shrine", t: "A tiny shrine on a rock, built by keepers long ago. A bowl waits for an offering.",
+      ch: [
+        { t: "Offer 8 ✦ glimmer", sub: "Gain a pack.", need: function (S) { return S.embers >= 8; }, fx: function (S) { S.embers -= 8; S.packs++; return { t: "The bowl glows. When you look again, a sealed pack lies in it." }; } },
+        { t: "Say a prayer", sub: "+1 card in your opening hand next warden battle.", fx: function (S) { boon(S, "draw", 1); return { t: "You feel lighter. Your spirits stand ready." }; } },
+      ] },
+    { id: "kelp", i: "🌿", n: "The Kelp Maze", t: "Glowing kelp closes in around your boat. Somewhere inside, something hums.",
+      ch: [
+        { t: "Follow the glow", sub: "Maybe a Root spirit. Maybe nothing.", fx: function (S, r) {
+          if (r() < 0.6) { var pool = D.CARDS.filter(function (c) { return c.el === "rod" && !c.sea && (c.r === "c" || c.r === "u"); }), id = pick(pool, r).id, m = give(S, id);
+            return { t: "A small root spirit, humming to itself. It climbs aboard." + (m ? " (A spare — melted into " + m + " ✦.)" : ""), card: id }; }
+          return { t: "Just kelp, all the way down. You find your way out." }; } },
+        { t: "Cut straight through", sub: "+4 ✦, but −2 lantern life next warden battle.", fx: function (S) { S.embers += 4; boon(S, "hp", -2); return { t: "Sap and sparks everywhere. (+4 ✦, −2 life next warden battle)" }; } },
+      ] },
+    { id: "shoal", i: "🐟", n: "Moonlit Shoal", t: "Under the moon, a shoal of mist-fish dances in perfect circles.",
+      ch: [
+        { t: "Join the dance", sub: "A Mist spirit joins you.", fx: function (S, r) {
+          var pool = D.CARDS.filter(function (c) { return c.el === "taage" && !c.sea && (c.r === "c" || c.r === "u"); }), id = pick(pool, r).id, m = give(S, id);
+          return { t: "You dance badly. One fish thinks it’s funny, and stays." + (m ? " (A spare — melted into " + m + " ✦.)" : ""), card: id }; } },
+        { t: "Just watch", sub: "+3 lantern life next warden battle.", fx: function (S) { boon(S, "hp", 3); return { t: "It’s beautiful. Your lantern burns steadier for it. (+3 life next warden battle)" }; } },
+      ] },
   ];
 
   function pickEvent(S, r) {

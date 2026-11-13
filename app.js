@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.6.2";
+  var VERSION = "0.6.3";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -155,6 +155,7 @@
   function uniqueOwned() { return D.CARDS.filter(function (c) { return owned(c.id) > 0; }).length; }
   // Samle-milepæle: et langsigtet mål ved siden af rejsen. Belønninger gives automatisk (og indhentes, hvis de blev sprunget over).
   var MILES = [10, 15, 20, 25, 30];
+  var LURE = { c: 5, u: 10, r: 22, m: 40 }; // glimmer-pris for at lokke en bestemt ånd (som Hearthstones dust)
   function mileReward(m) { return m === 30 ? 3 : 1; }
   function claimMiles() {
     var n = uniqueOwned(), got = [];
@@ -399,17 +400,33 @@
       return '<div class="ebar ' + e + '"><span>' + D.EL[e] + '</span><div><i style="width:' + (have / all.length * 100) + '%"></i></div><b>' + have + "/" + all.length + "</b></div>";
     }).join("");
     var miles = MILES.map(function (m) { var done = S.miles && S.miles[m]; return '<span class="mile' + (done ? " done" : n >= m ? " ready" : "") + '">' + (done ? "✦ " : "") + m + "</span>"; }).join("");
-    var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Collection</h2><span class="pill">' + n + "/" + D.CARDS.length + "</span></div>" +
+    var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Collection</h2><div class="row"><span class="pill">✦ ' + S.embers + '</span><span class="pill">' + n + "/" + D.CARDS.length + "</span></div></div>" +
       '<div class="bars">' + bars + "</div>" +
       '<div class="miles">' + miles + '</div><div class="dim" style="font-size:13px;text-align:center;margin:2px 0 8px">' +
       (next ? "Catch " + (next - n) + " more for a bonus pack" + (next === 30 ? " — and the Keeper's reward" : "") + "." : "Every spirit of the Dark Sea is yours.") + "</div>" +
-      '<div class="grid"></div><div class="info" id="binfo">Tap a spirit to read it.</div>' +
+      '<div class="grid"></div><div class="info" id="binfo">Tap a spirit to read it — or lure one you’re missing with ✦ glimmer.</div>' +
       '<div class="bottom" style="margin-top:8px"><button class="btn" id="back">Back</button></div></div>');
-    var grid = el.querySelector(".grid");
+    var grid = el.querySelector(".grid"), binfo = el.querySelector("#binfo");
     D.CARDS.forEach(function (c) {
       var o = owned(c.id);
       var w = h('<div>' + (o ? cardHTML(c.id, { badge: "×" + o }) : '<div class="card unknown ' + c.r + '"><div class="q">?</div><div class="nm">' + D.RAR[c.r] + "</div></div>") + "</div>");
-      w.onclick = function () { el.querySelector("#binfo").innerHTML = o ? cardInfo(c.id) : "Not caught yet — a " + D.RAR[c.r].toLowerCase() + " " + D.EL[c.el] + " spirit."; };
+      w.onclick = function () {
+        SFX.tap();
+        binfo.innerHTML = (o ? cardInfo(c.id) : "<span class='dim'>Not caught yet:</span><br>" + cardInfo(c.id));
+        if (o < E.deckLimit(c.id)) {
+          var cost = LURE[c.r], btn = h('<button class="btn lure"' + (S.embers < cost ? " disabled" : "") + ">Lure it · " + cost + " ✦</button>");
+          if (S.embers < cost) btn.textContent = "Lure it · " + cost + " ✦ (you have " + S.embers + ")";
+          btn.onclick = function (ev) {
+            ev.stopPropagation(); if (S.embers < cost) return;
+            S.embers -= cost; S.coll[c.id] = owned(c.id) + 1; save();
+            T("lure", { id: c.id, r: c.r, cost: cost });
+            SFX.flip(c.r); if (c.r === "r" || c.r === "m") burst(w, c.r); else particles(w, ELCOL[c.el], 14, 90);
+            var got = claimMiles(), msg = got.length ? "🏆 Collection " + got[got.length - 1] + "/" + D.CARDS.length + " — bonus pack!" : c.n + " joins you" + (o ? "" : " — add it under 'Deck'");
+            setTimeout(function () { binderScreen(); toast(msg); }, 900);
+          };
+          binfo.appendChild(btn);
+        }
+      };
       grid.appendChild(w);
     });
     el.querySelector("#back").onclick = function () { SFX.tap(); home(); };

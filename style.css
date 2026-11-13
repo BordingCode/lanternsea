@@ -186,3 +186,4 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
 .card.unknown{background:repeating-linear-gradient(45deg,#141b33 0 6px,#10162b 6px 12px);display:grid;place-items:center;opacity:.6}
 .card.unknown .q{font-size:2.6em;font-weight:900;color:#3a4470}
 .lead{text-align:center;font-size:19px;line-height:1.45;margin:6px 0}
+.btn.lure{display:block;width:100%;margin-top:8px;padding:12px;font-size:16px;background:linear-gradient(#e2b6ff,#a35be0);box-shadow:0 4px 0 #5a2a8a;color:#1e0a30}

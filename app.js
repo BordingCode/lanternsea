@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.6.0";
+  var VERSION = "0.6.1";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -153,6 +153,16 @@
   function flamesHTML() { var s = ""; for (var i = 0; i < 3; i++) s += '<i class="flame' + (i < S.flames ? "" : " out") + '"></i> '; return s; }
   function owned(id) { return S.coll[id] || 0; }
   function uniqueOwned() { return D.CARDS.filter(function (c) { return owned(c.id) > 0; }).length; }
+  // Samle-milepæle: et langsigtet mål ved siden af rejsen. Belønninger gives automatisk (og indhentes, hvis de blev sprunget over).
+  var MILES = [10, 15, 20, 25, 30];
+  function mileReward(m) { return m === 30 ? 3 : 1; }
+  function claimMiles() {
+    var n = uniqueOwned(), got = [];
+    S.miles = S.miles || {};
+    MILES.forEach(function (m) { if (n >= m && !S.miles[m]) { S.miles[m] = 1; S.packs += mileReward(m); got.push(m); T("progress", { step: "collection", n: m }); } });
+    if (got.length) save();
+    return got;
+  }
 
   // Søkort: øerne snor sig fra bunden (start) mod The Black Lighthouse øverst. Procedural SVG.
   var ISLPOS = [[30, 148], [70, 128], [34, 106], [68, 84], [30, 62], [66, 40], [50, 15]];
@@ -210,7 +220,8 @@
   }
 
   function home() {
-    var el = h('<div class="screen"><div class="hud"><div class="flames">' + flamesHTML() + '</div><div class="row"><span class="pill">✦ ' + S.embers + ' glimmer</span><span class="pill">' + uniqueOwned() + "/" + D.CARDS.length + " spirits</span></div></div>" +
+    var caught = claimMiles();
+    var el = h('<div class="screen"><div class="hud"><div class="flames">' + flamesHTML() + '</div><div class="row"><span class="pill">✦ ' + S.embers + ' glimmer</span><button class="pill" id="binder">📖 ' + uniqueOwned() + "/" + D.CARDS.length + " spirits</button></div></div>" +
       '<h2 style="margin-top:10px">The Dark Sea' + (S.runs > 1 ? ' <span class="dim" style="font-size:14px">· voyage ' + S.runs + "</span>" : "") + '</h2><div class="map"></div><div class="info" id="islinfo" style="min-height:64px"></div>' +
       '<div class="bottom"><div class="row"><button class="btn sec" id="deck">Deck (' + S.deck.length + ')</button><button class="btn sec" id="packs">Packs (' + S.packs + ")</button></div>" +
       '<button class="btn" id="sail">Sail to ' + esc(D.ISLANDS[S.island].n) + "</button></div></div>");
@@ -226,6 +237,7 @@
     map.onclick = function (ev) { var g = ev.target.closest(".mi"); if (g) { SFX.tap(); showIsl(+g.dataset.i); } };
     showIsl(S.island);
     el.querySelector("#deck").onclick = function () { SFX.tap(); deckScreen(); };
+    el.querySelector("#binder").onclick = function () { SFX.tap(); binderScreen(); };
     var pb = el.querySelector("#packs"); pb.disabled = S.packs < 1 && S.embers < 12;
     if (S.packs < 1 && S.embers >= 12) pb.textContent = "Buy pack (12 ✦)";
     pb.onclick = function () {
@@ -240,7 +252,8 @@
     };
     show(el);
 
-    if (S.packs > 0 && !S.seen.packhint) { S.seen.packhint = 1; save(); toast("You have an unopened pack!"); }
+    if (caught.length) toast("🏆 Collection " + caught[caught.length - 1] + "/" + D.CARDS.length + " — bonus pack!");
+    else if (S.packs > 0 && !S.seen.packhint) { S.seen.packhint = 1; save(); toast("You have an unopened pack!"); }
   }
 
   // ---------- pakke-ritualet ----------
@@ -308,6 +321,11 @@
         var nNew = Object.keys(newOnes).length;
         el.querySelector("#hint").innerHTML = (nNew ? "<b style='color:var(--gold)'>" + nNew + " new spirits!</b> " : "") + (melted ? "Duplicates melted into <b>" + melted + " ✦ glimmer</b>." : "") + (!nNew && !melted ? "More spirits for your collection." : "");
         btns.innerHTML = "";
+        var got = claimMiles();
+        if (got.length) {
+          el.querySelector("#hint").innerHTML += "<br><b style='color:var(--m)'>🏆 Collection " + got[got.length - 1] + "/" + D.CARDS.length + "!</b> Bonus pack" + (got.reduce(function (a, m) { return a + mileReward(m); }, 0) > 1 ? "s" : "") + " earned.";
+          SFX.win();
+        }
         var next = h('<button class="btn">' + (S.packs > 0 ? "Next pack (" + S.packs + ")" : "Continue") + "</button>");
         next.onclick = function () {
           SFX.tap();
@@ -356,6 +374,31 @@
     var rest = pool.slice(deck.length).filter(function (id) { return D.BY[id].c <= 2; });
     for (var i = deck.length - 1; i >= 0 && cheap < 5 && rest.length; i--) { if (D.BY[deck[i]].c > 3) { deck[i] = rest.shift(); cheap++; } }
     return deck;
+  }
+
+  // ---------- samlemappe ----------
+  function binderScreen() {
+    var n = uniqueOwned(), next = MILES.filter(function (m) { return !S.miles || !S.miles[m]; })[0];
+    var bars = ["glod", "taage", "rod"].map(function (e) {
+      var all = D.CARDS.filter(function (c) { return c.el === e; }), have = all.filter(function (c) { return owned(c.id); }).length;
+      return '<div class="ebar ' + e + '"><span>' + D.EL[e] + '</span><div><i style="width:' + (have / all.length * 100) + '%"></i></div><b>' + have + "/" + all.length + "</b></div>";
+    }).join("");
+    var miles = MILES.map(function (m) { var done = S.miles && S.miles[m]; return '<span class="mile' + (done ? " done" : n >= m ? " ready" : "") + '">' + (done ? "✦ " : "") + m + "</span>"; }).join("");
+    var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Collection</h2><span class="pill">' + n + "/" + D.CARDS.length + "</span></div>" +
+      '<div class="bars">' + bars + "</div>" +
+      '<div class="miles">' + miles + '</div><div class="dim" style="font-size:13px;text-align:center;margin:2px 0 8px">' +
+      (next ? "Catch " + (next - n) + " more for a bonus pack" + (next === 30 ? " — and the Keeper's reward" : "") + "." : "Every spirit of the Dark Sea is yours.") + "</div>" +
+      '<div class="grid"></div><div class="info" id="binfo">Tap a spirit to read it.</div>' +
+      '<div class="bottom" style="margin-top:8px"><button class="btn" id="back">Back</button></div></div>');
+    var grid = el.querySelector(".grid");
+    D.CARDS.forEach(function (c) {
+      var o = owned(c.id);
+      var w = h('<div>' + (o ? cardHTML(c.id, { badge: "×" + o }) : '<div class="card unknown ' + c.r + '"><div class="q">?</div><div class="nm">' + D.RAR[c.r] + "</div></div>") + "</div>");
+      w.onclick = function () { el.querySelector("#binfo").innerHTML = o ? cardInfo(c.id) : "Not caught yet — a " + D.RAR[c.r].toLowerCase() + " " + D.EL[c.el] + " spirit."; };
+      grid.appendChild(w);
+    });
+    el.querySelector("#back").onclick = function () { SFX.tap(); home(); };
+    show(el);
   }
 
   // ---------- deckbygger ----------

@@ -27,7 +27,7 @@ D.ISLANDS.forEach(i => ok(!i.trait || D.TRAITS[i.trait], "evne findes " + i.n));
 // pakker
 const r = E.rng(7); for (let i = 0; i < 200; i++) { const p = E.openPack(r); ok(p.length === 5 && p.every(id => D.BY[id]), "pakke gyldig"); }
 for (const el of ["glod","taage","rod"]) for (let i = 0; i < 100; i++) { const p = E.openPack(r, el); ok(p.slice(0, 4).every(id => D.BY[id].el === el), "temapakke " + el); ok(p.length === 5, "temapakke 5 kort"); }
-ok(Array.isArray(E.migrate({sv:1,coll:{},deck:[]}).packq), "gammel gemt tilstand får packq");
+ok(Array.isArray(E.migrate({sv:1,coll:{},deck:[]}).packq), "gammel gemt tilstand får packq"); ok(typeof E.migrate({sv:1,coll:{},deck:[]}).miles === "object", "gammel gemt tilstand får miles");
 // AI-decks gyldige
 D.ISLANDS.forEach(is => ok(is.deck.every(id => D.BY[id]), "ø-deck " + is.n));
 // gemte tilstande fra tidligere versioner

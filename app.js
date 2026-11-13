@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.4.1";
+  var VERSION = "0.5.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -128,7 +128,7 @@
   function kwText(c) {
     var k = c.kw, out = [];
     if (k.gnist) out.push("Spark " + k.gnist); if (k.taage) out.push("Veil"); if (k.flok) out.push("Kin");
-    if (k.rod) out.push("Mend " + k.rod); if (k.sluger) out.push("Devour");
+    if (k.rod) out.push("Mend " + k.rod); if (k.sluger) out.push("Devour"); if (k.rally) out.push("Rally");
     return out.join(" · ");
   }
   function cardHTML(id, o) {
@@ -392,8 +392,7 @@
         var side = view.s[si];
         bd.querySelectorAll(".slot").forEach(function (sl, i) {
           var u = side.board[i];
-          var bonus = 0;
-          if (u && D.BY[u.id].kw.flok) side.board.forEach(function (v, j) { if (v && j !== i && v.el === u.el) bonus++; });
+          var bonus = u ? E.attackOf(side, i) - u.a : 0;
           var g = !u && si === 1 ? ghostAt(i) : null;
           sl.innerHTML = u ? cardHTML(u.id, { unit: u, bonus: bonus }) : g ? cardHTML(g, { cls: "ghost", badge: "next" }) : "";
           sl.classList.toggle("target", si === 0 && sel >= 0 && !u && !busy && E.canPlay(b, sel, i));
@@ -405,7 +404,7 @@
       for (var L = 0; L < 4; L++) {
         var mine = view.s[0].board[L], theirs = view.s[1].board[L], txt = "", gh = theirs ? null : ghostAt(L);
         if (mine) {
-          var am = mine.a; if (D.BY[mine.id].kw.flok) view.s[0].board.forEach(function (v, j) { if (v && j !== L && v.el === mine.el) am++; });
+          var am = E.attackOf(view.s[0], L);
           if (am <= 0) txt = "<span class='dim'>—</span>";
           else if (!theirs) txt = "<b style='color:var(--gold)'>↑" + am + "</b><br><span class='dim'>lantern</span>";
           else if (theirs.shield) txt = "↑" + am + "<br><span style='color:var(--taage)'>veiled</span>";
@@ -462,13 +461,14 @@
     };
     function slotEl(si, slot) { return (si ? b1 : b0).querySelectorAll(".slot")[slot]; }
     function floatTxt(target, txt, cls) { var f = h('<div class="float ' + (cls || "") + '">' + txt + "</div>"); target.appendChild(f); setTimeout(function () { f.remove(); }, 800); }
-    // Synlig synergi: når en ånd lander, blinker "Kin +1" over alle med samme lys og Kin.
+    // Synlig synergi: når en ånd lander, vis hvem der fik mere angreb (Kin/Rally), og hvorfor.
     function kinPing(si, slot) {
       var side = view.s[si], u = side.board[slot]; if (!u) return;
+      var without = { board: side.board.map(function (v, j) { return j === slot ? null : v; }) };
       side.board.forEach(function (v, j) {
         if (!v) return;
-        var gets = (j !== slot && v.el === u.el && D.BY[v.id].kw.flok) || (j === slot && D.BY[v.id].kw.flok && side.board.some(function (w, k) { return w && k !== j && w.el === v.el; }));
-        if (gets) floatTxt(slotEl(si, j), "Kin ↑", "g");
+        var now = E.attackOf(side, j), before = j === slot ? v.a : E.attackOf(without, j);
+        if (now > before) floatTxt(slotEl(si, j), "+" + (now - before) + " ⚔", "g");
       });
     }
     // Afspil motorens hændelser én for én på det viste brætstade.

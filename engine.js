@@ -56,6 +56,7 @@
   function attackOf(p, slot) {
     var u = p.board[slot], c = D.BY[u.id], a = u.a;
     if (c.kw.flok) p.board.forEach(function (v, i) { if (v && i !== slot && v.el === u.el) a++; });
+    [slot - 1, slot + 1].forEach(function (j) { var v = p.board[j]; if (v && D.BY[v.id].kw.rally) a++; });
     return a;
   }
   function endTurn(b) {

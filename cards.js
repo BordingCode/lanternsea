@@ -25,6 +25,13 @@
     { id: "r5", n: "Stonestag", el: "rod", r: "u", c: 4, a: 3, h: 6, kw: {}, t: "Older than the islands." },
     { id: "r6", n: "Mother Oak", el: "rod", r: "r", c: 5, a: 3, h: 7, kw: { rod: 2, flok: 1 }, t: "All living things seek her shade." },
     { id: "r7", n: "Seed of the First Tree", el: "rod", r: "m", c: 6, a: 4, h: 9, kw: { rod: 3 }, t: "First tree, and last." },
+    // Sæt 1b (0.5.0): Rally — placering inden for din egen række betyder noget
+    { id: "g8", n: "Beacon Imp", el: "glod", r: "c", c: 2, a: 1, h: 2, kw: { rally: 1 }, t: "Cheers on whoever stands beside it." },
+    { id: "g9", n: "Pyre Herald", el: "glod", r: "u", c: 4, a: 3, h: 3, kw: { rally: 1, gnist: 1 }, t: "Its horn lights the line." },
+    { id: "t8", n: "Fog Lantern", el: "taage", r: "c", c: 2, a: 0, h: 3, kw: { taage: 1, rally: 1 }, t: "A small light the mist protects." },
+    { id: "t9", n: "Tidecaller", el: "taage", r: "u", c: 3, a: 2, h: 2, kw: { taage: 1, rally: 1 }, t: "Calls the shoal to strike as one." },
+    { id: "r8", n: "Hedge Warden", el: "rod", r: "c", c: 2, a: 1, h: 3, kw: { rally: 1 }, t: "Keeps the line tight." },
+    { id: "r9", n: "Elder Willow", el: "rod", r: "u", c: 4, a: 2, h: 5, kw: { rally: 1, rod: 1 }, t: "Its branches shelter its neighbours." },
     // Wanderers
     { id: "n1", n: "Lantern Moth", el: "glod", r: "c", c: 1, a: 1, h: 2, kw: {}, t: "Drawn to every light." },
     { id: "n2", n: "Lampkeeper", el: "rod", r: "u", c: 2, a: 1, h: 2, kw: { gnist: 1, rod: 1 }, t: "Keeps the flame alive." },
@@ -39,6 +46,7 @@
     flok: "Kin: +1 attack for each other spirit of yours with the same light.",
     rod: "Mend N: heals your lantern N when you end your turn.",
     sluger: "Devour: gains +1/+1 when it kills a spirit.",
+    rally: "Rally: your spirits next to it get +1 attack.",
   };
   // The islands: wardens with fixed decks
   var ISLANDS = [

@@ -120,8 +120,12 @@
     if (si === 1) planFoe(b);
   }
   // Pakker
-  function openPack(r) {
-    function pick(rar) { var pool = D.CARDS.filter(function (c) { return c.r === rar; }); return pool[Math.floor(r() * pool.length)].id; }
+  // el (valgfri): temapakke — almindelige og ualmindelige kommer fra det lys; den sjældne kan være hvad som helst.
+  function openPack(r, el) {
+    function pick(rar) {
+      var pool = D.CARDS.filter(function (c) { return c.r === rar && (!el || rar === "r" || rar === "m" || c.el === el); });
+      return pool[Math.floor(r() * pool.length)].id;
+    }
     var top = r() < 1 / 6 ? "m" : "r";
     var ids = [pick("c"), pick("c"), pick("c"), pick("u"), pick(top)];
     return ids;
@@ -135,7 +139,7 @@
   }
   // Gemt tilstand + migrering
   var SAVE_VERSION = 1;
-  function newSave() { return { sv: SAVE_VERSION, coll: {}, deck: [], island: 0, flames: 3, best: 0, packs: 2, embers: 0, wins: 0, losses: 0, runs: 1, seen: {} }; }
+  function newSave() { return { sv: SAVE_VERSION, coll: {}, deck: [], island: 0, flames: 3, best: 0, packs: 2, packq: [], embers: 0, wins: 0, losses: 0, runs: 1, seen: {} }; }
   function migrate(s) {
     if (!s || typeof s !== "object") return newSave();
     var base = newSave();

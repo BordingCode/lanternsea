@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.5.0";
+  var VERSION = "0.5.1";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -89,7 +89,7 @@
     var row = m.querySelector(".row");
     return new Promise(function (res) {
       buttons.forEach(function (b) {
-        var el = h('<button class="btn ' + (b.sec ? "sec" : "") + '" style="flex:1">' + b.t + "</button>");
+        var el = h('<button class="btn ' + (b.sec ? "sec" : "") + " " + (b.cls || "") + '" style="flex:1">' + b.t + "</button>");
         el.onclick = function () { SFX.tap(); m.classList.add("hidden"); res(b.v); };
         row.appendChild(el);
       });
@@ -205,12 +205,15 @@
 
   // ---------- pakke-ritualet ----------
   var RORD = { c: 0, u: 1, r: 2, m: 3 };
+  var PACKNAME = { glod: "BLAZE TIDE", taage: "MIST TIDE", rod: "ROOT TIDE" };
   function packScreen(first) {
     if (S.packs < 1) return home();
+    var ptype = S.packq && S.packq.length ? S.packq[0] : null;
     var el = h('<div class="screen"><div class="hud"><span class="pill">Packs: ' + S.packs + '</span><span class="pill">' + uniqueOwned() + "/" + D.CARDS.length + ' spirits</span></div>' +
-      '<div class="packzone"><div class="pack"><div class="lbl">THE DARK SEA<br><span style="font-size:13px;color:#dfe3ff">5 light-spirits</span></div></div></div>' +
+      '<div class="packzone"><div class="pack"><div class="lbl">' + (ptype ? PACKNAME[ptype] : "THE DARK SEA") + '<br><span style="font-size:13px;color:#dfe3ff">5 light-spirits</span></div></div></div>' +
       '<div class="bottom"><div class="dim" style="text-align:center" id="hint">Tap the pack to tear it open</div><div class="row" id="btns"></div></div></div>');
     var pack = el.querySelector(".pack"), zone = el.querySelector(".packzone");
+    if (ptype) pack.classList.add("p-" + ptype);
     var opened = false;
     zone.onclick = function () {
       if (opened) return; opened = true;
@@ -219,9 +222,9 @@
       setTimeout(function () { reveal(); }, 950);
     };
     function reveal() {
-      S.packs--;
+      S.packs--; if (ptype) S.packq.shift();
       el.querySelector(".hud .pill").textContent = "Packs: " + S.packs;
-      var ids = E.openPack(R).sort(function (a, b) { return RORD[D.BY[a].r] - RORD[D.BY[b].r]; });
+      var ids = E.openPack(R, ptype).sort(function (a, b) { return RORD[D.BY[a].r] - RORD[D.BY[b].r]; });
       var newOnes = {}, melted = 0;
       ids.forEach(function (id) {
         if (!owned(id)) newOnes[id] = 1;
@@ -549,7 +552,13 @@
       }
       save();
       setTimeout(function () {
-        modal(msg, [{ t: won ? "Open the pack" : "To the map", v: 1 }]).then(function () { if (won) packScreen(false); else home(); });
+        if (won && S.island > 0) {
+          // Vælg selv belønningen: en temapakke, så man kan bygge mod et lys (Kin) — Rosewater: lad spillerne vælge deres spil.
+          msg = msg.replace("You get <b>1 pack</b>.", "Choose your pack:") + "<p class='dim' style='text-align:center;font-size:13px;margin:0'>Commons and uncommons of that light. The rare can be anything.</p>";
+          modal(msg, [{ t: "🔥 Blaze", v: "glod", cls: "pb-glod" }, { t: "🌫 Mist", v: "taage", cls: "pb-taage" }, { t: "🌱 Root", v: "rod", cls: "pb-rod" }]).then(function (v) {
+            S.packq = S.packq || []; S.packq.unshift(v); save(); T("pack_choice", { el: v, island: S.island }); packScreen(false);
+          });
+        } else modal(msg, [{ t: won ? "Open the pack" : "To the map", v: 1 }]).then(function () { if (won) packScreen(false); else home(); });
       }, 500);
     }
     show(el); full();

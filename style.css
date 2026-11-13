@@ -155,3 +155,11 @@ h2{margin:4px 0 8px;font-size:20px}
 @keyframes vig{from{opacity:1}to{opacity:0}}
 .endbtn.ready{animation:ready 1.2s ease-in-out infinite}
 @keyframes ready{50%{box-shadow:0 4px 0 #9a5f17,0 0 26px 6px #ffb347cc;transform:scale(1.04)}}
+/* temapakker (0.5.1) */
+.pack.p-glod{background:linear-gradient(135deg,#6a2a12,#1b2445 45%,#8a3a12);border-color:#ff9a5a}
+.pack.p-taage{background:linear-gradient(135deg,#1a3a6a,#1b2445 45%,#2a5a8a);border-color:#8fd0ff}
+.pack.p-rod{background:linear-gradient(135deg,#1a5a32,#1b2445 45%,#2a6a3a);border-color:#8ff0a6}
+.btn.pb-glod{background:linear-gradient(#ffb07a,#e8642c);box-shadow:0 4px 0 #8a3510}
+.btn.pb-taage{background:linear-gradient(#bfe6ff,#5aa8f0);box-shadow:0 4px 0 #2a5a8a}
+.btn.pb-rod{background:linear-gradient(#b6f7c6,#3fbf6a);box-shadow:0 4px 0 #1f6a3a}
+.btn.pb-glod,.btn.pb-taage,.btn.pb-rod{padding:14px 8px;font-size:16px}

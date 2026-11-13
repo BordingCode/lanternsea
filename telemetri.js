@@ -12,7 +12,7 @@
 // Failures are silently dropped: telemetry must never break or slow the game.
 (function () {
   var URL = "https://spilsmedjen-api.mathiasjob.workers.dev/t";
-  var q = [], game = "?", version = "?", session = "?";
+  var q = [], game = "?", version = "?", session = "?", off = false;
   function sid() {
     try {
       var s = localStorage.getItem("telemetri_sid");
@@ -32,12 +32,15 @@
   window.Telemetri = {
     init: function (g, v) {
       game = g; version = v; session = sid();
+      // Lokale testkørsler sendes ikke; automatiserede browsere (Playwright/test-bots) mærkes bot:true.
+      if (/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) { off = true; return; }
       this.log("session_start", { ua_mobile: /Mobi|Android|iPad|Tablet/i.test(navigator.userAgent),
-        w: window.innerWidth, h: window.innerHeight });
+        w: window.innerWidth, h: window.innerHeight, bot: !!navigator.webdriver });
       setInterval(flush, 15000);
       document.addEventListener("visibilitychange", function () { if (document.hidden) flush(); });
     },
     log: function (kind, data) {
+      if (off) return;
       q.push({ game: game, session: session, kind: kind, data: Object.assign({ v: version }, data || {}) });
       if (q.length >= 40) flush();
     },

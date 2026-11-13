@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.8.2";
+  var VERSION = "0.8.3";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -771,6 +771,10 @@
     });
     el.querySelectorAll(".node.ahead,.node.took,.node.skip").forEach(function (nb) { nb.onclick = function () { el.querySelector("#vinfo").innerHTML = "<b>" + VOY.NODES[nb.dataset.t].i + " " + VOY.NODES[nb.dataset.t].n + "</b> — " + VOY.NODES[nb.dataset.t].t; }; });
     el.querySelector("#back").onclick = function () { SFX.tap(); home(); };
+    if (!S.seen.voyhint && !done) {
+      S.seen.voyhint = 1; save();
+      modal("<h2>The open sea</h2><p style='line-height:1.5'>Between the islands lies open water.<br><br>At each fork, <b>choose your course</b> — you can see what waits on both paths.<br><br>⚔️ Wild spirits can join you, but they fight back.<br>🌊 Some spirits are <b>only found at sea</b>.</p>", [{ t: "Set sail", v: 1 }]);
+    }
     var land = el.querySelector("#land");
     if (land) land.onclick = function () { SFX.tap(); if (!E.validDeck(S.deck, S.coll)) { toast("Your deck needs 12–20 cards"); deckScreen(); return; } battleScreen(); };
     show(el);
@@ -798,7 +802,8 @@
     var v = S.voy, el, res;
     if (type === "wild") {
       var enc = VOY.wildEncounter(S.island, R);
-      el = stopScreen("wild", enc.foe + "!", "A shoal of wild spirits blocks your way. <b>Win</b>, and one of them joins you.<br><span style='color:#ff8a8a'>Lose, and a flame goes out.</span>");
+      var rumour = D.CARDS.some(function (c) { return c.sea && c.el === enc.el && c.r !== "m" && !owned(c.id); });
+      el = stopScreen("wild", enc.foe + "!", "A shoal of wild spirits blocks your way. <b>Win</b>, and one of them joins you." + (rumour ? "<br><span style='color:#6fc3ff'>🌊 A drifter has been seen among them…</span>" : "") + "<br><span style='color:#ff8a8a'>Lose, and a flame goes out.</span>");
       el.querySelector(".stopcards").innerHTML = '<div class="peek">' + enc.deck.filter(function (id, i, a) { return a.indexOf(id) === i; }).slice(0, 4).map(function (id) { return cardHTML(id); }).join("") + "</div>";
       var fb = h('<button class="btn">Fight · ' + enc.hp + " life</button>");
       fb.onclick = function () { SFX.tap(); battleScreen(enc); };

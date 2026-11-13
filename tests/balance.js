@@ -8,12 +8,35 @@ function deckAfter(packs, seed) {
   pool.sort((a,b) => { const A=D.BY[a],B=D.BY[b]; const R={c:0,u:1,r:2,m:3}; return (R[B.r]*3+B.a+B.h-B.c*1.6)-(R[A.r]*3+A.a+A.h-A.c*1.6); });
   return pool.slice(0, 15);
 }
+// "Klog" spiller: ser vogterens plan (spøgelseskort) som om de allerede stod der, og foretrækker
+// at lægge dræbende/holdbare ånder overfor dem — og ellers åbne baner uden trussel (fri skade på lygten).
+function smartTurn(b) {
+  const me = b.s[0], foe = b.s[1], ghost = [null, null, null, null];
+  (b.plan || []).forEach(m => { ghost[m.slot] = { a: D.BY[m.id].a, h: D.BY[m.id].h }; });
+  for (let guard = 0; guard < 8; guard++) {
+    let best = -1, bestSlot = -1, bestScore = -1e9;
+    me.hand.forEach((id, hi) => {
+      const c = D.BY[id]; if (c.c > me.lys) return;
+      for (let s = 0; s < 4; s++) {
+        if (!E.canPlay(b, hi, s)) continue;
+        const f = foe.board[s] || ghost[s]; let sc = c.c * 10;
+        if (f) sc += (c.a >= f.h ? 10 : 0) + (c.h > f.a ? 6 : -4) + (c.kw.gnist && foe.board[s] ? 6 : 0);
+        else sc += 5 + c.a;
+        if (sc > bestScore) { bestScore = sc; best = hi; bestSlot = s; }
+      }
+    });
+    if (best < 0) break;
+    E.play(b, best, bestSlot); if (b.over) return;
+  }
+  E.endTurn(b);
+}
+const SMART = process.argv.includes("--klog");
 const N = +process.argv[2] || 400, cardStats = {};
 D.ISLANDS.forEach((isl, i) => {
   let w = 0;
   for (let g = 0; g < N; g++) {
     const deck = deckAfter(2 + i, g * 31 + i), b = E.newBattle(deck, i, g + 1000 * i); E.startTurn(b);
-    let n = 0; while (!b.over && n < 300) { E.aiTurn(b); n++; }
+    let n = 0; while (!b.over && n < 300) { if (SMART && b.who === 0) smartTurn(b); else E.aiTurn(b); n++; }
     const won = b.over === "win"; if (won) w++;
     new Set(deck).forEach(id => { const s = cardStats[id] = cardStats[id] || [0,0]; s[0]++; if (won) s[1]++; });
   }

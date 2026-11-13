@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.5.1";
+  var VERSION = "0.6.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -154,6 +154,40 @@
   function owned(id) { return S.coll[id] || 0; }
   function uniqueOwned() { return D.CARDS.filter(function (c) { return owned(c.id) > 0; }).length; }
 
+  // Søkort: øerne snor sig fra bunden (start) mod The Black Lighthouse øverst. Procedural SVG.
+  var ISLPOS = [[30, 148], [70, 128], [34, 106], [68, 84], [30, 62], [66, 40], [50, 15]];
+  function seaChart() {
+    var W = '<svg viewBox="0 0 100 162" preserveAspectRatio="xMidYMid meet" class="chart"><defs>' +
+      '<radialGradient id="lit"><stop offset="0" stop-color="#fff6d8"/><stop offset=".4" stop-color="#ffb347" stop-opacity=".6"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="dark"><stop offset=".3" stop-color="#000" stop-opacity=".75"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><radialGradient id="sea" cx="50%" cy="100%" r="100%"><stop offset="0" stop-color="#1d2a55"/><stop offset="1" stop-color="#080c1a"/></radialGradient></defs>' +
+      '<rect width="100" height="162" fill="url(#sea)" rx="6"/>';
+    var r = E.rng(77);
+    for (var k = 0; k < 26; k++) { var wx = r() * 92 + 2, wy = r() * 156 + 3; W += '<path d="M' + wx.toFixed(1) + " " + wy.toFixed(1) + " q2 -1.4 4 0 t4 0" + '" stroke="#6fc3ff" stroke-opacity=".13" stroke-width=".5" fill="none"/>'; }
+    // rute
+    var path = "M" + ISLPOS[0][0] + " " + ISLPOS[0][1];
+    for (var i = 1; i < ISLPOS.length; i++) { var a0 = ISLPOS[i - 1], a1 = ISLPOS[i]; path += " Q" + ((a0[0] + a1[0]) / 2 + (i % 2 ? 14 : -14)) + " " + ((a0[1] + a1[1]) / 2) + " " + a1[0] + " " + a1[1]; }
+    W += '<path d="' + path + '" stroke="#c9a86a" stroke-opacity=".45" stroke-width=".7" stroke-dasharray="1.6 2" fill="none"/>';
+    D.ISLANDS.forEach(function (is, i) {
+      var p = ISLPOS[i], st = i < S.island ? "done" : i === S.island ? "cur" : "lock", rr = E.rng(hash(is.n));
+      var n = 9, R = i === 6 ? 9.5 : 7.5 + rr() * 1.5, pts = [];
+      for (var j = 0; j < n; j++) { var ang = j / n * Math.PI * 2, rad = R * (0.75 + rr() * 0.4); pts.push([p[0] + Math.cos(ang) * rad * 1.25, p[1] + Math.sin(ang) * rad * 0.8]); }
+      function mid(u, v) { return ((u[0] + v[0]) / 2).toFixed(1) + " " + ((u[1] + v[1]) / 2).toFixed(1); }
+      var d = "M" + mid(pts[n - 1], pts[0]);
+      for (j = 0; j < n; j++) d += " Q" + pts[j][0].toFixed(1) + " " + pts[j][1].toFixed(1) + " " + mid(pts[j], pts[(j + 1) % n]);
+      var land = st === "lock" ? "#1a2036" : st === "done" ? "#3a5a3a" : "#4a4a6a", rim = st === "lock" ? "#2a3150" : "#c9a86a";
+      W += '<g class="mi ' + st + '" data-i="' + i + '">' + (i === 6 && st !== "done" ? '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="18" fill="url(#dark)" class="darkaura"/>' : "") + (st === "done" ? '<circle cx="' + p[0] + '" cy="' + (p[1] - 4) + '" r="11" fill="url(#lit)"/>' : "") +
+        '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="11" fill="transparent"/>' +
+        '<path d="' + d + 'Z" fill="' + land + '" stroke="' + rim + '" stroke-width=".5"/>' +
+        // fyrtårn
+        '<rect x="' + (p[0] - 0.9) + '" y="' + (p[1] - 6) + '" width="1.8" height="5" fill="' + (st === "lock" ? "#2a3150" : "#e8e0d0") + '"/>' +
+        '<circle cx="' + p[0] + '" cy="' + (p[1] - 6.5) + '" r="1.3" fill="' + (st === "done" ? "#fff1a8" : st === "cur" ? "#553" : "#223") + '"/>' +
+        '<text x="' + p[0] + '" y="' + (p[1] + 11) + '" text-anchor="middle" font-size="3.4" fill="' + (st === "lock" ? "#5a6388" : "#dfe3ff") + '" font-weight="700">' + (st === "lock" && i > S.island + 1 ? "?" : esc(is.n)) + "</text>" +
+        (st === "cur" ? '<g class="boat"><path d="M' + (p[0] + 7) + " " + (p[1] + 2) + " l6 0 l-1.2 2 l-3.6 0z" + '" fill="#c9a86a"/><path d="M' + (p[0] + 10) + " " + (p[1] + 2) + " l0 -6 l3 5z" + '" fill="#eef0ff"/><circle cx="' + (p[0] + 9) + '" cy="' + (p[1] + 0.6) + '" r=".9" fill="#ffd27a"/></g>' : "") +
+        "</g>";
+    });
+    return W + "</svg>";
+  }
+
   // ---------- skærme ----------
   function show(el) { app.innerHTML = ""; app.appendChild(el); var t = document.getElementById("toast"); clearTimeout(toastT); t.classList.remove("on"); }
 
@@ -177,14 +211,20 @@
 
   function home() {
     var el = h('<div class="screen"><div class="hud"><div class="flames">' + flamesHTML() + '</div><div class="row"><span class="pill">✦ ' + S.embers + ' glimmer</span><span class="pill">' + uniqueOwned() + "/" + D.CARDS.length + " spirits</span></div></div>" +
-      '<h2 style="margin-top:10px">The Dark Sea' + (S.runs > 1 ? ' <span class="dim" style="font-size:14px">· voyage ' + S.runs + "</span>" : "") + '</h2><div class="map"></div>' +
+      '<h2 style="margin-top:10px">The Dark Sea' + (S.runs > 1 ? ' <span class="dim" style="font-size:14px">· voyage ' + S.runs + "</span>" : "") + '</h2><div class="map"></div><div class="info" id="islinfo" style="min-height:64px"></div>' +
       '<div class="bottom"><div class="row"><button class="btn sec" id="deck">Deck (' + S.deck.length + ')</button><button class="btn sec" id="packs">Packs (' + S.packs + ")</button></div>" +
       '<button class="btn" id="sail">Sail to ' + esc(D.ISLANDS[S.island].n) + "</button></div></div>");
     var map = el.querySelector(".map");
-    D.ISLANDS.forEach(function (is, i) {
-      var cls = i < S.island ? "done" : i === S.island ? "cur" : "lock";
-      map.appendChild(h('<div class="isl ' + cls + '"><div class="dot">' + (i < S.island ? "✦" : i + 1) + '</div><div><b>' + esc(is.n) + '</b><br><span class="dim">' + (i <= S.island ? "Warden: " + esc(is.foe) + " · " + is.hp + " life" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") : "Unknown") + "</span></div></div>"));
-    });
+    map.innerHTML = seaChart();
+    var islInfo = el.querySelector("#islinfo");
+    function showIsl(i) {
+      var is = D.ISLANDS[i], known = i <= S.island;
+      islInfo.innerHTML = "<b>" + (i + 1) + ". " + esc(is.n) + "</b>" + (i < S.island ? " <span style='color:var(--gold)'>· lit ✦</span>" : i === S.island ? " <span style='color:var(--gold)'>· next</span>" : "") + "<br>" +
+        (known ? "<span class='dim'>Warden: " + esc(is.foe) + " · " + is.hp + " life</span>" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") : "<span class='dim'>Beyond the dark. Unknown.</span>");
+      map.querySelectorAll(".mi").forEach(function (g) { g.classList.toggle("picked", +g.dataset.i === i); });
+    }
+    map.onclick = function (ev) { var g = ev.target.closest(".mi"); if (g) { SFX.tap(); showIsl(+g.dataset.i); } };
+    showIsl(S.island);
     el.querySelector("#deck").onclick = function () { SFX.tap(); deckScreen(); };
     var pb = el.querySelector("#packs"); pb.disabled = S.packs < 1 && S.embers < 12;
     if (S.packs < 1 && S.embers >= 12) pb.textContent = "Buy pack (12 ✦)";
@@ -199,7 +239,7 @@
       battleScreen();
     };
     show(el);
-    setTimeout(function () { var c = map.querySelector(".cur"); if (c) c.scrollIntoView({ block: "center" }); }, 30);
+
     if (S.packs > 0 && !S.seen.packhint) { S.seen.packhint = 1; save(); toast("You have an unopened pack!"); }
   }
 

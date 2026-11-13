@@ -45,7 +45,13 @@ h2{margin:4px 0 8px;font-size:20px}
 .back{width:var(--w,96px);aspect-ratio:5/7;border-radius:10px;background:radial-gradient(circle at 50% 45%,#ffcf7a33,transparent 45%),repeating-linear-gradient(45deg,#1b2445 0 6px,#18203d 6px 12px);border:2px solid #c9a86a;display:grid;place-items:center;flex:none}
 .back::before{content:"";width:34%;aspect-ratio:1;border-radius:50%;background:radial-gradient(#fff6d8,#ffb34700 70%)}
 /* kort */
-.map{flex:1;overflow:auto;display:flex;flex-direction:column-reverse;gap:6px;padding:6px 0}
+.map{flex:1;min-height:0;display:flex;justify-content:center;padding:4px 0}
+.map .chart{height:100%;width:100%;max-width:520px}
+.mi{cursor:pointer}.mi.picked path:first-of-type{stroke:#ffd27a;stroke-width:.9}
+.mi.cur path:first-of-type{animation:curglow 1.6s ease-in-out infinite}
+@keyframes curglow{50%{stroke:#ffd27a;stroke-width:1.1}}
+.boat{animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-1px)}}
 .isl{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;background:#141b3388;border:1px solid #ffffff10}
 .isl .dot{width:30px;height:30px;border-radius:50%;background:#222b4d;display:grid;place-items:center;font-weight:900;flex:none}
 .isl.done .dot{background:radial-gradient(#fff6d8,#ffb347);color:#3a1d00;box-shadow:0 0 14px #ffb347}
@@ -163,3 +169,4 @@ h2{margin:4px 0 8px;font-size:20px}
 .btn.pb-taage{background:linear-gradient(#bfe6ff,#5aa8f0);box-shadow:0 4px 0 #2a5a8a}
 .btn.pb-rod{background:linear-gradient(#b6f7c6,#3fbf6a);box-shadow:0 4px 0 #1f6a3a}
 .btn.pb-glod,.btn.pb-taage,.btn.pb-rod{padding:14px 8px;font-size:16px}
+.darkaura{animation:aura 3s ease-in-out infinite}@keyframes aura{50%{opacity:.6}}

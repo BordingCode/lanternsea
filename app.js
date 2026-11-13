@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.6.4";
+  var VERSION = "0.6.5";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -392,6 +392,29 @@
     return deck;
   }
 
+  // Et konkret råd efter et nederlag, så tabet peger fremad (kort: maks ~12 ord).
+  var TRAITTIP = {
+    regrow: "Hit hard: wounded spirits of hers heal. Kill in one blow.",
+    embers: "Keep fragile spirits out of lanes where his Blaze will land.",
+    gale: "Only three lanes — every space counts. Pack stronger spirits.",
+    fog: "No plan to read. Veil spirits survive the surprise.",
+    tide: "His lantern heals. Push many lanes at once.",
+    night: "It draws fast. End it quickly, or build to outlast.",
+  };
+  var TIPS = [
+    "Faded cards show the warden’s next move. Block them.",
+    "Kin spirits grow stronger with friends of the same light.",
+    "Rally spirits boost the spirits beside them.",
+    "Spark hits the moment you play it — aim it.",
+    "An empty lane hits the enemy lantern. Find open lanes.",
+    "Lure missing spirits with glimmer in the Collection.",
+    "Choose tide packs that match your deck’s light.",
+  ];
+  function tipHTML(isl) {
+    var t = isl.trait && R() < 0.6 ? TRAITTIP[isl.trait] : TIPS[Math.floor(R() * TIPS.length)];
+    return "<p class='tip'>💡 " + t + "</p>";
+  }
+
   // ---------- samlemappe ----------
   function binderScreen() {
     var n = uniqueOwned(), next = MILES.filter(function (m) { return !S.miles || !S.miles[m]; })[0];
@@ -437,7 +460,7 @@
   function deckScreen() {
     var filter = "all";
     var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Your deck</h2><div class="row"><div class="curve"></div><span class="pill" id="cnt"></span></div></div>' +
-      '<div class="dim" style="font-size:13px;margin:4px 0 8px">Tap a spirit to add it to your deck. Tap − to take it out. 12–20 cards, max 2 of each.</div>' +
+      '<div class="dim" style="font-size:13px;margin:4px 0 8px">Tap a spirit to add it. Tap − to remove. 12–20 cards.</div><div id="elmix" class="elmix"></div>' +
       '<div class="filters"><button class="chip on" data-f="all">All</button><button class="chip" data-f="deck">In deck</button><button class="chip" data-f="glod">Blaze</button><button class="chip" data-f="taage">Mist</button><button class="chip" data-f="rod">Root</button><button class="chip" data-f="missing">Missing</button></div>' +
       '<div class="grid"></div><div class="info" id="dinfo">Tap a card to read it.</div>' +
       '<div class="bottom" style="margin-top:8px"><div class="row"><button class="btn sec" id="auto">Build for me</button><button class="btn" id="back">Done</button></div></div></div>');
@@ -467,6 +490,8 @@
       });
       var n = S.deck.length, cnt = el.querySelector("#cnt");
       cnt.textContent = n + " cards"; cnt.style.background = n < 12 || n > 20 ? "#5a1f12" : "#14402a";
+      var ec = { glod: 0, taage: 0, rod: 0 }; S.deck.forEach(function (id) { ec[D.BY[id].el]++; });
+      el.querySelector("#elmix").innerHTML = "<span class='e glod'>🔥 " + ec.glod + "</span><span class='e taage'>🌫 " + ec.taage + "</span><span class='e rod'>🌱 " + ec.rod + "</span>";
       var cv = [0, 0, 0, 0, 0, 0, 0]; S.deck.forEach(function (id) { cv[Math.min(6, D.BY[id].c - 1 < 0 ? 0 : D.BY[id].c - 1)]++; });
       var mx = Math.max.apply(null, cv) || 1;
       el.querySelector(".curve").innerHTML = cv.map(function (v) { return '<div style="height:' + (v / mx * 100) + '%"></div>'; }).join("");
@@ -661,9 +686,9 @@
         if (S.flames <= 0) {
           T("progress", { step: "voyage_lost", reached: S.island });
           S.island = 0; S.flames = 3; S.runs++;
-          msg = "<h1 style='color:#b46bff'>The lantern goes out</h1><p style='text-align:center'>Your last flame died. The Dark takes the islands back, and the voyage must begin again.<br><br>But the spirits are still yours.</p>";
+          msg = "<h1 style='color:#b46bff'>The lantern goes out</h1><p style='text-align:center'>Your last flame died. The Dark takes the islands back, and the voyage must begin again.<br><br>But the spirits are still yours.</p>" + tipHTML(isl);
         } else {
-          msg = "<h1 style='color:#b46bff'>Defeat</h1><p style='text-align:center'>" + esc(isl.foe) + " put out one of your flames.<br>" + S.flames + " flame" + (S.flames === 1 ? "" : "s") + " left.</p>";
+          msg = "<h1 style='color:#b46bff'>Defeat</h1><p style='text-align:center'>" + esc(isl.foe) + " put out one of your flames.<br>" + S.flames + " flame" + (S.flames === 1 ? "" : "s") + " left.</p>" + tipHTML(isl);
         }
       }
       save();

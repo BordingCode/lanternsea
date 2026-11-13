@@ -52,7 +52,7 @@
   var ISLANDS = [
     { n: "Skerrystone", foe: "The Hungry Gull", hp: 10, deck: ["n1","n1","g1","g1","t1","t1","r2","r2","g3","t2","n1","g2"] },
     { n: "Kelpwood", foe: "The Root Witch", hp: 18, trait: "regrow", deck: ["r1","r2","r2","r3","r3","r3","r4","n2","r5","r5","g2","g3","g2","n1"] },
-    { n: "Ash Holm", foe: "The Coal Reeve", hp: 12, trait: "embers", deck: ["g1","g1","g2","g2","g3","g3","g4","g4","g5","n1","g2","g6"] },
+    { n: "Ash Holm", foe: "The Coal Reeve", hp: 12, trait: "embers", deck: ["r2","n1","g2","g2","g3","g3","g4","g4","g5","n1","g2","g6"] },
     { n: "Storm Skerry", foe: "The Twins", hp: 30, trait: "gale", deck: ["g2","g2","t3","t3","g4","t4","g5","t5","n3","g6","g4","t4","g3","t2"] },
     { n: "Mist Sound", foe: "The Blind Pilot", hp: 15, trait: "fog", deck: ["t1","t1","t2","t2","t3","t3","t4","n1","t5","n1","t6","t3"] },
     { n: "Deadwater", foe: "The Drowned King", hp: 28, trait: "tide", deck: ["r3","r3","r5","r5","t4","t4","t6","r6","n3","t5","r4","r4","g5","t7"] },

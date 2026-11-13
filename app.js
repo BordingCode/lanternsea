@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.8.1";
+  var VERSION = "0.8.2";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -297,31 +297,42 @@
       zone.innerHTML = '<div class="reveal"></div>';
       var rv = zone.querySelector(".reveal"), left = ids.length;
       el.querySelector("#hint").textContent = "Tap the cards to turn them over";
+      // Finalen (0.8.2): det sidste, sjældne kort ligger stort for sig selv og kan først vendes til sidst.
+      var finale = null;
       ids.forEach(function (id, i) {
-        var c = D.BY[id];
-        var sc = h('<div class="slotc ' + c.r + '"><div class="flip"><div class="back"></div>' + cardHTML(id, { isNew: newOnes[id] }) + "</div></div>");
+        var c = D.BY[id], fin = i === ids.length - 1;
+        var sc = h('<div class="slotc ' + c.r + (fin ? " finale" : "") + '"><div class="flip"><div class="back"></div>' + cardHTML(id, { isNew: newOnes[id] }) + "</div></div>");
+        if (fin) sc.style.setProperty("--w", "calc(var(--wr) * 1.45)");
         sc.style.width = "var(--w)"; sc.querySelector(".flip").style.aspectRatio = "5/7";
-        sc.style.animation = "fadein .3s " + i * 0.08 + "s both";
+        sc.style.animation = (fin ? "finalein .6s " : "fadein .3s ") + i * 0.08 + "s both";
         var busy = false;
         sc.onclick = function () {
           if (busy || sc.classList.contains("open")) { if (sc.classList.contains("open")) toast(D.BY[id].n + " — " + D.BY[id].t); return; }
+          if (fin && left > 1) { el.querySelector("#hint").textContent = "Save the best for last — turn the others first"; sc.classList.remove("nudge"); void sc.offsetWidth; sc.classList.add("nudge"); return; }
           busy = true;
-          var wait0 = { c: 0, u: 350, r: 800, m: 1300 }[c.r];
+          var wait0 = fin ? { c: 500, u: 700, r: 1200, m: 1900 }[c.r] : { c: 0, u: 350, r: 800, m: 1300 }[c.r];
+          var spot = null;
+          if (fin) { var rc = sc.getBoundingClientRect(); spot = h('<div class="spot"></div>'); spot.style.background = "radial-gradient(circle at " + (rc.left + rc.width / 2) + "px " + (rc.top + rc.height / 2) + "px," + "transparent " + (rc.height * 0.62) + "px,#000c " + (rc.height * 1.4) + "px)"; document.body.appendChild(spot); }
           if (wait0) { sc.classList.add("charge"); SFX.charge(); }
           setTimeout(function () {
+            if (spot) { spot.classList.add("off"); setTimeout(function () { spot.remove(); }, 600); }
             sc.classList.remove("charge"); sc.classList.add("open"); SFX.flip(c.r);
             if (c.r === "m" || c.r === "r") { var f = h('<div class="flash"></div>'); if (c.r === "r") f.style.background = "radial-gradient(#ffc861aa,#ffc86100 60%)"; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 800); burst(sc, c.r); }
             if (navigator.vibrate && c.r !== "c") try { navigator.vibrate(c.r === "m" ? [30, 40, 60] : 25); } catch (e) {}
             left--; if (!left) done();
+            else if (left === 1 && finale) { finale.classList.add("ready"); el.querySelector("#hint").textContent = "And now… the last one"; }
           }, wait0);
         };
+        if (fin) { finale = sc; rv.appendChild(h('<div class="brk"></div>')); sc.addEventListener("animationend", function (e) { if (e.animationName === "nudge") sc.classList.remove("nudge"); }); }
         rv.appendChild(sc);
       });
       var btns = el.querySelector("#btns");
       var all = h('<button class="btn sec">Reveal all</button>');
       all.onclick = function () {
         var k = 0;
-        rv.querySelectorAll(".slotc:not(.open)").forEach(function (s) { setTimeout(function () { s.click(); }, k++ * 220); });
+        rv.querySelectorAll(".slotc:not(.open):not(.finale)").forEach(function (s) { setTimeout(function () { s.click(); }, k++ * 220); });
+        if (finale && !finale.classList.contains("open")) setTimeout(function () { finale.click(); }, k * 220 + 1500);
+        all.disabled = true;
       };
       btns.appendChild(all);
       function done() {

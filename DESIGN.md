@@ -58,3 +58,18 @@ Kelpwood **Regrowth** (hendes ånder heler 1 → dræb i ét slag) · Ash Holm *
 med Spark 1 → hold dine skrøbelige ånder væk fra hans planlagte baner) · Storm Skerry **Gale** (bane 1 lukket →
 3 baner) · Mist Sound **Fog** (du kan ikke se planen) · Deadwater **High Tide** (lygten heler 2 → pres hårdt) ·
 Black Lighthouse **Endless Night** (trækker 2 kort).
+
+## Nat 2, del 2 (0.5.0–0.7.0)
+- **Rally** (nyt nøgleord): dine ånder ved siden af får +1 angreb → placering inden for egen række betyder noget.
+  6 nye ånder (Beacon Imp, Pyre Herald, Fog Lantern, Tidecaller, Hedge Warden, Elder Willow) → 30 i alt.
+- **Temapakker**: efter hver sejr vælger man Blaze/Mist/Root-pakke (almindelige+ualmindelige fra det lys, den
+  sjældne kan være alt). Giver retning mod Kin-decks. `S.packq` holder ventende temapakker.
+- **Samlemappe + milepæle**: 10/15/20/25/30 ånder giver bonuspakker (30 → 3). **Lure**: lok en bestemt ånd for
+  glimmer (5/10/22/40 efter sjældenhed) — dubletter bliver til noget, man selv styrer (Hearthstones dust-princip).
+- **Søkort** i stedet for liste; **kampscene** (horisont + vogterens fyr, der tændes ved sejr); kort intro (≤ ~8 ord pr. linje).
+- **Kunst** (art.js): hver ånd har sin egen opskrift af dele (krop + ører/vinger/gevir/finner/krone …).
+- Nederlag giver et konkret råd (vogter-specifikt), så tabet peger fremad.
+
+### Sværhedskurve (balance-bot, simpel spiller, 600 kampe/ø, 0.6.6+)
+ø1 100 % · ø2 87 % · ø3 69 % · ø4 75 % · ø5 57 % · ø6 49 % · ø7 44 %. Botten bruger ikke vogterens plan;
+en "klog" bot (`node tests/balance.js 400 --klog`) vinder kun lidt mere → planen giver endnu få svarmuligheder.

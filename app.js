@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.6.1";
+  var VERSION = "0.6.2";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -198,6 +198,21 @@
     return W + "</svg>";
   }
 
+  // Kampens baggrund: horisont, bølger og vogterens ø med et slukket fyrtårn. Tændes ved sejr.
+  function battleScene() {
+    var r = E.rng(hash(D.ISLANDS[S.island].n)), waves = "";
+    for (var k = 0; k < 14; k++) { var x = r() * 96, y = 26 + r() * 13; waves += '<path d="M' + x.toFixed(1) + " " + y.toFixed(1) + ' q1.5 -1 3 0 t3 0" stroke="#6fc3ff" stroke-opacity="' + (0.08 + (y - 26) / 100).toFixed(2) + '" stroke-width=".35" fill="none"/>'; }
+    var iw = 18 + r() * 8, top = 20 - r() * 3;
+    return '<svg class="scene" viewBox="0 0 100 40" preserveAspectRatio="xMidYMid slice"><defs>' +
+      '<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1020" stop-opacity="0"/><stop offset="1" stop-color="#1a2348"/></linearGradient>' +
+      '<radialGradient id="beam"><stop offset="0" stop-color="#fff1a8" stop-opacity=".9"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient></defs>' +
+      '<rect width="100" height="24.5" fill="url(#sky)"/><rect y="24.5" width="100" height="16" fill="#0d1430"/>' +
+      '<path d="M' + (50 - iw / 2) + ' 24.6 Q' + (50 - iw / 4) + " " + top + " 50 " + (top + 0.5) + " Q" + (50 + iw / 4) + " " + top + " " + (50 + iw / 2) + ' 24.6Z" fill="#141a33"/>' +
+      '<rect x="49.2" y="' + (top - 7) + '" width="1.6" height="7.5" fill="#1f2747"/><rect x="48.8" y="' + (top - 8.2) + '" width="2.4" height="1.4" fill="#1f2747"/>' +
+      '<g class="lamp"><circle cx="50" cy="' + (top - 8.8) + '" r="7" fill="url(#beam)"/><circle cx="50" cy="' + (top - 8.8) + '" r=".9" fill="#fff6d8"/></g>' +
+      waves + "</svg>";
+  }
+
   // ---------- skærme ----------
   function show(el) { app.innerHTML = ""; app.appendChild(el); var t = document.getElementById("toast"); clearTimeout(toastT); t.classList.remove("on"); }
 
@@ -205,9 +220,9 @@
     var el = h('<div class="screen intro"><div class="grow" style="display:flex;flex-direction:column;justify-content:center;gap:8px">' +
       '<div style="width:140px;margin:0 auto">' + document.createElement("div").outerHTML + "</div>" +
       '<h1 style="text-align:center">Lanternsea</h1>' +
-      "<p>The light has gone out over the <b>Dark Sea</b>. Only the light-spirits remain — small, wild creatures of blaze, mist and root.</p>" +
-      "<p>You carry the last lantern. Catch the spirits, build your deck, and sail island by island to <b>The Black Lighthouse</b> to light it again.</p>" +
-      '<p class="dim">You have 3 flames. Lose a battle and one goes out. Lose them all and your voyage starts over — but you keep your spirits.</p>' +
+      '<p class="lead">The light has left the <b>Dark Sea</b>.</p>' +
+      '<p class="lead">Catch spirits. Build a deck.<br>Relight <b>the Black Lighthouse</b>.</p>' +
+      '<p class="dim" style="text-align:center">🔥🔥🔥 Lose them all, and the voyage restarts.</p>' +
       '</div><div class="bottom"><button class="btn" id="go">Open your first pack</button></div></div>');
     el.querySelector("div[style*='140px']").innerHTML = '<img src="icon.svg" alt="" style="width:140px;filter:drop-shadow(0 0 30px #ffb34788)">';
     el.querySelector("#go").onclick = function () {
@@ -458,7 +473,7 @@
     var sel = -1, busy = false;
     var el = h('<div class="screen battle">' +
       '<div class="hero foe"><span>🌑 <b>' + esc(isl.foe) + '</b></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
-      '<div class="board" id="b1"></div><div class="mid" id="mid"></div><div class="lanes" id="lanes"></div><div class="board" id="b0"></div>' +
+      '<div class="board" id="b1"></div><div class="midwrap">' + battleScene() + '<div class="mid" id="mid"></div></div><div class="lanes" id="lanes"></div><div class="board" id="b0"></div>' +
       '<div class="hero me"><span class="lys"></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
       '<div class="info" id="info"></div><div class="hand"></div>' +
       '<div class="row"><button class="btn sec" id="quit" style="padding:12px 14px;font-size:15px">Flee</button><div class="grow dim" style="font-size:13px;text-align:center" id="deckn"></div><button class="btn endbtn" id="end">End turn</button></div></div>');
@@ -609,6 +624,7 @@
     };
     function finish(fled) {
       busy = true; mid.textContent = ""; lanesEl.innerHTML = "";
+      if (b.over === "win") el.querySelector(".scene").classList.add("lit");
       var won = b.over === "win";
       T("battle_end", { won: won, fled: !!fled, island: S.island, turns: b.turn, deck: S.deck, hp: b.s[0].hp });
       var msg;

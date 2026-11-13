@@ -189,3 +189,4 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
 .btn.lure{display:block;width:100%;margin-top:8px;padding:12px;font-size:16px;background:linear-gradient(#e2b6ff,#a35be0);box-shadow:0 4px 0 #5a2a8a;color:#1e0a30}
 .tip{background:#222b4d;border-radius:12px;padding:8px 12px;margin:0;font-size:14px;text-align:center;color:#ffd27a}
 .elmix{display:flex;gap:8px;margin:0 0 8px;font-size:14px;font-weight:700}.elmix .e{padding:2px 10px;border-radius:10px;background:#222b4d}.elmix .glod{color:#ffb08c}.elmix .taage{color:#9fd8ff}.elmix .rod{color:#9ff0b8}
+.float.big{font-size:32px;color:#ff3b3b}

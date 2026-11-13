@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.6.6";
+  var VERSION = "0.6.7";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG;
   var app = document.getElementById("app");
@@ -383,12 +383,14 @@
       var A = D.BY[a], B = D.BY[b];
       return (RORD[B.r] * 3 + B.a + B.h - B.c * 1.6) - (RORD[A.r] * 3 + A.a + A.h - A.c * 1.6);
     });
-    var deck = [], cheap = 0;
-    pool.forEach(function (id) { if (deck.length < 15) { deck.push(id); } });
-    // sørg for mindst 5 billige (≤2) kort
-    deck.forEach(function (id) { if (D.BY[id].c <= 2) cheap++; });
-    var rest = pool.slice(deck.length).filter(function (id) { return D.BY[id].c <= 2; });
-    for (var i = deck.length - 1; i >= 0 && cheap < 5 && rest.length; i--) { if (D.BY[deck[i]].c > 3) { deck[i] = rest.shift(); cheap++; } }
+    // Kurve: maks 3 kort der koster 5+, og mindst 6 der koster ≤2 (ellers sker der intet de første ture).
+    var deck = [], big = 0;
+    pool.forEach(function (id) { if (deck.length >= 15) return; if (D.BY[id].c >= 5) { if (big >= 3) return; big++; } deck.push(id); });
+    var cheapN = function () { return deck.filter(function (id) { return D.BY[id].c <= 2; }).length; };
+    var rest = pool.filter(function (id) { return D.BY[id].c <= 2; });
+    deck.forEach(function (id) { var k = rest.indexOf(id); if (k >= 0) rest.splice(k, 1); });
+    for (var i = deck.length - 1; i >= 0 && cheapN() < 6 && rest.length; i--) { if (D.BY[deck[i]].c >= 4) deck[i] = rest.shift(); }
+    while (deck.length < 15 && rest.length) deck.push(rest.shift());
     return deck;
   }
 
@@ -623,7 +625,7 @@
           var V = view.s;
           if (e.t === "play") { V[e.si].board[e.slot] = JSON.parse(JSON.stringify(b.s[e.si].board[e.slot] || { id: e.id, a: D.BY[e.id].a, h: D.BY[e.id].h, mh: D.BY[e.id].h, shield: !!D.BY[e.id].kw.taage, el: D.BY[e.id].el })); var u0 = V[e.si].board[e.slot]; u0.h = D.BY[e.id].h; u0.a = D.BY[e.id].a; u0.mh = u0.h; u0.shield = !!D.BY[e.id].kw.taage; drawBoards(); var c = slotEl(e.si, e.slot).querySelector(".card"); if (c) c.classList.add("drop"); SFX.play(); if (e.si === 1) mid.textContent = isl.foe + " calls " + D.BY[e.id].n; kinPing(e.si, e.slot); return wait(380); }
           if (e.t === "atk") { var c2 = slotEl(e.si, e.slot).querySelector(".card"); if (c2) { c2.classList.remove("lunge0", "lunge1"); void c2.offsetWidth; c2.classList.add("lunge" + e.si); } SFX.atk(); return wait(200); }
-          if (e.t === "hit") { var u = V[e.si].board[e.slot]; if (u) u.h -= e.n; drawBoards(); var se = slotEl(e.si, e.slot), c3 = se.querySelector(".card"); if (c3) c3.classList.add("hitfx"); floatTxt(se, "−" + e.n); SFX.hit(); return wait(260); }
+          if (e.t === "hit") { var u = V[e.si].board[e.slot]; if (u) u.h -= e.n; drawBoards(); var se = slotEl(e.si, e.slot), c3 = se.querySelector(".card"); if (c3) c3.classList.add("hitfx"); floatTxt(se, "−" + e.n, e.n >= 4 ? "big" : ""); SFX.hit(); return wait(260); }
           if (e.t === "dodge") { var u2 = V[e.si].board[e.slot]; if (u2) u2.shield = false; drawBoards(); floatTxt(slotEl(e.si, e.slot), "veiled!", "b"); SFX.dodge(); return wait(260); }
           if (e.t === "die") { var c4 = slotEl(e.si, e.slot).querySelector(".card"); if (c4) { c4.classList.add("die"); particles(c4, ELCOL[D.BY[e.id].el], 12, 70); } SFX.die(); return wait(330).then(function () { V[e.si].board[e.slot] = null; drawBoards(); }); }
           if (e.t === "grow") { var u3 = V[e.si].board[e.slot]; if (u3) { u3.a++; u3.h++; u3.mh++; } drawBoards(); floatTxt(slotEl(e.si, e.slot), "+1/+1", "g"); SFX.heal(); return wait(260); }

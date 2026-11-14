@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.8.3";
+  var VERSION = "0.8.4";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -485,7 +485,7 @@
           wrap.appendChild(minus);
         }
         wrap.onclick = function () {
-          el.querySelector("#dinfo").innerHTML = o ? cardInfo(c.id) : "You haven't caught this spirit yet.";
+          el.querySelector("#dinfo").innerHTML = o ? cardInfo(c.id) : c.sea ? "🌊 A drifter — found only at sea, on the voyage between islands." : "You haven't caught this spirit yet.";
           if (!o) return;
           if (d >= Math.min(o, E.deckLimit(c.id))) { toast(d >= E.deckLimit(c.id) ? "Max " + E.deckLimit(c.id) + " of each in a deck" : "You only own " + o); return; }
           if (S.deck.length >= 20) { toast("Deck is full (20)"); return; }
@@ -537,6 +537,15 @@
       for (var k = 0; k < b.plan.length; k++) if (b.plan[k].slot === slot) return b.plan[k].id;
       return null;
     }
+    // Forhåndsvisning (0.8.4): hvor stærk bliver det valgte kort på denne plads? Viser Kin/Rally-bonus og fælder.
+    function previewHTML(id, slot) {
+      var c = D.BY[id], side = { board: view.s[0].board.slice() };
+      side.board[slot] = { id: id, a: c.a, h: c.h, mh: c.h, shield: !!c.kw.taage, el: c.el };
+      var a = E.attackOf(side, slot), up = a > c.a, foe = view.s[1].board[slot], amb = foe && D.BY[foe.id].kw.ambush;
+      var boost = 0; side.board.forEach(function (v, j) { if (v && j !== slot) boost += E.attackOf(side, j) - E.attackOf(view.s[0], j); });
+      var line = amb && !c.kw.taage && amb >= c.h ? "<span style='color:#ff8a8a'>ambush kills it</span>" : boost > 0 ? "<span style='color:var(--gold)'>+" + boost + " ⚔ to allies</span>" : "";
+      return '<div class="pv"><b class="' + (up ? "up" : "") + '">⚔ ' + a + "</b>" + line + "</div>";
+    }
     function drawBoards() {
       [b0, b1].forEach(function (bd, si) {
         var side = view.s[si];
@@ -545,7 +554,9 @@
           var bonus = u ? E.attackOf(side, i) - u.a : 0;
           var g = !u && si === 1 ? ghostAt(i) : null;
           sl.innerHTML = u ? cardHTML(u.id, { unit: u, bonus: bonus }) : g ? cardHTML(g, { cls: "ghost", badge: "next" }) : "";
-          sl.classList.toggle("target", si === 0 && sel >= 0 && !u && !busy && E.canPlay(b, sel, i));
+          var tgt = si === 0 && sel >= 0 && !u && !busy && E.canPlay(b, sel, i);
+          sl.classList.toggle("target", tgt);
+          if (tgt) sl.innerHTML = previewHTML(b.s[0].hand[sel], i);
           sl.classList.toggle("closed", E.closed(b, i));
         });
       });

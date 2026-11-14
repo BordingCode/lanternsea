@@ -168,7 +168,7 @@ h2{margin:4px 0 8px;font-size:20px}
 .vignette{position:fixed;inset:0;pointer-events:none;z-index:29;box-shadow:inset 0 0 90px 30px #ff2a2aaa;animation:vig .5s forwards}
 @keyframes vig{from{opacity:1}to{opacity:0}}
 .endbtn.ready{animation:ready 1.2s ease-in-out infinite}
-@keyframes ready{50%{box-shadow:0 4px 0 #9a5f17,0 0 26px 6px #ffb347cc;transform:scale(1.04)}}
+@keyframes ready{50%{box-shadow:0 4px 0 #9a5f17,0 0 26px 6px #ffb347cc}} /* kun glød — en knap der skifter størrelse er sværere at ramme */
 /* temapakker (0.5.1) */
 .pack.p-glod{background:linear-gradient(135deg,#6a2a12,#1b2445 45%,#8a3a12);border-color:#ff9a5a}
 .pack.p-taage{background:linear-gradient(135deg,#1a3a6a,#1b2445 45%,#2a5a8a);border-color:#8fd0ff}
@@ -259,3 +259,8 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
 @keyframes finalebob{50%{transform:translateY(-6px) scale(1.03)}}
 .spot{position:fixed;inset:0;background:radial-gradient(circle at 50% 62%,transparent 18%,#000c 60%);z-index:20;pointer-events:none;animation:fadein .4s}
 .spot.off{opacity:0;transition:opacity .5s}
+/* plads-forhåndsvisning (0.8.4) */
+.slot .pv{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;text-align:center;line-height:1.15;pointer-events:none}
+.slot .pv b{font-size:18px;color:#ffb08c}
+.slot .pv b.up{color:var(--gold);text-shadow:0 0 8px #ffb347}
+@media (min-width:700px){.slot .pv{font-size:14px}.slot .pv b{font-size:24px}}

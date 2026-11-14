@@ -265,3 +265,9 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
 .slot .pv b.up{color:var(--gold);text-shadow:0 0 8px #ffb347}
 @media (min-width:700px){.slot .pv{font-size:14px}.slot .pv b{font-size:24px}}
 .darkpill{display:inline-block;background:#2a1440;color:#d4a8ff;border:1px solid #b46bff88;border-radius:999px;padding:1px 10px;font-size:13px;font-weight:800;vertical-align:middle;box-shadow:0 0 12px #b46bff44}
+/* sejlads-følelse (0.9.1) */
+.node.took.here::after{content:"⛵ you are here";color:var(--ink)}
+.port.here{border-color:var(--gold)}
+.node.chosen{transform:scale(1.06);border-color:#fff1a8;box-shadow:0 0 40px #ffb347aa;transition:transform .3s,box-shadow .3s}
+.node.open.skip{opacity:.25;animation:none;transition:opacity .4s}
+.sailboat{position:fixed;z-index:25;font-size:30px;transform:translate(-50%,-50%);transition:left .7s ease-in-out,top .7s ease-in-out;pointer-events:none;filter:drop-shadow(0 0 10px #ffd27a)}

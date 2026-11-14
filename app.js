@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.9.0";
+  var VERSION = "0.9.1";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -56,6 +56,8 @@
   }
   var SFX = {
     tap: function () { tone(660, 0.06, "triangle", 0.14); },
+    sail: function () { noise(0.7, 0.2); tone(170, 0.7, "sine", 0.08, 110); noise(0.55, 0.13, 0.35); },
+    chime: function () { [784, 988, 1319].forEach(function (f, i) { tone(f, 0.28, "triangle", 0.11, null, i * 0.09); }); },
     tear: function () { noise(0.35, 0.35); tone(200, 0.3, "sawtooth", 0.05, 900); },
     flip: function (r) {
       var base = { c: 520, u: 660, r: 784, m: 988 }[r];
@@ -767,7 +769,7 @@
     var rows = "";
     for (var k = 1; k >= 0; k--) {
       var pair = v.nodes[k].map(function (t) {
-        var cls = k < v.step ? (v.done[k] === t ? "took" : "skip") : k === v.step ? "open" : "ahead";
+        var cls = k < v.step ? (v.done[k] === t ? "took" + (k === v.step - 1 ? " here" : "") : "skip") : k === v.step ? "open" : "ahead";
         return nodeHTML(t, cls);
       }).join("");
       rows += '<div class="fork' + (k === v.step ? " now" : "") + '">' + pair + "</div>";
@@ -775,15 +777,21 @@
     var done = v.step >= 2;
     var el = h('<div class="screen voyage"><div class="hud"><div class="flames">' + flamesHTML() + '</div><span class="pill">✦ ' + S.embers + " glimmer</span></div>" +
       '<h2 style="margin:8px 0 2px">' + (done ? "Land ho!" : "Crossing to " + esc(to.n)) + '</h2><p class="dim" style="margin:0 0 6px;font-size:14px">' + (done ? esc(to.foe) + " waits on the shore." : "Choose your course. You can see what lies ahead.") + "</p>" +
-      '<div class="route"><div class="port to">⚑ ' + esc(to.n) + "</div>" + rows + '<div class="port from">⛵ ' + esc(from.n) + "</div></div>" +
+      '<div class="route"><div class="port to">⚑ ' + esc(to.n) + "</div>" + rows + '<div class="port from' + (v.step === 0 ? " here" : "") + '">' + (v.step === 0 ? "⛵ " : "⚓ ") + esc(from.n) + "</div></div>" +
       '<div class="info" id="vinfo">' + (v.boon && VOY.boonText(v.boon) ? "<span style='color:#8dffb0'>✧ For the next warden: " + VOY.boonText(v.boon) + "</span>" : "<span class='dim'>Tap a glowing waypoint to sail there.</span>") + "</div>" +
       '<div class="bottom"><div class="row"><button class="btn sec" id="back">Chart</button>' + (done ? '<button class="btn" id="land">Land on ' + esc(to.n) + "</button>" : "") + "</div></div></div>");
     el.querySelectorAll(".node.open").forEach(function (nb) {
       nb.onclick = function () {
-        SFX.tap(); var t = nb.dataset.t;
+        if (el.dataset.going) return; el.dataset.going = 1;
+        SFX.sail(); var t = nb.dataset.t;
         v.done[v.step] = t; v.step++; save(); // forpligt valget med det samme (ingen gen-valg ved genindlæsning)
         T("voyage", { to: S.island, node: t, step: v.step });
-        nodeScreen(t);
+        // lille sejltur: båden glider fra sin plads hen til det valgte stop
+        var from0 = el.querySelector(".here"), boat = h('<div class="sailboat">⛵</div>');
+        if (from0) { var a0 = from0.getBoundingClientRect(), a1 = nb.getBoundingClientRect(); boat.style.left = (a0.left + a0.width / 2) + "px"; boat.style.top = (a0.top + a0.height / 2) + "px"; document.body.appendChild(boat);
+          requestAnimationFrame(function () { requestAnimationFrame(function () { boat.style.left = (a1.left + a1.width / 2) + "px"; boat.style.top = (a1.top + a1.height / 2) + "px"; }); }); }
+        nb.classList.add("chosen"); el.querySelectorAll(".node.open").forEach(function (o) { if (o !== nb) o.classList.add("skip"); });
+        setTimeout(function () { boat.remove(); nodeScreen(t); }, 750);
       };
     });
     el.querySelectorAll(".node.ahead,.node.took,.node.skip").forEach(function (nb) { nb.onclick = function () { el.querySelector("#vinfo").innerHTML = "<b>" + VOY.NODES[nb.dataset.t].i + " " + VOY.NODES[nb.dataset.t].n + "</b> — " + VOY.NODES[nb.dataset.t].t; }; });
@@ -842,7 +850,7 @@
           el.querySelector(".result").innerHTML = esc(res.t);
           el.querySelector("#emb").textContent = "✦ " + S.embers + " glimmer"; el.querySelector(".flames").innerHTML = flamesHTML();
           if (res.flameLost) { SFX.lose(); app.classList.remove("quake"); void app.offsetWidth; app.classList.add("quake"); }
-          if (res.card) showCard(el, res.card, !before[res.card]);
+          if (res.card) showCard(el, res.card, !before[res.card]); else if (!res.flameLost) SFX.chime();
           continueBtn(el);
         };
         bx.appendChild(cb);
@@ -854,7 +862,7 @@
       var before = {}; for (var k in S.coll) before[k] = S.coll[k];
       res = VOY.salvage(S, R); save();
       el.querySelector(".result").innerHTML = esc(res.t);
-      if (res.card) showCard(el, res.card, !before[res.card]); else SFX.heal();
+      if (res.card) showCard(el, res.card, !before[res.card]); else SFX.chime();
       continueBtn(el); return;
     }
     if (type === "haven") {

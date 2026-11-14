@@ -12,6 +12,10 @@
     r1: ["orb:11", "sprout"], r2: ["beetle"], r3: ["snake", "sprout"], r4: ["orb:13", "fountain"], r5: ["beast", "antlers"],
     r6: ["tree"], r7: ["seed", "sprout", "rings"], r8: ["block", "sprout", "shield"], r9: ["willow"],
     n1: ["orb:10", "moth"], n2: ["drop", "hood", "lamp"], n3: ["fish", "lure"],
+    s1: ["orb:13", "flame", "veil", "star"], s2: ["orb:11", "lamp", "sprout", "star"], s3: ["tree", "flame", "star"], s4: ["seed", "sprout", "star"],
+    s5: ["drop", "flame", "star"], s6: ["eel", "horns", "flame", "star"], s7: ["beast", "antlers", "flame", "star"], s8: ["orb:12", "cap", "star"],
+    s9: ["bird", "flame", "star"], s10: ["orb:14", "moon", "waves", "star"], s11: ["willow", "veil", "star"], s12: ["beast:big", "antlers", "rings", "star"],
+    s13: ["orb:17", "rays", "crown", "star"],
     d1: ["drop", "hood", "veil"], d2: ["fish", "crown"], d3: ["bird", "rays"], d4: ["ray", "waves"], d5: ["drop", "hood", "lamp", "waves"], d6: ["orb:16", "rays", "crown"],
   };
   function f(n) { return n.toFixed(1); }
@@ -24,7 +28,8 @@
     return e(cx - dx) + e(cx + dx);
   }
   function build(id, c, r) {
-    var col = COL[c.el], B = "url(#b" + id + ")", st = ' stroke="' + col[3] + '" stroke-width="1.2" stroke-opacity=".55"';
+    // Twin-lys (Starfall): kroppen glider fra det ene lys til det andet; "*" = stjernelys.
+    var col = c.el2 === "*" ? ["#fff1a8", "#b48bff", "#ffffff", "#3a2a6a"] : c.el2 ? [COL[c.el][0], COL[c.el2][1], COL[c.el][2], COL[c.el2][3]] : COL[c.el], B = "url(#b" + id + ")", st = ' stroke="' + col[3] + '" stroke-width="1.2" stroke-opacity=".55"';
     var parts = FORM[id] || ["orb:14"], back = "", body = "", front = "", cx = 50, cy = 56, s = 14, eyeY = 52;
     parts.forEach(function (p) {
       var k = p.split(":"), n = k[0], a = k[1];
@@ -108,6 +113,8 @@
       else if (n === "rings") { back += '<circle cx="50" cy="58" r="26" fill="none" stroke="' + col[2] + '" stroke-width=".8" opacity=".6"/><circle cx="50" cy="58" r="33" fill="none" stroke="' + col[2] + '" stroke-width=".6" opacity=".4"/>'; }
       else if (n === "shield") { front += '<path d="M60 58 l12 -2 l0 10 q-2 8 -6 10 q-4 -2 -6 -10z" fill="#c9a86a" stroke="#6a4a2a" stroke-width=".8"/>'; }
       else if (n === "moth") { back += '<path d="M48 54 C30 30 14 40 20 54 C14 66 30 74 48 60Z M52 54 C70 30 86 40 80 54 C86 66 70 74 52 60Z" fill="' + col[0] + '" opacity=".8"/><circle cx="28" cy="48" r="4" fill="' + col[2] + '"/><circle cx="72" cy="48" r="4" fill="' + col[2] + '"/>'; }
+      else if (n === "star") { front += '<path d="M50 9 l2.6 5.6 l6 .7 l-4.5 4.1 l1.3 6 l-5.4 -3.1 l-5.4 3.1 l1.3 -6 l-4.5 -4.1 l6 -.7z" fill="#fff1a8" stroke="#c9a2ff" stroke-width=".8"/><circle cx="50" cy="17" r="11" fill="#fff1a8" opacity=".18"/>'; }
+      else if (n === "cap") { front += '<path d="M28 50 C30 28 70 28 72 50 Q50 44 28 50Z" fill="' + col[1] + '"' + st + '/>' + [[40, 40], [52, 35], [62, 43]].map(function (q) { return '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="2.6" fill="' + col[2] + '" opacity=".85"/>'; }).join(""); eyeY = 60; }
       else if (n === "lamp") { front += '<path d="M66 60 l0 -6" stroke="#c9a86a" stroke-width="1.4"/><rect x="62" y="60" width="9" height="11" rx="2" fill="#ffd27a" stroke="#9a5f17" stroke-width=".8"/>'; }
       else if (n === "lure") { back += '<path d="M44 44 q-2 -16 -14 -18" stroke="' + col[3] + '" stroke-width="1.6" fill="none"/><circle cx="29" cy="26" r="4" fill="#fff1a8"/><circle cx="29" cy="26" r="9" fill="#fff1a8" opacity=".25"/>'; front += '<path d="M28 60 l4 -3 l4 3 l4 -3 l4 3" stroke="#eaf6ff" stroke-width="1.2" fill="none"/>'; }
     });

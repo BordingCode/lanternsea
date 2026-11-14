@@ -61,7 +61,9 @@
     // Ambush: en ånd overfor rammer den, der lander (svaret på vogterens synlige plan).
     var opp = b.s[1 - b.who].board[slot], amb = opp && D.BY[opp.id].kw.ambush;
     if (amb) { ev(b, { t: "ambush", si: 1 - b.who, slot: slot }); if (damageUnit(b, b.who, slot, amb)) return true; }
-    var spark = (c.kw.gnist || 0) + (b.who === 1 && b.trait === "embers" && c.el === "glod" ? 1 : 0);
+    // Shine (Starfall): naboerne i din egen række får +N/+N.
+    if (c.kw.shine) [slot - 1, slot + 1].forEach(function (j) { var v = p.board[j]; if (v) { v.a += c.kw.shine; v.h += c.kw.shine; v.mh += c.kw.shine; ev(b, { t: "shine", si: b.who, slot: j, n: c.kw.shine }); } });
+    var spark = (c.kw.gnist || 0) + (b.who === 1 && b.trait === "embers" && D.hasLight(c, "glod") ? 1 : 0);
     if (spark) {
       var o = 1 - b.who;
       if (b.s[o].board[slot]) damageUnit(b, o, slot, spark); else damageHero(b, o, spark);
@@ -70,7 +72,7 @@
   }
   function attackOf(p, slot) {
     var u = p.board[slot], c = D.BY[u.id], a = u.a;
-    if (c.kw.flok) p.board.forEach(function (v, i) { if (v && i !== slot && v.el === u.el) a++; });
+    if (c.kw.flok) p.board.forEach(function (v, i) { if (v && i !== slot && D.shareLight(c, D.BY[v.id])) a++; });
     [slot - 1, slot + 1].forEach(function (j) { var v = p.board[j]; if (v && D.BY[v.id].kw.rally) a++; });
     return a;
   }
@@ -90,6 +92,7 @@
         if (killed && P.board[i] && D.BY[u.id].kw.sluger) { u.a++; u.h++; u.mh++; ev(b, { t: "grow", si: me, slot: i }); }
       } else damageHero(b, o, a);
     }
+    P.board.forEach(function (u, i) { if (u && D.BY[u.id].kw.bloom && (u.bl || 0) < 3) { u.bl = (u.bl || 0) + 1; u.a++; u.h++; u.mh++; ev(b, { t: "grow", si: me, slot: i, bloom: 1 }); } });
     P.board.forEach(function (u) { if (u && D.BY[u.id].kw.rod) { var n = D.BY[u.id].kw.rod; P.hp = Math.min(P.mhp, P.hp + n); ev(b, { t: "heal", si: me, n: n }); } });
     if (me === 1 && b.trait === "tide" && P.hp < P.mhp) { P.hp = Math.min(P.mhp, P.hp + 2); ev(b, { t: "heal", si: 1, n: 2 }); }
     if (me === 1 && b.trait === "regrow") P.board.forEach(function (u, i) { if (u && u.h < u.mh) { u.h++; ev(b, { t: "regrow", si: 1, slot: i }); } });
@@ -111,6 +114,7 @@
           if (amb) sc -= c.h <= amb && !c.kw.taage ? 25 : 4;
           if (foe) { sc += (c.a >= foe.h ? 8 : 0) + (c.h > foe.a ? 4 : -3) + (c.kw.gnist ? 6 : 0); }
           else sc += 3;
+          if (c.kw.shine) [s - 1, s + 1].forEach(function (j) { if (j >= 0 && j < SLOTS && p.board[j]) sc += 3 * c.kw.shine; });
           if (sc > bestScore) { bestScore = sc; best = hi; bestSlot = s; }
         }
       });
@@ -146,7 +150,8 @@
   // el (valgfri): temapakke — almindelige og ualmindelige kommer fra det lys; den sjældne kan være hvad som helst.
   function openPack(r, el) {
     function pick(rar) {
-      var pool = D.CARDS.filter(function (c) { return c.r === rar && !c.sea && (!el || rar === "r" || rar === "m" || c.el === el); });
+      // "star" = Starfall-pakke (kun sæt 2); ellers aldrig sæt 2.
+      var pool = D.CARDS.filter(function (c) { return c.r === rar && !c.sea && (el === "star" ? c.set === 2 : !c.set && (!el || rar === "r" || rar === "m" || c.el === el)); });
       return pool[Math.floor(r() * pool.length)].id;
     }
     var top = r() < 1 / 6 ? "m" : "r";

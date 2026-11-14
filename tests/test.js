@@ -62,6 +62,22 @@ ok(Array.isArray(E.migrate({sv:1,coll:{},deck:[]}).packq), "gammel gemt tilstand
 ok(E.newSave().dark === 0 && E.migrate({sv:1,coll:{},deck:[]}).dark === 0, "dark i gemt tilstand");
 ok(E.warden(6, 0).hp === D.ISLANDS[6].hp && E.warden(6, 5).hp === Math.round(D.ISLANDS[6].hp * 1.5) && E.warden(1, 2).deck === D.ISLANDS[1].deck, "vogter skaleres med mørke");
 ok(D.ISLANDS[1].hp === 16, "Root Witch 16 liv");
+// 0.10.0 Starfall: twin-lys, Shine, Bloom, Starfall-pakker
+{ const U = id => ({ id, a: D.BY[id].a, h: D.BY[id].h, mh: D.BY[id].h, shield: !!D.BY[id].kw.taage, el: D.BY[id].el });
+  let side = { board: [U("g2"), U("s1"), U("t3"), null] };
+  ok(E.attackOf(side, 0) === 3, "Blaze Kin tæller Blaze/Mist-twin"); ok(E.attackOf(side, 2) === 3, "Mist Kin tæller Blaze/Mist-twin");
+  ok(E.attackOf(side, 1) === 4, "twin Kin tæller begge lys");
+  side = { board: [U("r3"), U("s13"), null, null] }; ok(E.attackOf(side, 0) === 3 && E.attackOf(side, 1) === 5, "alle-lys-mytisk deler lys med alle");
+  let bb = E.newBattle(Array(12).fill("r2"), 0, 9); E.startTurn(bb); bb.s[0].board[0] = U("r2"); bb.s[0].board[2] = U("r2"); bb.s[0].hand = ["s5"]; bb.s[0].lys = 5;
+  E.play(bb, 0, 1); ok(bb.s[0].board[0].a === 2 && bb.s[0].board[0].h === 5 && bb.s[0].board[2].mh === 5, "Shine giver naboer +1/+1");
+  bb = E.newBattle(Array(12).fill("r2"), 0, 9); E.startTurn(bb); bb.s[0].hand = ["s4"]; bb.s[0].lys = 2; E.play(bb, 0, 3); bb.s[1].board = [null, null, null, null];
+  E.endTurn(bb); ok(bb.s[0].board[3] && bb.s[0].board[3].a === 1 && bb.s[0].board[3].h === 3, "Bloom vokser +1/+1 ved tur-slut");
+  const sd = bb.s[0].board[3]; for (let t = 0; t < 4; t++) { bb.who = 0; bb.s[1].board = [null, null, null, null]; bb.s[1].hp = 99; E.endTurn(bb); }
+  ok(sd.a === 3 && sd.mh === 5, "Bloom højst 3 gange");
+  const rr = E.rng(11); for (let i = 0; i < 200; i++) { const st = E.openPack(rr, "star"); ok(st.length === 5 && st.every(id => D.BY[id].set === 2), "Starfall-pakke kun sæt 2");
+    ok(E.openPack(rr).every(id => !D.BY[id].set) && E.openPack(rr, "rod").every(id => !D.BY[id].set), "almindelige pakker uden sæt 2"); }
+  ok(D.CARDS.length === 49 && new Set(D.CARDS.map(c => c.id)).size === 49, "49 unikke kort");
+  ok(D.CARDS.every(c => Object.keys(c.kw).every(k => D.KW[k])), "alle nøgleord forklaret"); }
 // 0.9.6: fair starthånd — et 1-lys-kort på hånden, når decket har ét
 for (let sd = 1; sd < 400; sd++) { const dk = ["g1","g2","g2","g3","g3","g4","g4","g5","g5","g6","t3","t3","r3","r3"]; const bb = E.newBattle(dk, 0, sd);
   ok(bb.s[0].hand.some(id => D.BY[id].c <= 1) && bb.s[0].hand.length === 4 && bb.s[0].hand.length + bb.s[0].deck.length === dk.length, "fair starthånd " + sd); }

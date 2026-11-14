@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.9.6";
+  var VERSION = "0.10.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -110,15 +110,16 @@
     var k = c.kw, out = [];
     if (k.gnist) out.push("Spark " + k.gnist); if (k.taage) out.push("Veil"); if (k.flok) out.push("Kin");
     if (k.rod) out.push("Mend " + k.rod); if (k.sluger) out.push("Devour"); if (k.rally) out.push("Rally"); if (k.ambush) out.push("Ambush " + k.ambush);
+    if (k.bloom) out.push("Bloom"); if (k.shine) out.push("Shine " + k.shine);
     return out.join(" · ");
   }
   function cardHTML(id, o) {
     o = o || {}; var c = D.BY[id];
     var a = o.unit ? o.unit.a + (o.bonus || 0) : c.a, hp = o.unit ? o.unit.h : c.h;
-    return '<div class="card ' + c.el + " " + c.r + (o.cls ? " " + o.cls : "") + '" data-id="' + id + '"' + (o.attr || "") + ">" +
+    return '<div class="card ' + c.el + " " + c.r + (c.el2 ? " tw tw-" + (c.el2 === "*" ? "all" : c.el2) : "") + (o.cls ? " " + o.cls : "") + '" data-id="' + id + '"' + (o.attr || "") + ">" +
       '<div class="art">' + art(id) + "</div>" +
       (o.unit ? "" : '<div class="cost">' + c.c + "</div>") +
-      '<div class="nm">' + esc(c.n) + "</div>" +
+      '<div class="nm' + (c.n.length > 15 ? " xl" : c.n.length > 12 ? " l" : "") + '">' + esc(c.n) + "</div>" +
       '<div class="kw">' + kwText(c) + "</div>" +
       '<div class="st at' + (o.bonus > 0 ? " boosted" : "") + '">' + a + '</div><div class="st hp' + (o.unit && hp < o.unit.mh ? " hurt" : "") + '">' + hp + "</div>" +
       (o.unit && o.unit.shield ? '<div class="shield"></div>' : "") +
@@ -127,18 +128,21 @@
       (o.isNew ? '<div class="new">NEW!</div>' : "") + "</div>";
   }
   function cardInfo(id) {
-    var c = D.BY[id], s = "<b>" + esc(c.n) + "</b> · " + D.EL[c.el] + " · " + D.RAR[c.r] + " · costs " + c.c + " light<br>";
+    var c = D.BY[id], s = "<b>" + esc(c.n) + "</b> · " + D.lightName(c) + " · " + D.RAR[c.r] + " · costs " + c.c + " light<br>";
     var k = c.kw, parts = [];
     Object.keys(k).forEach(function (key) { parts.push(D.KW[key].replace(/\bN\b/g, k[key])); });
+    if (c.el2) parts.push(c.el2 === "*" ? "Every light: it counts as Blaze, Mist and Root — for Kin." : D.TWIN);
     return s + (parts.length ? parts.join("<br>") : "<i>" + esc(c.t) + "</i>");
   }
   function flamesHTML() { var s = ""; for (var i = 0; i < 3; i++) s += '<i class="flame' + (i < S.flames ? "" : " out") + '"></i> '; return s; }
   function owned(id) { return S.coll[id] || 0; }
   function uniqueOwned() { return D.CARDS.filter(function (c) { return owned(c.id) > 0; }).length; }
   // Samle-milepæle: et langsigtet mål ved siden af rejsen. Belønninger gives automatisk (og indhentes, hvis de blev sprunget over).
-  var MILES = [10, 15, 20, 25, 30, 36]; // 36 = alle, også drifterne fra havet (0.8.0)
+  var MILES = [10, 15, 20, 25, 30, 36, 42, 49]; // 42/49 = Starfall (0.10.0) // 36 = alle, også drifterne fra havet (0.8.0)
   var LURE = { c: 5, u: 10, r: 22, m: 40 }; // glimmer-pris for at lokke en bestemt ånd (som Hearthstones dust)
-  function mileReward(m) { return m === 30 ? 3 : m === 36 ? 2 : 1; }
+  function mileReward(m) { return m === 30 || m === 49 ? 3 : m === 36 ? 2 : 1; }
+  // Starfall (sæt 2) låses op, første gang Den Sorte Fyr tændes.
+  function starOpen() { return (S.bestDark || 0) >= 1; }
   function claimMiles() {
     var n = uniqueOwned(), got = [];
     S.miles = S.miles || {};
@@ -263,13 +267,24 @@
     };
     show(el);
 
+    // Starfall lander (0.10.0): én gang, når Den Sorte Fyr er tændt første gang — med 2 gratis Starfall-pakker.
+    if (starOpen() && !S.seen.starfall) {
+      S.seen.starfall = 1; S.packs += 2; S.packq = S.packq || []; S.packq.unshift("star", "star"); save();
+      T("progress", { step: "starfall" });
+      var fall = h('<div class="starfall"></div>'); for (var q = 0; q < 14; q++) { var st = h("<i></i>"); st.style.left = (5 + Math.random() * 90) + "%"; st.style.animationDelay = (Math.random() * 2.2).toFixed(2) + "s"; fall.appendChild(st); }
+      document.body.appendChild(fall); setTimeout(function () { fall.remove(); }, 6000); SFX.chime();
+      modal("<h1 style='color:#fff1a8'>★ Starfall</h1><p style='text-align:center'>The beam of the Black Lighthouse reached the sky — and the sky answered.<br>Stars are falling into the Dark Sea, and new spirits climb out of the water.</p>" +
+        "<p style='text-align:center;line-height:1.5'><b>13 Starfall spirits</b> to catch:<br><span class='dim'>✧ <b>Twin light</b> — counts as two lights for Kin<br>✧ <b>Bloom</b> — grows each turn it survives (3 times)<br>✧ <b>Shine</b> — blesses the spirits beside it</span></p>" +
+        "<p style='text-align:center'>Here are <b>2 Starfall packs</b>. After every warden, you can now choose a Starfall pack.</p>", [{ t: "Open them", v: 1 }, { t: "Later", v: 0, sec: true }]).then(function (v) { if (v) packScreen(false); });
+      return;
+    }
     if (caught.length) toast("🏆 Collection " + caught[caught.length - 1] + "/" + D.CARDS.length + " — bonus pack!");
     else if (S.packs > 0 && !S.seen.packhint) { S.seen.packhint = 1; save(); toast("You have an unopened pack!"); }
   }
 
   // ---------- pakke-ritualet ----------
   var RORD = { c: 0, u: 1, r: 2, m: 3 };
-  var PACKNAME = { glod: "BLAZE TIDE", taage: "MIST TIDE", rod: "ROOT TIDE" };
+  var PACKNAME = { glod: "BLAZE TIDE", taage: "MIST TIDE", rod: "ROOT TIDE", star: "STARFALL" };
   function packScreen(first) {
     if (S.packs < 1) return home();
     var ptype = S.packq && S.packq.length ? S.packq[0] : null;
@@ -439,9 +454,11 @@
   function binderScreen() {
     var n = uniqueOwned(), next = MILES.filter(function (m) { return !S.miles || !S.miles[m]; })[0];
     var bars = ["glod", "taage", "rod"].map(function (e) {
-      var all = D.CARDS.filter(function (c) { return c.el === e; }), have = all.filter(function (c) { return owned(c.id); }).length;
+      var all = D.CARDS.filter(function (c) { return c.el === e && !c.set; }), have = all.filter(function (c) { return owned(c.id); }).length;
       return '<div class="ebar ' + e + '"><span>' + D.EL[e] + '</span><div><i style="width:' + (have / all.length * 100) + '%"></i></div><b>' + have + "/" + all.length + "</b></div>";
     }).join("");
+    var st = D.CARDS.filter(function (c) { return c.set === 2; }), stHave = st.filter(function (c) { return owned(c.id); }).length;
+    bars += '<div class="ebar star"><span>Starfall</span><div><i style="width:' + (stHave / st.length * 100) + '%"></i></div><b>' + (starOpen() ? stHave + "/" + st.length : "🔒") + "</b></div>";
     var miles = MILES.map(function (m) { var done = S.miles && S.miles[m]; return '<span class="mile' + (done ? " done" : n >= m ? " ready" : "") + '">' + (done ? "✦ " : "") + m + "</span>"; }).join("");
     var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Collection</h2><div class="row"><span class="pill">✦ ' + S.embers + '</span><span class="pill">' + n + "/" + D.CARDS.length + "</span></div></div>" +
       '<div class="bars">' + bars + "</div>" +
@@ -452,9 +469,12 @@
     var grid = el.querySelector(".grid"), binfo = el.querySelector("#binfo");
     D.CARDS.forEach(function (c) {
       var o = owned(c.id);
-      var w = h('<div>' + (o ? cardHTML(c.id, { badge: "×" + o }) : '<div class="card unknown ' + c.r + (c.sea ? " sea" : "") + '"><div class="q">' + (c.sea ? "🌊" : "?") + '</div><div class="nm">' + (c.sea ? "Found at sea" : D.RAR[c.r]) + "</div></div>") + "</div>");
+      var lock = c.set === 2 && !o && !starOpen();
+      if (c.id === "s1") grid.appendChild(h('<div class="sethead">★ Starfall' + (starOpen() ? "" : " · <span class='dim'>locked</span>") + "</div>"));
+      var w = h('<div>' + (o ? cardHTML(c.id, { badge: "×" + o }) : '<div class="card unknown ' + c.r + (c.sea ? " sea" : "") + (c.set ? " star" : "") + '"><div class="q">' + (c.sea ? "🌊" : c.set ? "★" : "?") + '</div><div class="nm">' + (c.sea ? "Found at sea" : lock ? "Starfall" : D.RAR[c.r]) + "</div></div>") + "</div>");
       w.onclick = function () {
         SFX.tap();
+        if (lock) { binfo.innerHTML = "<b>Starfall.</b> <span class='dim'>Something is waiting beyond the Black Lighthouse. Light it, and see what falls from the sky.</span>"; return; }
         if (c.sea && !o) { binfo.innerHTML = "<b>A drifter.</b> <span class='dim'>Some spirits never come in packs. Look for them on the voyage between islands — catch wild spirits, trade with the Fog Trader, or brave strange waters.</span>"; return; }
         binfo.innerHTML = (o ? cardInfo(c.id) : "<span class='dim'>Not caught yet:</span><br>" + cardInfo(c.id)) + (c.sea ? "<br><span style='color:#6fc3ff'>🌊 Drifter — found only at sea.</span>" : "");
         if (o < E.deckLimit(c.id) && !c.sea) {
@@ -478,8 +498,23 @@
   }
 
   // ---------- deckbygger ----------
+  // Synergi (0.10.0, dommer: "vis synergier eksplicit"): spiller to kort sammen?
+  function syn(a, b) {
+    return (a.kw.flok && D.shareLight(a, b)) || (b.kw.flok && D.shareLight(a, b)) || (a.kw.sluger && b.kw.gnist) || (b.kw.sluger && a.kw.gnist);
+  }
+  function synText(c) {
+    var others = S.deck.slice(); var k = others.indexOf(c.id); if (k >= 0) others.splice(k, 1);
+    var O = others.map(function (id) { return D.BY[id]; }), out = [];
+    if (c.kw.flok) out.push("Kin: <b>" + O.filter(function (o) { return D.shareLight(c, o); }).length + "</b> spirits in your deck share its light.");
+    else { var kin = O.filter(function (o) { return o.kw.flok && D.shareLight(c, o); }).length; if (kin) out.push("It powers up <b>" + kin + "</b> Kin spirits in your deck."); }
+    if (c.kw.sluger) out.push("Spark spirits soften foes for it to devour (<b>" + O.filter(function (o) { return o.kw.gnist; }).length + "</b> in your deck).");
+    if (c.kw.rally || c.kw.shine) out.push("Place it between your strongest spirits.");
+    if (c.kw.bloom) out.push(c.kw.taage ? "Its Veil keeps it alive while it grows." : "Put it where nothing attacks it — then watch it grow.");
+    if (c.kw.ambush) out.push("Place it where the warden’s faded cards will land.");
+    return out.length ? "<br><span style='color:#8dffb0'>✦ " + out.join("<br>✦ ") + "</span><br><span class='dim' style='font-size:12px'>Glowing cards work well with it.</span>" : "";
+  }
   function deckScreen() {
-    var filter = "all";
+    var filter = "all", focus = null;
     var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Your deck</h2><div class="row"><div class="curve"></div><span class="pill" id="cnt"></span></div></div>' +
       '<div class="dim" style="font-size:13px;margin:4px 0 8px">Tap a spirit to add it. Tap − to remove. 12–20 cards.</div><div id="elmix" class="elmix"></div>' +
       '<div class="filters"><button class="chip on" data-f="all">All</button><button class="chip" data-f="deck">In deck</button><button class="chip" data-f="glod">Blaze</button><button class="chip" data-f="taage">Mist</button><button class="chip" data-f="rod">Root</button><button class="chip" data-f="missing">Missing</button></div>' +
@@ -493,18 +528,20 @@
         var o = owned(c.id), d = inDeck(c.id);
         if (filter === "deck" && !d) return;
         if (filter === "missing" ? o : !o) return;
-        if (["glod", "taage", "rod"].indexOf(filter) >= 0 && c.el !== filter) return;
-        var wrap = h('<div style="position:relative">' + cardHTML(c.id, { cls: o ? (d ? "" : "notin") : "unowned", badge: o ? d + "/" + o : "?" }) + "</div>");
+        if (c.set === 2 && !o && !starOpen()) return;
+        if (["glod", "taage", "rod"].indexOf(filter) >= 0 && !D.hasLight(c, filter)) return;
+        var wrap = h('<div style="position:relative">' + cardHTML(c.id, { cls: (o ? (d ? "" : "notin") : "unowned") + (focus && o && focus !== c.id && syn(D.BY[focus], c) ? " syn" : "") + (focus === c.id ? " focus" : ""), badge: o ? d + "/" + o : "?" }) + "</div>");
         if (d) {
           var minus = h('<button class="chip" style="position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);padding:0 16px;line-height:24px;font-size:18px;background:#5a1f12">−</button>');
           minus.onclick = function (ev) { ev.stopPropagation(); S.deck.splice(S.deck.indexOf(c.id), 1); save(); SFX.tap(); render(); };
           wrap.appendChild(minus);
         }
         wrap.onclick = function () {
-          el.querySelector("#dinfo").innerHTML = o ? cardInfo(c.id) : c.sea ? "🌊 A drifter — found only at sea, on the voyage between islands." : "You haven't caught this spirit yet.";
+          focus = o ? c.id : null;
+          el.querySelector("#dinfo").innerHTML = o ? cardInfo(c.id) + synText(c) : c.sea ? "🌊 A drifter — found only at sea, on the voyage between islands." : "You haven't caught this spirit yet.";
           if (!o) return;
-          if (d >= Math.min(o, E.deckLimit(c.id))) { toast(d >= E.deckLimit(c.id) ? "Max " + E.deckLimit(c.id) + " of each in a deck" : "You only own " + o); return; }
-          if (S.deck.length >= 20) { toast("Deck is full (20)"); return; }
+          if (d >= Math.min(o, E.deckLimit(c.id))) { render(); toast(d >= E.deckLimit(c.id) ? "Max " + E.deckLimit(c.id) + " of each in a deck" : "You only own " + o); return; }
+          if (S.deck.length >= 20) { render(); toast("Deck is full (20)"); return; }
           S.deck.push(c.id); save(); SFX.play(); render();
         };
         grid.appendChild(wrap);
@@ -559,7 +596,8 @@
       side.board[slot] = { id: id, a: c.a, h: c.h, mh: c.h, shield: !!c.kw.taage, el: c.el };
       var a = E.attackOf(side, slot), up = a > c.a, foe = view.s[1].board[slot], amb = foe && D.BY[foe.id].kw.ambush;
       var boost = 0; side.board.forEach(function (v, j) { if (v && j !== slot) boost += E.attackOf(side, j) - E.attackOf(view.s[0], j); });
-      var line = amb && !c.kw.taage && amb >= c.h ? "<span style='color:#ff8a8a'>ambush kills it</span>" : boost > 0 ? "<span style='color:var(--gold)'>+" + boost + " ⚔ to allies</span>" : "";
+      var nb = c.kw.shine ? [slot - 1, slot + 1].filter(function (j) { return view.s[0].board[j]; }).length : 0;
+      var line = amb && !c.kw.taage && amb >= c.h ? "<span style='color:#ff8a8a'>ambush kills it</span>" : nb ? "<span style='color:var(--gold)'>✧ +" + c.kw.shine + "/+" + c.kw.shine + " to " + nb + "</span>" : boost > 0 ? "<span style='color:var(--gold)'>+" + boost + " ⚔ to allies</span>" : "";
       return '<div class="pv"><b class="' + (up ? "up" : "") + '">⚔ ' + a + "</b>" + line + "</div>";
     }
     function drawBoards() {
@@ -619,11 +657,17 @@
     }
     function full() { snap(); drawBoards(); drawHand(); teachKw(); }
     // Første gang et nøgleord er på hånden: forklar det i info-feltet (dommer, nat 2: "Kin, Veil, Devour forklares ikke").
-    var KWN = { gnist: "Spark", taage: "Veil", flok: "Kin", rod: "Mend", sluger: "Devour", rally: "Rally", ambush: "Ambush" };
+    var KWN = { gnist: "Spark", taage: "Veil", flok: "Kin", rod: "Mend", sluger: "Devour", rally: "Rally", ambush: "Ambush", bloom: "Bloom", shine: "Shine" };
     function teachKw() {
       if (sel >= 0 || b.over || b.who !== 0) return;
       for (var i = 0; i < b.s[0].hand.length; i++) {
         var c = D.BY[b.s[0].hand[i]];
+        if (c.el2 && !S.seen.kw_twin) {
+          S.seen.kw_twin = 1; save();
+          info.innerHTML = "<span class='trait'>New · </span><b>Twin light</b> <span class='dim'>(on " + esc(c.n) + ")</span><br>" + (c.el2 === "*" ? "It counts as every light — for Kin." : D.TWIN);
+          info.classList.remove("teach"); void info.offsetWidth; info.classList.add("teach");
+          return;
+        }
         for (var k in c.kw) if (!S.seen["kw_" + k]) {
           S.seen["kw_" + k] = 1; save();
           info.innerHTML = "<span class='trait'>New word · </span><b>" + KWN[k] + "</b> <span class='dim'>(on " + esc(c.n) + ")</span><br>" + D.KW[k].replace(/\bN\b/g, c.kw[k]);
@@ -677,7 +721,8 @@
           if (e.t === "hit") { var u = V[e.si].board[e.slot]; if (u) u.h -= e.n; drawBoards(); var se = slotEl(e.si, e.slot), c3 = se.querySelector(".card"); if (c3) c3.classList.add("hitfx"); floatTxt(se, "−" + e.n, e.n >= 4 ? "big" : ""); SFX.hit(); return wait(260); }
           if (e.t === "dodge") { var u2 = V[e.si].board[e.slot]; if (u2) u2.shield = false; drawBoards(); floatTxt(slotEl(e.si, e.slot), "veiled!", "b"); SFX.dodge(); return wait(260); }
           if (e.t === "die") { var c4 = slotEl(e.si, e.slot).querySelector(".card"); if (c4) { c4.classList.add("die"); particles(c4, ELCOL[D.BY[e.id].el], 12, 70); } SFX.die(); return wait(330).then(function () { V[e.si].board[e.slot] = null; drawBoards(); }); }
-          if (e.t === "grow") { var u3 = V[e.si].board[e.slot]; if (u3) { u3.a++; u3.h++; u3.mh++; } drawBoards(); floatTxt(slotEl(e.si, e.slot), "+1/+1", "g"); SFX.heal(); return wait(260); }
+          if (e.t === "grow") { var u3 = V[e.si].board[e.slot]; if (u3) { u3.a++; u3.h++; u3.mh++; } drawBoards(); floatTxt(slotEl(e.si, e.slot), e.bloom ? "bloom +1/+1" : "+1/+1", "g"); SFX.heal(); return wait(e.bloom ? 300 : 260); }
+          if (e.t === "shine") { var u6 = V[e.si].board[e.slot]; if (u6) { u6.a += e.n; u6.h += e.n; u6.mh += e.n; } drawBoards(); var c6 = slotEl(e.si, e.slot).querySelector(".card"); if (c6) particles(c6, ["#fff1a8", "#ffffff", "#ffd27a"], 10, 50); floatTxt(slotEl(e.si, e.slot), "✧ +" + e.n + "/+" + e.n, "g"); SFX.heal(); return wait(320); }
           if (e.t === "face") { V[e.si].hp -= e.n; drawBoards(); var he = el.querySelector(e.si ? ".hero.foe" : ".hero.me"); he.classList.remove("hit"); void he.offsetWidth; he.classList.add("hit"); floatTxt(he, "−" + e.n); SFX.face();
             if (e.si === 0) { var vg = h('<div class="vignette"></div>'); document.body.appendChild(vg); setTimeout(function () { vg.remove(); }, 520); app.classList.remove("quake"); void app.offsetWidth; app.classList.add("quake"); }
             else particles(he, ["#ffc861", "#fff1c9", "#ff9a3d"], 10, 60); if (navigator.vibrate && e.si === 0) try { navigator.vibrate(30); } catch (x) {} return wait(300); }
@@ -753,7 +798,9 @@
         if (won && S.island > 0) {
           // Vælg selv belønningen: en temapakke, så man kan bygge mod et lys (Kin) — Rosewater: lad spillerne vælge deres spil.
           msg = msg.replace("<br>You get <b>1 pack</b>.", "") + "<p style='text-align:center;margin:10px 0 0'><b>Choose your pack:</b></p><p class='dim' style='text-align:center;font-size:13px;margin:0'>Commons and uncommons of that light. The rare can be anything.</p>";
-          modal(msg, [{ t: "🔥 Blaze", v: "glod", cls: "pb-glod" }, { t: "🌫 Mist", v: "taage", cls: "pb-taage" }, { t: "🌱 Root", v: "rod", cls: "pb-rod" }]).then(function (v) {
+          var pbs = [{ t: "🔥 Blaze", v: "glod", cls: "pb-glod" }, { t: "🌫 Mist", v: "taage", cls: "pb-taage" }, { t: "🌱 Root", v: "rod", cls: "pb-rod" }];
+          if (starOpen()) { pbs.push({ t: "★ Starfall", v: "star", cls: "pb-star" }); msg = msg.replace("The rare can be anything.", "The rare can be anything. ★ Starfall: only Starfall spirits."); }
+          modal(msg, pbs).then(function (v) {
             S.packq = S.packq || []; S.packq.unshift(v); save(); T("pack_choice", { el: v, island: S.island }); packScreen(false);
           });
         } else modal(msg, [{ t: won ? "Open the pack" : "To the map", v: 1 }]).then(function () { if (won) packScreen(false); else home(); });

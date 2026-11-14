@@ -39,12 +39,12 @@
   var WILDNAME = { glod: "Wild Blaze spirits", taage: "Wild Mist spirits", rod: "Wild Root spirits" };
   function wildEncounter(to, r, dark) {
     var el = pick(["glod", "taage", "rod"], r);
-    var pool = D.CARDS.filter(function (c) { return c.el === el && !c.sea && (c.r === "c" || (c.r === "u" && to >= 2) || (c.r === "r" && to >= 4)); });
+    var pool = D.CARDS.filter(function (c) { return c.el === el && !c.sea && !c.set && (c.r === "c" || (c.r === "u" && to >= 2) || (c.r === "r" && to >= 4)); });
     var deck = [];
     for (var i = 0; i < 9 + to; i++) deck.push(pick(pool, r).id);
     // Fra ø 4: nogle flokke har en leder — en sjælden ånd, man kan vinde (0.9.3).
     var leader = null;
-    if (to >= 3 && r() < 0.4) { leader = pick(D.CARDS.filter(function (c) { return c.el === el && c.r === "r" && !c.sea; }), r).id; deck.push(leader); }
+    if (to >= 3 && r() < 0.4) { leader = pick(D.CARDS.filter(function (c) { return c.el === el && c.r === "r" && !c.sea && !c.set; }), r).id; deck.push(leader); }
     return { el: el, n: "Open sea", foe: WILDNAME[el], hp: 7 + to * 2 + (dark || 0) * 2 + (leader ? 3 : 0), deck: deck, trait: null, wild: true, leader: leader };
   }
 
@@ -54,8 +54,8 @@
     var drift = D.CARDS.filter(function (c) { return c.sea && !(coll[c.id] > 0) && c.r !== "m"; });
     var dEl = drift.filter(function (c) { return c.el === el; });
     if (dEl.length) out.push(pick(dEl, r).id); else if (drift.length) out.push(pick(drift, r).id);
-    else out.push(pick(D.CARDS.filter(function (c) { return c.r === "r" && !c.sea; }), r).id);
-    var rest = D.CARDS.filter(function (c) { return c.el === el && !c.sea && (c.r === "c" || c.r === "u"); });
+    else out.push(pick(D.CARDS.filter(function (c) { return c.r === "r" && !c.sea && !c.set; }), r).id);
+    var rest = D.CARDS.filter(function (c) { return c.el === el && !c.sea && !c.set && (c.r === "c" || c.r === "u"); });
     if (leader && out.indexOf(leader) < 0) out.push(leader);
     for (var g = 0; out.length < 3 && g < 40; g++) { var id = pick(rest, r).id; if (out.indexOf(id) < 0) out.push(id); }
     return out;
@@ -70,7 +70,7 @@
   }
   function randomCard(r, rar, opts) {
     opts = opts || {};
-    var pool = D.CARDS.filter(function (c) { return c.r === rar && (opts.sea ? true : !c.sea); });
+    var pool = D.CARDS.filter(function (c) { return c.r === rar && !c.set && (opts.sea ? true : !c.sea); });
     return pick(pool, r).id;
   }
   function boon(S, k, n) { S.voy.boon = S.voy.boon || {}; S.voy.boon[k] = (S.voy.boon[k] || 0) + n; }
@@ -152,7 +152,7 @@
     { id: "kelp", i: "🌿", n: "The Kelp Maze", t: "Glowing kelp closes in around your boat. Somewhere inside, something hums.",
       ch: [
         { t: "Follow the glow", sub: "Maybe a Root spirit. Maybe nothing.", fx: function (S, r) {
-          if (r() < 0.6) { var pool = D.CARDS.filter(function (c) { return c.el === "rod" && !c.sea && (c.r === "c" || c.r === "u"); }), id = pick(pool, r).id, m = give(S, id);
+          if (r() < 0.6) { var pool = D.CARDS.filter(function (c) { return c.el === "rod" && !c.sea && !c.set && (c.r === "c" || c.r === "u"); }), id = pick(pool, r).id, m = give(S, id);
             return { t: "A small root spirit, humming to itself. It climbs aboard." + (m ? " (A spare — melted into " + m + " ✦.)" : ""), card: id }; }
           return { t: "Just kelp, all the way down. You find your way out." }; } },
         { t: "Cut straight through", sub: "+4 ✦, but −2 lantern life next warden battle.", fx: function (S) { S.embers += 4; boon(S, "hp", -2); return { t: "Sap and sparks everywhere. (+4 ✦, −2 life next warden battle)" }; } },
@@ -160,7 +160,7 @@
     { id: "shoal", i: "🐟", n: "Moonlit Shoal", t: "Under the moon, a shoal of mist-fish dances in perfect circles.",
       ch: [
         { t: "Join the dance", sub: "A Mist spirit joins you.", fx: function (S, r) {
-          var pool = D.CARDS.filter(function (c) { return c.el === "taage" && !c.sea && (c.r === "c" || c.r === "u"); }), id = pick(pool, r).id, m = give(S, id);
+          var pool = D.CARDS.filter(function (c) { return c.el === "taage" && !c.sea && !c.set && (c.r === "c" || c.r === "u"); }), id = pick(pool, r).id, m = give(S, id);
           return { t: "You dance badly. One fish thinks it’s funny, and stays." + (m ? " (A spare — melted into " + m + " ✦.)" : ""), card: id }; } },
         { t: "Just watch", sub: "+3 lantern life next warden battle.", fx: function (S) { boon(S, "hp", 3); return { t: "It’s beautiful. Your lantern burns steadier for it. (+3 life next warden battle)" }; } },
       ] },

@@ -101,3 +101,21 @@ vilde ånder +2 liv pr. niveau, hver vogtersejr giver +3 ✦ pr. niveau, og den 
 Små ting samme nat: Root Witch 18 → 16 liv (dommer + Mathias tabte ved de første øer); plads-forhåndsvisning (0.8.4);
 pakke-finale (0.8.2).
 Idéer til senere niveauer: én ekstra regel pr. niveau (fx vogtere starter med en ånd på brættet), egne Darkness-drifters.
+
+## Nat 4 (0.9.6 → 0.10.0)
+**0.9.6 — dommerens fejl:** pakken reagerer straks (et ekstra tryk springer rysten over), "Reveal all" ~1,5 s (før 6–8 s),
+sjældenhed som ædelsten på hvert kort, **fair starthånd** (`fairHand` i engine: har decket et 1-lys-kort, er der ét på
+hånden — tur 1 har kun 1 lys), autoDeck tager mindst 2 til 1 lys, tryk på tomt felt uden valgt kort forklarer hvad man gør.
+
+**0.10.0 — Starfall (sæt 2).** Telemetri: Mathias tændte Den Sorte Fyr (nat 3) og har 30/36 → indholdet var slut, og hans
+deck (mono-Blaze) ændrede sig aldrig. Starfall lander første gang Den Sorte Fyr er tændt (`S.bestDark >= 1`): en lille
+begivenhed (stjerneskud + historie) og 2 gratis Starfall-pakker; derefter kan man vælge en Starfall-pakke efter hver vogter.
+13 kort (`set: 2`, kun i Starfall-pakker, aldrig på havet/i vilde møder). Tre nye ting, alle for at gøre **deckbygning på
+tværs af lys** interessant:
+- **Twin light** (`el2`): tæller som begge lys for Kin (begge veje). `"*"` = alle lys (mytisk). Kin bruger nu `D.shareLight`.
+- **Bloom**: +1/+1 ved slutningen af din tur, højst 3 gange (uden loft var Starseed +9–10 point bedst i `tests/kortrate.js`).
+- **Shine N**: når den lægges, får naboerne +N/+N (placering i egen række, permanent i modsætning til Rally).
+Balance: `node tests/kortrate.js 30000` (tilfældige decks mod ø 2–7, Darkness 1): alle Starfall-kort mellem −2,2 og +2,9.
+**Synergi i deckbyggeren:** tryk på et kort → kort, der spiller sammen med det (Kin-lys, Devour+Spark), lyser grønt, og
+infofeltet siger hvorfor ("Kin: 14 spirits in your deck share its light").
+Samlingen er nu 49; milepæle 42 og 49 (49 → 3 pakker).

@@ -43,9 +43,30 @@
     { id: "d4", n: "Whalesong", el: "taage", r: "r", c: 5, a: 3, h: 6, kw: { rally: 1, rod: 2 }, t: "Its song carries the whole shoal.", sea: 1 },
     { id: "d5", n: "Drowned Lamplighter", el: "rod", r: "r", c: 4, a: 3, h: 4, kw: { gnist: 1, rod: 1, ambush: 1 }, t: "Still tending a lamp under the waves.", sea: 1 },
     { id: "d6", n: "The Starfallen", el: "glod", r: "m", c: 6, a: 5, h: 5, kw: { gnist: 2, rally: 1 }, t: "It fell from the sky and kept burning.", sea: 1 },
+    // Set 2 — Starfall (0.10.0): unlocked when the Black Lighthouse is lit the first time. Only in Starfall packs.
+    // el2 = a second light (twin: counts as both lights, for Kin) · "*" = every light. Bloom: grows +1/+1 at the end of your turn.
+    // Shine N: when played, the spirits beside it get +N/+N.
+    { id: "s1", n: "Steamling", el: "glod", el2: "taage", r: "c", c: 2, a: 2, h: 2, kw: { flok: 1 }, t: "Fire met fog, and giggled.", set: 2 },
+    { id: "s2", n: "Bogwisp", el: "taage", el2: "rod", r: "c", c: 2, a: 1, h: 3, kw: { flok: 1 }, t: "Lights the way across the marsh — sometimes.", set: 2 },
+    { id: "s3", n: "Emberbark", el: "rod", el2: "glod", r: "c", c: 3, a: 2, h: 4, kw: { flok: 1 }, t: "A tree that remembers the fire.", set: 2 },
+    { id: "s4", n: "Starseed", el: "rod", r: "c", c: 2, a: 0, h: 2, kw: { bloom: 1 }, t: "Plant it. Protect it. Wait.", set: 2 },
+    { id: "s5", n: "Starwick", el: "glod", r: "c", c: 2, a: 1, h: 1, kw: { shine: 1 }, t: "A candle that blesses whoever stands near.", set: 2 },
+    { id: "s6", n: "Geyser Drake", el: "glod", el2: "taage", r: "u", c: 4, a: 3, h: 3, kw: { flok: 1, gnist: 2 }, t: "It sleeps under the sea and wakes up boiling.", set: 2 },
+    { id: "s7", n: "Ashgrove Stag", el: "rod", el2: "glod", r: "u", c: 4, a: 3, h: 4, kw: { flok: 1, rally: 1 }, t: "Its antlers smoulder like dry branches.", set: 2 },
+    { id: "s8", n: "Glowcap", el: "taage", r: "u", c: 3, a: 1, h: 3, kw: { taage: 1, bloom: 1 }, t: "A mushroom that only grows in the dark.", set: 2 },
+    { id: "s9", n: "Phoenix Chick", el: "glod", r: "u", c: 3, a: 2, h: 3, kw: { bloom: 1, sluger: 1 }, t: "Small now. Not for long.", set: 2 },
+    { id: "s10", n: "Moonpool", el: "taage", r: "u", c: 3, a: 1, h: 3, kw: { shine: 1, taage: 1 }, t: "The moon bathes here, and so do its friends.", set: 2 },
+    { id: "s11", n: "Marsh Mother", el: "taage", el2: "rod", r: "r", c: 5, a: 3, h: 5, kw: { flok: 1, bloom: 1 }, t: "Every reed in the marsh is one of her children.", set: 2 },
+    { id: "s12", n: "Old Starwarden", el: "rod", r: "r", c: 5, a: 3, h: 5, kw: { shine: 2 }, t: "It caught the first falling star — and kept it.", set: 2 },
+    { id: "s13", n: "Heart of the Starfall", el: "glod", el2: "*", r: "m", c: 7, a: 4, h: 6, kw: { shine: 2, bloom: 1, flok: 1 }, t: "Every light in the sea leans toward it.", set: 2 },
   ];
   var BY = {}; CARDS.forEach(function (c) { BY[c.id] = c; });
   var EL = { glod: "Blaze", taage: "Mist", rod: "Root" };
+  // Lysene et kort har (twin-kort har to; "*" = alle tre).
+  function lights(c) { return c.el2 === "*" ? ["glod", "taage", "rod"] : c.el2 ? [c.el, c.el2] : [c.el]; }
+  function hasLight(c, el) { return lights(c).indexOf(el) >= 0; }
+  function shareLight(a, b) { return lights(a).some(function (e) { return hasLight(b, e); }); }
+  function lightName(c) { return c.el2 === "*" ? "Every light" : lights(c).map(function (e) { return EL[e]; }).join(" & "); }
   var RAR = { c: "Common", u: "Uncommon", r: "Rare", m: "Mythic" };
   var KW = {
     gnist: "Spark N: when played, deal N damage to the spirit opposite (or the enemy lantern).",
@@ -55,7 +76,10 @@
     sluger: "Devour: gains +1/+1 when it kills a spirit.",
     rally: "Rally: your spirits next to it get +1 attack.",
     ambush: "Ambush N: an enemy landing opposite takes N damage.",
+    bloom: "Bloom: grows +1/+1 at the end of your turn — up to 3 times.",
+    shine: "Shine N: when played, the spirits beside it get +N/+N.",
   };
+  var TWIN = "Twin light: it counts as both lights — for its own Kin, and for its allies’ Kin.";
   // The islands: wardens with fixed decks
   var ISLANDS = [
     { n: "Skerrystone", lore: "A bare rock where gulls fight over washed-up lights.", foe: "The Hungry Gull", say: "Mine! Every light on this rock is MINE!", beaten: "Fine… keep your little lamp. Skraak.", hp: 10, deck: ["n1","n1","g1","g1","t1","t1","r2","r2","g3","t2","n1","g2"] },
@@ -75,6 +99,6 @@
     tide: { n: "High Tide", t: "His lantern heals 2 after his turn." },
     night: { n: "Endless Night", t: "The Dark draws 2 cards each turn." },
   };
-  var api = { TRAITS: TRAITS, CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
+  var api = { TWIN: TWIN, lights: lights, hasLight: hasLight, shareLight: shareLight, lightName: lightName, TRAITS: TRAITS, CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
   if (typeof module !== "undefined") module.exports = api; else root.DATA = api;
 })(this);

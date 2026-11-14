@@ -181,7 +181,7 @@ h2{margin:4px 0 8px;font-size:20px}
 /* samlemappe (0.6.1) */
 button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #ffffff22}
 .bars{display:flex;flex-direction:column;gap:6px;margin:6px 0}
-.ebar{display:grid;grid-template-columns:52px 1fr 44px;align-items:center;gap:8px;font-size:14px}
+.ebar{display:grid;grid-template-columns:62px 1fr 44px;align-items:center;gap:8px;font-size:14px}
 .ebar>div{height:10px;border-radius:6px;background:#222b4d;overflow:hidden}.ebar i{display:block;height:100%;background:var(--glod)}
 .ebar.taage i{background:var(--taage)}.ebar.rod i{background:var(--rod)}.ebar b{text-align:right}
 .miles{display:flex;justify-content:center;gap:8px;margin:6px 0 0}
@@ -288,3 +288,22 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
 .card .gem{position:absolute;left:50%;bottom:5%;width:.85em;height:.85em;transform:translateX(-50%) rotate(45deg);background:#8a93b8;border-radius:2px;box-shadow:0 0 0 1px #0008}
 .card.u .gem{background:var(--u)}.card.r .gem{background:var(--r);box-shadow:0 0 6px var(--r)}.card.m .gem{background:var(--m);box-shadow:0 0 8px var(--m)}
 .card.c .gem{width:.6em;height:.6em;border-radius:50%}
+/* ---------- Starfall (0.10.0) ---------- */
+.card.tw{background:linear-gradient(160deg,color-mix(in srgb,var(--el) 38%,#141b33) 0 45%,color-mix(in srgb,var(--el2) 38%,#141b33) 55%,#0e1328 92%)}
+.card.tw-glod{--el2:var(--glod)}.card.tw-taage{--el2:var(--taage)}.card.tw-rod{--el2:var(--rod)}
+.card.tw-all{--el2:#fff1a8;background:linear-gradient(160deg,color-mix(in srgb,var(--glod) 35%,#141b33),color-mix(in srgb,var(--taage) 35%,#141b33) 40%,color-mix(in srgb,var(--rod) 35%,#141b33) 70%,#0e1328)}
+.card.tw::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--el) 50%,var(--el2) 50%);z-index:1}
+.card.tw-all::before{background:linear-gradient(90deg,var(--glod) 33%,var(--taage) 33% 66%,var(--rod) 66%)}
+.row:has(>.pb-star){flex-wrap:wrap}
+.btn.pb-star{flex-basis:100%!important;background:linear-gradient(#fff6c8,#c9a2ff);color:#2a1650;box-shadow:0 4px 0 #5a3a8a;padding:14px 8px;font-size:16px}
+.pack.p-star{background:radial-gradient(circle at 30% 25%,#fff6c855,transparent 30%),linear-gradient(135deg,#2a1a5a,#0e1328 50%,#3a2a6a);border-color:#fff1a8;box-shadow:0 0 50px #c9a2ff77}
+.pack.p-star .lbl{color:#fff1a8}
+.ebar.star i{background:linear-gradient(90deg,#fff1a8,#c9a2ff)}
+.card.unknown.star{border-style:dashed;border-color:#c9a2ff88}
+.card.unknown.star .q{color:#c9a2ff88}
+.sethead{grid-column:1/-1;flex-basis:100%;text-align:center;font-weight:900;color:#fff1a8;margin:10px 0 2px;letter-spacing:.05em}
+.starfall{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+.starfall i{position:absolute;top:-20px;width:3px;height:60px;border-radius:3px;background:linear-gradient(#fff0,#fff1a8,#fff);transform:rotate(-20deg);animation:sfall 1.6s ease-in forwards;opacity:0}
+@keyframes sfall{0%{opacity:0;transform:translate(0,0) rotate(-20deg)}10%{opacity:1}100%{opacity:0;transform:translate(-25vw,110vh) rotate(-20deg)}}
+.card .nm.l{font-size:.8em;top:57.5%}.card .nm.xl{font-size:.66em;top:58%;letter-spacing:-.01em}
+.card.syn{box-shadow:0 0 0 2px #8dffb0,0 0 16px #8dffb0aa!important;opacity:1!important;filter:none!important}.card.focus{box-shadow:0 0 0 2px var(--gold),0 0 18px var(--gold)!important}

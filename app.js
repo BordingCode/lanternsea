@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.9.4";
+  var VERSION = "0.9.5";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -627,7 +627,7 @@
           var start = b.log.length; E.play(b, sel, i); sel = -1; info.innerHTML = "";
           animate(b.log.slice(start)).then(after);
         } else if (b.s[0].board[i]) { info.innerHTML = cardInfo(b.s[0].board[i].id); }
-        else toast("Not enough light");
+        else toast(E.closed(b, i) ? "This lane is closed (Gale)" : D.BY[b.s[0].hand[sel]].c > b.s[0].lys ? "Not enough light — you have " + b.s[0].lys : "You can’t play there");
       } else if (b.s[0].board[i]) info.innerHTML = cardInfo(b.s[0].board[i].id);
     };
     el.querySelector(".hero.foe").onclick = function () {

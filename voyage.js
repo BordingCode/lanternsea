@@ -36,12 +36,12 @@
 
   // Vilde ånder: en lille flok af ét lys. Bliver stærkere jo længere ude.
   var WILDNAME = { glod: "Wild Blaze spirits", taage: "Wild Mist spirits", rod: "Wild Root spirits" };
-  function wildEncounter(to, r) {
+  function wildEncounter(to, r, dark) {
     var el = pick(["glod", "taage", "rod"], r);
     var pool = D.CARDS.filter(function (c) { return c.el === el && !c.sea && (c.r === "c" || (c.r === "u" && to >= 2) || (c.r === "r" && to >= 4)); });
     var deck = [];
     for (var i = 0; i < 9 + to; i++) deck.push(pick(pool, r).id);
-    return { el: el, n: "Open sea", foe: WILDNAME[el], hp: 7 + to * 2, deck: deck, trait: null, wild: true };
+    return { el: el, n: "Open sea", foe: WILDNAME[el], hp: 7 + to * 2 + (dark || 0) * 2, deck: deck, trait: null, wild: true };
   }
 
   // Tre ånder at vælge imellem: en ukendt drifter (hvis der er nogen), ellers en sjælden, + to fra flokkens lys.

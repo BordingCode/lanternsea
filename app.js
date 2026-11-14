@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.8.4";
+  var VERSION = "0.9.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -179,7 +179,7 @@
         // fyrtårn
         '<rect x="' + (p[0] - 0.9) + '" y="' + (p[1] - 6) + '" width="1.8" height="5" fill="' + (st === "lock" ? "#2a3150" : "#e8e0d0") + '"/>' +
         '<circle cx="' + p[0] + '" cy="' + (p[1] - 6.5) + '" r="1.3" fill="' + (st === "done" ? "#fff1a8" : st === "cur" ? "#553" : "#223") + '"/>' +
-        '<text x="' + p[0] + '" y="' + (p[1] + 11) + '" text-anchor="middle" font-size="3.4" fill="' + (st === "lock" ? "#5a6388" : "#dfe3ff") + '" font-weight="700">' + (st === "lock" && i > S.island + 1 ? "?" : esc(is.n)) + "</text>" +
+        '<text x="' + p[0] + '" y="' + (p[1] + 11) + '" text-anchor="middle" font-size="3.4" fill="' + (st === "lock" ? "#5a6388" : "#dfe3ff") + '" font-weight="700">' + (st === "lock" && i > S.island + 1 && i > (S.best || 0) ? "?" : esc(is.n)) + "</text>" +
         (st === "cur" ? '<g class="boat"><path d="M' + (p[0] + 7) + " " + (p[1] + 2) + " l6 0 l-1.2 2 l-3.6 0z" + '" fill="#c9a86a"/><path d="M' + (p[0] + 10) + " " + (p[1] + 2) + " l0 -6 l3 5z" + '" fill="#eef0ff"/><circle cx="' + (p[0] + 9) + '" cy="' + (p[1] + 0.6) + '" r=".9" fill="#ffd27a"/></g>' : "") +
         "</g>";
     });
@@ -227,16 +227,16 @@
   function home() {
     var caught = claimMiles();
     var el = h('<div class="screen"><div class="hud"><div class="flames">' + flamesHTML() + '</div><div class="row"><span class="pill">✦ ' + S.embers + ' glimmer</span><button class="pill" id="binder">📖 ' + uniqueOwned() + "/" + D.CARDS.length + " spirits</button></div></div>" +
-      '<h2 style="margin-top:10px">The Dark Sea' + (S.runs > 1 ? ' <span class="dim" style="font-size:14px">· voyage ' + S.runs + "</span>" : "") + '</h2><div class="map"></div><div class="info" id="islinfo" style="min-height:64px"></div>' +
+      '<h2 style="margin-top:10px">The Dark Sea' + (S.runs > 1 ? ' <span class="dim" style="font-size:14px">· voyage ' + S.runs + "</span>" : "") + (S.dark ? ' <span class="darkpill">Darkness ' + ROMAN[S.dark] + "</span>" : "") + '</h2><div class="map"></div><div class="info" id="islinfo" style="min-height:64px"></div>' +
       '<div class="bottom"><div class="row"><button class="btn sec" id="deck">Deck (' + S.deck.length + ')</button><button class="btn sec" id="packs">Packs (' + S.packs + ")</button></div>" +
       '<button class="btn" id="sail">' + (legDone() ? "Land on " : "Set sail for ") + esc(D.ISLANDS[S.island].n) + "</button></div></div>");
     var map = el.querySelector(".map");
     map.innerHTML = seaChart();
     var islInfo = el.querySelector("#islinfo");
     function showIsl(i) {
-      var is = D.ISLANDS[i], known = i <= S.island;
+      var is = D.ISLANDS[i], known = i <= Math.max(S.island, S.best || 0);
       islInfo.innerHTML = "<b>" + (i + 1) + ". " + esc(is.n) + "</b>" + (i < S.island ? " <span style='color:var(--gold)'>· lit ✦</span>" : i === S.island ? " <span style='color:var(--gold)'>· next</span>" : "") + "<br>" +
-        (known ? "<span class='dim'>Warden: " + esc(is.foe) + " · " + is.hp + " life</span>" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") : "<span class='dim'>Beyond the dark. Unknown.</span>") +
+        (known ? "<span class='dim'>Warden: " + esc(is.foe) + " · " + E.warden(i, S.dark).hp + " life</span>" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") : "<span class='dim'>Beyond the dark. Unknown.</span>") +
         (i === S.island && S.voy && S.voy.to === i && S.voy.boon && VOY.boonText(S.voy.boon) ? "<br><span style='color:#8dffb0'>✧ Voyage: " + VOY.boonText(S.voy.boon) + "</span>" : "");
       map.querySelectorAll(".mi").forEach(function (g) { g.classList.toggle("picked", +g.dataset.i === i); });
     }
@@ -515,9 +515,9 @@
   // ---------- kamp ----------
   // enc: et vildt møde på havet (VOY.wildEncounter); ellers øens vogter.
   function battleScreen(enc) {
-    var wild = !!enc, isl = enc || D.ISLANDS[S.island], opt = null;
+    var wild = !!enc, isl = enc || E.warden(S.island, S.dark), opt = null;
     if (!wild && S.voy && S.voy.to === S.island && S.voy.boon) { opt = S.voy.boon; S.voy.boon = null; save(); }
-    var b = E.newBattle(S.deck, wild ? enc : S.island, (R() * 1e9) >>> 0, opt);
+    var b = E.newBattle(S.deck, isl, (R() * 1e9) >>> 0, opt);
     E.startTurn(b);
     var sel = -1, busy = false;
     var el = h('<div class="screen battle">' +
@@ -707,14 +707,19 @@
       var msg;
       if (won) {
         S.wins++; S.packs++; S.island++; S.best = Math.max(S.best, S.island); S.voy = null;
+        var dg = 3 * (S.dark || 0); S.embers += dg; // dybere mørke → rigere belønning
         SFX.win();
         if (S.island >= D.ISLANDS.length) {
-          T("progress", { step: "victory", runs: S.runs });
-          S.island = 0; S.flames = 3; S.runs++; S.packs += 2; S.voy = null;
-          msg = "<h1>The Black Lighthouse burns!</h1><p style='text-align:center'>You lit the whole Dark Sea. The spirits sing.<br><br>You get 3 packs. The Dark will return — a new voyage awaits.</p>";
+          var was = S.dark || 0;
+          T("progress", { step: "victory", runs: S.runs, dark: was });
+          S.island = 0; S.flames = 3; S.runs++; S.packs += 2 + was; S.voy = null;
+          S.dark = Math.min(E.MAXDARK, was + 1); S.bestDark = Math.max(S.bestDark || 0, was + 1);
+          msg = "<h1>The Black Lighthouse burns!</h1><p style='text-align:center'>You lit the whole Dark Sea" + (was ? " — even in Darkness " + ROMAN[was] : "") + ". The spirits sing.<br>You get <b>" + (3 + was) + " packs</b>.</p>" +
+            (was < E.MAXDARK ? "<p class='quote'>“…then I will sink deeper.”</p><p style='text-align:center'>The Dark returns as <b class='darkpill'>Darkness " + ROMAN[S.dark] + "</b>.<br><span class='dim'>Wardens have more life. Wild spirits are tougher. Every victory pays more glimmer.</span></p>"
+              : "<p style='text-align:center'>You have driven the Dark to its very bottom. Darkness V is yours to sail, again and again.</p>");
         } else {
           T("progress", { island: S.island });
-          msg = "<h1>Victory!</h1><p style='text-align:center'>" + esc(isl.foe) + " is defeated, and the lighthouse on " + esc(isl.n) + " is lit.<br>You get <b>1 pack</b>.</p>" + (isl.beaten ? "<p class='quote'>“" + esc(isl.beaten) + "”</p>" : "");
+          msg = "<h1>Victory!</h1><p style='text-align:center'>" + esc(isl.foe) + " is defeated, and the lighthouse on " + esc(isl.n) + " is lit.<br>You get <b>1 pack</b>.</p>" + (dg ? "<p class='dim' style='text-align:center;margin:0'>Darkness bonus: +" + dg + " ✦</p>" : "") + (isl.beaten ? "<p class='quote'>“" + esc(isl.beaten) + "”</p>" : "");
         }
       } else {
         S.losses++; S.flames--; SFX.lose();
@@ -750,6 +755,7 @@
   }
 
   // ---------- sejladsen (The Voyage, 0.8.0) ----------
+  var ROMAN = ["", "I", "II", "III", "IV", "V"];
   function legDone() { return S.island < 1 || !!(S.voy && S.voy.to === S.island && S.voy.step >= 2); }
   function ensureLeg() {
     if (!S.voy || S.voy.to !== S.island) { var seen = S.voy && S.voy.seenEv; S.voy = VOY.makeLeg(S.island, R); S.voy.seenEv = (seen || []).slice(-4); save(); }
@@ -812,7 +818,7 @@
   function nodeScreen(type) {
     var v = S.voy, el, res;
     if (type === "wild") {
-      var enc = VOY.wildEncounter(S.island, R);
+      var enc = VOY.wildEncounter(S.island, R, S.dark);
       var rumour = D.CARDS.some(function (c) { return c.sea && c.el === enc.el && c.r !== "m" && !owned(c.id); });
       el = stopScreen("wild", enc.foe + "!", "A shoal of wild spirits blocks your way. <b>Win</b>, and one of them joins you." + (rumour ? "<br><span style='color:#6fc3ff'>🌊 A drifter has been seen among them…</span>" : "") + "<br><span style='color:#ff8a8a'>Lose, and a flame goes out.</span>");
       el.querySelector(".stopcards").innerHTML = '<div class="peek">' + enc.deck.filter(function (id, i, a) { return a.indexOf(id) === i; }).slice(0, 4).map(function (id) { return cardHTML(id); }).join("") + "</div>";

@@ -264,3 +264,4 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
 .slot .pv b{font-size:18px;color:#ffb08c}
 .slot .pv b.up{color:var(--gold);text-shadow:0 0 8px #ffb347}
 @media (min-width:700px){.slot .pv{font-size:14px}.slot .pv b{font-size:24px}}
+.darkpill{display:inline-block;background:#2a1440;color:#d4a8ff;border:1px solid #b46bff88;border-radius:999px;padding:1px 10px;font-size:13px;font-weight:800;vertical-align:middle;box-shadow:0 0 12px #b46bff44}

@@ -92,3 +92,12 @@ løb tør. Nu sejler man **mellem øerne** (fra ø 2): hver overfart har 2 skill
 - **Drifters**: 6 nye ånder (d1–d6), kun på havet — aldrig i pakker, kan ikke lokkes. Samlingen er nu 36.
 Gemt tilstand: `S.voy = {to, step, nodes, done, boon, seenEv}`; valget forpligtes, før stoppet vises (ingen gen-valg ved genindlæsning).
 Ø 1 har ingen overfart (de første minutter skal hurtigt frem til første kamp).
+
+## Darkness (0.9.0, nat 3) — det langsigtede mål efter Den Sorte Fyr
+Før: efter sejren startede alt forfra med de samme vogtere. Nu: hver gang Den Sorte Fyr tændes, vender Mørket
+dybere tilbage — **Darkness I–V** (`S.dark`, `S.bestDark`). Vogterne får +10 % liv pr. niveau (`E.warden(i, dark)`),
+vilde ånder +2 liv pr. niveau, hver vogtersejr giver +3 ✦ pr. niveau, og den endelige sejr giver 3 + niveau pakker.
+20 %/niveau gjorde Den Sorte Fyr umulig ved V (bot 0 %) → 10 %. `node tests/moerke.js 300` måler hele tabellen.
+Små ting samme nat: Root Witch 18 → 16 liv (dommer + Mathias tabte ved de første øer); plads-forhåndsvisning (0.8.4);
+pakke-finale (0.8.2).
+Idéer til senere niveauer: én ekstra regel pr. niveau (fx vogtere starter med en ånd på brættet), egne Darkness-drifters.

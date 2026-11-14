@@ -59,7 +59,7 @@
   // The islands: wardens with fixed decks
   var ISLANDS = [
     { n: "Skerrystone", foe: "The Hungry Gull", say: "Mine! Every light on this rock is MINE!", beaten: "Fine… keep your little lamp. Skraak.", hp: 10, deck: ["n1","n1","g1","g1","t1","t1","r2","r2","g3","t2","n1","g2"] },
-    { n: "Kelpwood", foe: "The Root Witch", say: "Roots remember, little light. They will hold you here forever.", beaten: "Then grow, little light. Grow far from my wood.", hp: 18, trait: "regrow", deck: ["r1","r2","r2","r3","r3","r3","r4","n2","r5","r5","g2","g3","g2","n1"] },
+    { n: "Kelpwood", foe: "The Root Witch", say: "Roots remember, little light. They will hold you here forever.", beaten: "Then grow, little light. Grow far from my wood.", hp: 16, trait: "regrow", deck: ["r1","r2","r2","r3","r3","r3","r4","n2","r5","r5","g2","g3","g2","n1"] },
     { n: "Ash Holm", foe: "The Coal Reeve", say: "Burn bright, and ash is all that’s left. Let me show you.", beaten: "Hm. You burn hotter than I ever did.", hp: 12, trait: "embers", deck: ["r2","n1","g2","g2","g3","g3","g4","g4","g5","n1","g2","g6"] },
     { n: "Storm Skerry", foe: "The Twins", say: "One of us strikes. The other one laughs.", beaten: "We’ll argue later about whose fault this was.", hp: 30, trait: "gale", deck: ["g2","g2","t3","t3","g4","t4","g5","t5","n3","g6","g4","t4","g3","t2"] },
     { n: "Mist Sound", foe: "The Blind Pilot", say: "I cannot see you. I do not need to.", beaten: "So that is what light looks like. I had forgotten.", hp: 15, trait: "fog", deck: ["t1","t1","t2","t2","t3","t3","t4","n1","t5","n1","t6","t3"] },

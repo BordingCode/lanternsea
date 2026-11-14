@@ -52,6 +52,10 @@ ok(Array.isArray(E.migrate({sv:1,coll:{},deck:[]}).packq), "gammel gemt tilstand
   { const b2 = E.newBattle(Array(15).fill("g2"), 1, 3, { hp: 4, draw: 1 }); ok(b2.s[0].hp === 19 && b2.s[0].hand.length === 5, "voyage-bonus: liv og ekstra kort"); }
   { const b3 = E.newBattle(Array(15).fill("g2"), 1, 3, { hp: -40 }); ok(b3.s[0].hp >= 1, "lygten starter aldrig på 0"); }
   ok(E.migrate({sv:1,coll:{},deck:[]}).voy === null, "gammel gemt tilstand får voy"); }
+// Darkness (0.9.0)
+ok(E.newSave().dark === 0 && E.migrate({sv:1,coll:{},deck:[]}).dark === 0, "dark i gemt tilstand");
+ok(E.warden(6, 0).hp === D.ISLANDS[6].hp && E.warden(6, 5).hp === Math.round(D.ISLANDS[6].hp * 1.5) && E.warden(1, 2).deck === D.ISLANDS[1].deck, "vogter skaleres med mørke");
+ok(D.ISLANDS[1].hp === 16, "Root Witch 16 liv");
 // AI-decks gyldige
 D.ISLANDS.forEach(is => ok(is.deck.every(id => D.BY[id]), "ø-deck " + is.n));
 // gemte tilstande fra tidligere versioner

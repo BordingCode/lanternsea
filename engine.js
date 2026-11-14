@@ -125,6 +125,13 @@
     endTurn(b);
     if (si === 1) planFoe(b);
   }
+  // Darkness (0.9.0): hver gang Den Sorte Fyr tændes, bliver Mørket dybere. Vogterne får +10 % liv pr. niveau (20 % gjorde Den Sorte Fyr umulig ved V — tests/moerke.js).
+  var MAXDARK = 5;
+  function warden(i, dark) {
+    var is = D.ISLANDS[i], o = {}; for (var k in is) o[k] = is[k];
+    o.hp = Math.round(is.hp * (1 + 0.1 * (dark || 0)));
+    return o;
+  }
   // Pakker
   // el (valgfri): temapakke — almindelige og ualmindelige kommer fra det lys; den sjældne kan være hvad som helst.
   function openPack(r, el) {
@@ -145,7 +152,7 @@
   }
   // Gemt tilstand + migrering
   var SAVE_VERSION = 1;
-  function newSave() { return { sv: SAVE_VERSION, coll: {}, deck: [], island: 0, flames: 3, best: 0, packs: 2, packq: [], miles: {}, voy: null, embers: 0, wins: 0, losses: 0, runs: 1, seen: {} }; }
+  function newSave() { return { sv: SAVE_VERSION, coll: {}, deck: [], island: 0, flames: 3, best: 0, packs: 2, packq: [], miles: {}, voy: null, dark: 0, embers: 0, wins: 0, losses: 0, runs: 1, seen: {} }; }
   function migrate(s) {
     if (!s || typeof s !== "object") return newSave();
     var base = newSave();
@@ -156,6 +163,6 @@
     s.sv = SAVE_VERSION;
     return s;
   }
-  var api = { SLOTS: SLOTS, closed: closed, chooseMoves: chooseMoves, planFoe: planFoe, rng: rng, newBattle: newBattle, startTurn: startTurn, canPlay: canPlay, play: play, endTurn: endTurn, aiTurn: aiTurn, attackOf: attackOf, openPack: openPack, deckLimit: deckLimit, validDeck: validDeck, newSave: newSave, migrate: migrate, SAVE_VERSION: SAVE_VERSION };
+  var api = { MAXDARK: MAXDARK, warden: warden, SLOTS: SLOTS, closed: closed, chooseMoves: chooseMoves, planFoe: planFoe, rng: rng, newBattle: newBattle, startTurn: startTurn, canPlay: canPlay, play: play, endTurn: endTurn, aiTurn: aiTurn, attackOf: attackOf, openPack: openPack, deckLimit: deckLimit, validDeck: validDeck, newSave: newSave, migrate: migrate, SAVE_VERSION: SAVE_VERSION };
   if (typeof module !== "undefined") module.exports = api; else root.ENG = api;
 })(this);

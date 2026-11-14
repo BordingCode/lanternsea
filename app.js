@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.9.3";
+  var VERSION = "0.9.4";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -738,7 +738,7 @@
       setTimeout(function () {
         if (won && S.island > 0) {
           // Vælg selv belønningen: en temapakke, så man kan bygge mod et lys (Kin) — Rosewater: lad spillerne vælge deres spil.
-          msg = msg.replace("You get <b>1 pack</b>.", "Choose your pack:") + "<p class='dim' style='text-align:center;font-size:13px;margin:0'>Commons and uncommons of that light. The rare can be anything.</p>";
+          msg = msg.replace("<br>You get <b>1 pack</b>.", "") + "<p style='text-align:center;margin:10px 0 0'><b>Choose your pack:</b></p><p class='dim' style='text-align:center;font-size:13px;margin:0'>Commons and uncommons of that light. The rare can be anything.</p>";
           modal(msg, [{ t: "🔥 Blaze", v: "glod", cls: "pb-glod" }, { t: "🌫 Mist", v: "taage", cls: "pb-taage" }, { t: "🌱 Root", v: "rod", cls: "pb-rod" }]).then(function (v) {
             S.packq = S.packq || []; S.packq.unshift(v); save(); T("pack_choice", { el: v, island: S.island }); packScreen(false);
           });
@@ -797,6 +797,19 @@
     });
     el.querySelectorAll(".node.ahead,.node.took,.node.skip").forEach(function (nb) { nb.onclick = function () { el.querySelector("#vinfo").innerHTML = "<b>" + VOY.NODES[nb.dataset.t].i + " " + VOY.NODES[nb.dataset.t].n + "</b> — " + VOY.NODES[nb.dataset.t].t; }; });
     el.querySelector("#back").onclick = function () { SFX.tap(); home(); };
+    // Forgreningslinjer mellem stoppene (tegnes efter layout, så de passer på alle skærme).
+    requestAnimationFrame(function () {
+      var route = el.querySelector(".route"); if (!route) return;
+      var R0 = route.getBoundingClientRect(), NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+      svg.setAttribute("class", "links"); svg.setAttribute("width", R0.width); svg.setAttribute("height", R0.height);
+      function c(e, top) { var q = e.getBoundingClientRect(); return [q.left - R0.left + q.width / 2, (top ? q.top : q.bottom) - R0.top]; }
+      function line(a, b, on) { var l = document.createElementNS(NS, "path"), my = (a[1] + b[1]) / 2; l.setAttribute("d", "M" + a[0] + " " + a[1] + " C" + a[0] + " " + my + " " + b[0] + " " + my + " " + b[0] + " " + b[1]); l.setAttribute("class", on ? "on" : ""); svg.appendChild(l); }
+      var forks = el.querySelectorAll(".fork"), r1 = forks[0].querySelectorAll(".node"), r0 = forks[1].querySelectorAll(".node"), fromP = el.querySelector(".port.from"), toP = el.querySelector(".port.to");
+      r0.forEach(function (n) { line(c(fromP, true), c(n, false), v.step === 0 || n.classList.contains("took")); });
+      r0.forEach(function (n) { r1.forEach(function (m) { line(c(n, true), c(m, false), (n.classList.contains("took") && v.step === 1) || (n.classList.contains("took") && m.classList.contains("took"))); }); });
+      r1.forEach(function (m) { line(c(m, true), c(toP, false), m.classList.contains("took")); });
+      route.insertBefore(svg, route.firstChild);
+    });
     if (!S.seen.voyhint && !done) {
       S.seen.voyhint = 1; save();
       modal("<h2>The open sea</h2><p style='line-height:1.5'>Between the islands lies open water.<br><br>At each fork, <b>choose your course</b> — you can see what waits on both paths.<br><br>⚔️ Wild spirits can join you, but they fight back.<br>🌊 Some spirits are <b>only found at sea</b>.</p>", [{ t: "Set sail", v: 1 }]);

@@ -280,3 +280,7 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
   .port{font-size:17px;padding:8px 18px}
   .lead{font-size:21px}
 }
+.route::before{display:none}
+.route .links{position:absolute;left:0;top:0;pointer-events:none;z-index:0}
+.route .links path{fill:none;stroke:#c9a86a;stroke-opacity:.18;stroke-width:2;stroke-dasharray:5 6}
+.route .links path.on{stroke-opacity:.75;stroke-width:2.5}

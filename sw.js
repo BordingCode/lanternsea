@@ -1,5 +1,5 @@
-const CACHE = "lanternsea-0.9.3";
-const FILES = ["./", "index.html", "style.css?v=0.9.3", "telemetri.js?v=0.9.3", "cards.js?v=0.9.3", "engine.js?v=0.9.3", "art.js?v=0.9.3", "voyage.js?v=0.9.3", "app.js?v=0.9.3", "icon.svg", "icon-192.png", "manifest.webmanifest"];
+const CACHE = "lanternsea-0.9.4";
+const FILES = ["./", "index.html", "style.css?v=0.9.4", "telemetri.js?v=0.9.4", "cards.js?v=0.9.4", "engine.js?v=0.9.4", "art.js?v=0.9.4", "voyage.js?v=0.9.4", "app.js?v=0.9.4", "icon.svg", "icon-192.png", "manifest.webmanifest"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", e => {

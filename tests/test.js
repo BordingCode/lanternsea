@@ -39,7 +39,8 @@ ok(Array.isArray(E.migrate({sv:1,coll:{},deck:[]}).packq), "gammel gemt tilstand
     ok(f.includes("wild") && f.filter(x => x === "haven").length <= 1 && L.nodes.every(p => p[0] !== p[1] && p.every(t => V.NODES[t])), "overfart gyldig"); }
   for (let to = 1; to < 7; to++) for (let i = 0; i < 30; i++) { const w = V.wildEncounter(to, rv); ok(w.deck.length >= 10 && w.deck.every(id => D.BY[id] && !D.BY[id].sea) && w.hp > 0, "vildt møde gyldigt");
     const bb = E.newBattle(Array(12).fill("g2"), w, i + 1); E.startTurn(bb); let n = 0; while (!bb.over && n < 200) { E.aiTurn(bb); n++; } ok(bb.over, "vild kamp slutter");
-    const ch = V.rewardChoices(w.el, {}, rv); ok(ch.length === 3 && new Set(ch).size === 3 && ch.every(id => D.BY[id]), "3 forskellige belønninger"); }
+    if (w.leader) ok(D.BY[w.leader].r === "r" && w.deck.includes(w.leader) && V.rewardChoices(w.el, {}, rv, w.leader).includes(w.leader), "leder kan vindes");
+    const ch = V.rewardChoices(w.el, {}, rv, w.leader); ok(ch.length === 3 && new Set(ch).size === 3 && ch.every(id => D.BY[id]), "3 forskellige belønninger"); }
   ok(D.CARDS.filter(c => c.sea).length === 6, "6 drifters");
   for (let i = 0; i < 500; i++) ok(E.openPack(rv).every(id => !D.BY[id].sea), "drifters aldrig i pakker");
   for (const ev of V.EVENTS) for (const ch of ev.ch) for (let k = 0; k < 20; k++) {

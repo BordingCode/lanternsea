@@ -42,17 +42,21 @@
     var pool = D.CARDS.filter(function (c) { return c.el === el && !c.sea && (c.r === "c" || (c.r === "u" && to >= 2) || (c.r === "r" && to >= 4)); });
     var deck = [];
     for (var i = 0; i < 9 + to; i++) deck.push(pick(pool, r).id);
-    return { el: el, n: "Open sea", foe: WILDNAME[el], hp: 7 + to * 2 + (dark || 0) * 2, deck: deck, trait: null, wild: true };
+    // Fra ø 4: nogle flokke har en leder — en sjælden ånd, man kan vinde (0.9.3).
+    var leader = null;
+    if (to >= 3 && r() < 0.4) { leader = pick(D.CARDS.filter(function (c) { return c.el === el && c.r === "r" && !c.sea; }), r).id; deck.push(leader); }
+    return { el: el, n: "Open sea", foe: WILDNAME[el], hp: 7 + to * 2 + (dark || 0) * 2 + (leader ? 3 : 0), deck: deck, trait: null, wild: true, leader: leader };
   }
 
   // Tre ånder at vælge imellem: en ukendt drifter (hvis der er nogen), ellers en sjælden, + to fra flokkens lys.
-  function rewardChoices(el, coll, r) {
+  function rewardChoices(el, coll, r, leader) {
     var out = [];
     var drift = D.CARDS.filter(function (c) { return c.sea && !(coll[c.id] > 0) && c.r !== "m"; });
     var dEl = drift.filter(function (c) { return c.el === el; });
     if (dEl.length) out.push(pick(dEl, r).id); else if (drift.length) out.push(pick(drift, r).id);
     else out.push(pick(D.CARDS.filter(function (c) { return c.r === "r" && !c.sea; }), r).id);
     var rest = D.CARDS.filter(function (c) { return c.el === el && !c.sea && (c.r === "c" || c.r === "u"); });
+    if (leader && out.indexOf(leader) < 0) out.push(leader);
     for (var g = 0; out.length < 3 && g < 40; g++) { var id = pick(rest, r).id; if (out.indexOf(id) < 0) out.push(id); }
     return out;
   }

@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.9.2";
+  var VERSION = "0.9.3";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -829,8 +829,8 @@
     if (type === "wild") {
       var enc = VOY.wildEncounter(S.island, R, S.dark);
       var rumour = D.CARDS.some(function (c) { return c.sea && c.el === enc.el && c.r !== "m" && !owned(c.id); });
-      el = stopScreen("wild", enc.foe + "!", "A shoal of wild spirits blocks your way. <b>Win</b>, and one of them joins you." + (rumour ? "<br><span style='color:#6fc3ff'>🌊 A drifter has been seen among them…</span>" : "") + "<br><span style='color:#ff8a8a'>Lose, and a flame goes out.</span>");
-      el.querySelector(".stopcards").innerHTML = '<div class="peek">' + enc.deck.filter(function (id, i, a) { return a.indexOf(id) === i; }).slice(0, 4).map(function (id) { return cardHTML(id); }).join("") + "</div>";
+      el = stopScreen("wild", enc.foe + "!", "Wild spirits block your way. <b>Win</b>, and one joins you." + (enc.leader ? "<br><span style='color:var(--r)'>👑 Led by " + esc(D.BY[enc.leader].n) + "</span>" : "") + (rumour ? "<br><span style='color:#6fc3ff'>🌊 A drifter swims with them…</span>" : "") + "<br><span style='color:#ff8a8a'>Lose, and a flame goes out.</span>");
+      el.querySelector(".stopcards").innerHTML = '<div class="peek">' + (enc.leader ? [enc.leader] : []).concat(enc.deck.filter(function (id, i, a) { return a.indexOf(id) === i && id !== enc.leader; })).slice(0, 4).map(function (id) { return cardHTML(id); }).join("") + "</div>";
       var fb = h('<button class="btn">Fight · ' + enc.hp + " life</button>");
       fb.onclick = function () { SFX.tap(); battleScreen(enc); };
       el.querySelector("#sbtns").appendChild(fb);
@@ -910,7 +910,7 @@
     save();
     if (won) {
       SFX.win();
-      var ch = VOY.rewardChoices(enc.el, S.coll, R);
+      var ch = VOY.rewardChoices(enc.el, S.coll, R, enc.leader);
       setTimeout(function () {
         var el = stopScreen("wild", "Victory!", "The shoal scatters — but one spirit stays, curious. <b>Choose who joins you.</b>");
         var box = el.querySelector(".stopcards"); box.innerHTML = '<div class="shop"></div>';

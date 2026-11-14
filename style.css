@@ -284,3 +284,7 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
 .route .links{position:absolute;left:0;top:0;pointer-events:none;z-index:0}
 .route .links path{fill:none;stroke:#c9a86a;stroke-opacity:.18;stroke-width:2;stroke-dasharray:5 6}
 .route .links path.on{stroke-opacity:.75;stroke-width:2.5}
+/* 0.9.6: sjældenhed som en lille ædelsten nederst på kortet (dommer: "kortene viser ingen sjældenhed") */
+.card .gem{position:absolute;left:50%;bottom:5%;width:.85em;height:.85em;transform:translateX(-50%) rotate(45deg);background:#8a93b8;border-radius:2px;box-shadow:0 0 0 1px #0008}
+.card.u .gem{background:var(--u)}.card.r .gem{background:var(--r);box-shadow:0 0 6px var(--r)}.card.m .gem{background:var(--m);box-shadow:0 0 8px var(--m)}
+.card.c .gem{width:.6em;height:.6em;border-radius:50%}

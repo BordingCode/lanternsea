@@ -18,8 +18,18 @@
     var b = { r: r, turn: 1, who: 0, over: null, log: [], plan: null, trait: isl.trait || null,
       s: [side(playerDeck, Math.max(1, 15 + (opt.hp || 0)), r), side(isl.deck, isl.hp, r)] };
     for (var k = 0; k < (opt.draw || 0) && b.s[0].deck.length; k++) b.s[0].hand.push(b.s[0].deck.shift());
+    fairHand(b.s[0]);
     planFoe(b);
     return b;
+  }
+  // 0.9.6 (dommer): tur 1 har 1 lys — har du et 1-lys-kort i decket, er der mindst ét på starthånden.
+  // Det dyreste kort på hånden byttes med det første billige i decket (og decket blandes ikke om).
+  function fairHand(p) {
+    if (p.hand.some(function (id) { return D.BY[id].c <= 1; })) return;
+    var j = -1; for (var i = 0; i < p.deck.length; i++) if (D.BY[p.deck[i]].c <= 1) { j = i; break; }
+    if (j < 0 || !p.hand.length) return;
+    var hi = 0; p.hand.forEach(function (id, k) { if (D.BY[id].c > D.BY[p.hand[hi]].c) hi = k; });
+    var t = p.hand[hi]; p.hand[hi] = p.deck[j]; p.deck[j] = t;
   }
   function ev(b, e) { b.log.push(e); }
   function damageUnit(b, si, slot, n) {

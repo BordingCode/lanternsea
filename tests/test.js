@@ -62,6 +62,10 @@ ok(Array.isArray(E.migrate({sv:1,coll:{},deck:[]}).packq), "gammel gemt tilstand
 ok(E.newSave().dark === 0 && E.migrate({sv:1,coll:{},deck:[]}).dark === 0, "dark i gemt tilstand");
 ok(E.warden(6, 0).hp === D.ISLANDS[6].hp && E.warden(6, 5).hp === Math.round(D.ISLANDS[6].hp * 1.5) && E.warden(1, 2).deck === D.ISLANDS[1].deck, "vogter skaleres med mørke");
 ok(D.ISLANDS[1].hp === 16, "Root Witch 16 liv");
+// 0.9.6: fair starthånd — et 1-lys-kort på hånden, når decket har ét
+for (let sd = 1; sd < 400; sd++) { const dk = ["g1","g2","g2","g3","g3","g4","g4","g5","g5","g6","t3","t3","r3","r3"]; const bb = E.newBattle(dk, 0, sd);
+  ok(bb.s[0].hand.some(id => D.BY[id].c <= 1) && bb.s[0].hand.length === 4 && bb.s[0].hand.length + bb.s[0].deck.length === dk.length, "fair starthånd " + sd); }
+{ const bb = E.newBattle(Array(12).fill("g2"), 0, 5); ok(bb.s[0].hand.length === 4, "fair starthånd uden 1-lys-kort rører intet"); }
 // AI-decks gyldige
 D.ISLANDS.forEach(is => ok(is.deck.every(id => D.BY[id]), "ø-deck " + is.n));
 // gemte tilstande fra tidligere versioner

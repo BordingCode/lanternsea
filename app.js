@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.9.5";
+  var VERSION = "0.9.6";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -123,6 +123,7 @@
       '<div class="st at' + (o.bonus > 0 ? " boosted" : "") + '">' + a + '</div><div class="st hp' + (o.unit && hp < o.unit.mh ? " hurt" : "") + '">' + hp + "</div>" +
       (o.unit && o.unit.shield ? '<div class="shield"></div>' : "") +
       (o.badge ? '<div class="badge">' + o.badge + "</div>" : "") +
+      (o.unit ? "" : '<i class="gem" title="' + D.RAR[c.r] + '"></i>') +
       (o.isNew ? '<div class="new">NEW!</div>' : "") + "</div>";
   }
   function cardInfo(id) {
@@ -278,13 +279,18 @@
     var pack = el.querySelector(".pack"), zone = el.querySelector(".packzone");
     if (ptype) pack.classList.add("p-" + ptype);
     var opened = false;
+    // 0.9.6 (dommer): reaktionen skal ses med det samme, og et ekstra tryk springer rysten over.
+    var revealed = false, tTear = null, tRev = null;
     zone.onclick = function () {
-      if (opened) return; opened = true;
+      if (opened) { if (!revealed) { clearTimeout(tTear); clearTimeout(tRev); pack.classList.remove("shake"); SFX.tear(); reveal(); } return; }
+      opened = true;
       ac(); pack.classList.add("shake"); SFX.charge();
-      setTimeout(function () { pack.classList.remove("shake"); pack.classList.add("tear"); SFX.tear(); }, 520);
-      setTimeout(function () { reveal(); }, 950);
+      el.querySelector("#hint").textContent = "Tearing it open…";
+      tTear = setTimeout(function () { pack.classList.remove("shake"); pack.classList.add("tear"); SFX.tear(); }, 420);
+      tRev = setTimeout(function () { reveal(); }, 760);
     };
     function reveal() {
+      if (revealed) return; revealed = true;
       S.packs--; if (ptype) S.packq.shift();
       el.querySelector(".hud .pill").textContent = "Packs: " + S.packs;
       var ids = E.openPack(R, ptype).sort(function (a, b) { return RORD[D.BY[a].r] - RORD[D.BY[b].r]; });
@@ -301,7 +307,7 @@
       var rv = zone.querySelector(".reveal"), left = ids.length;
       el.querySelector("#hint").textContent = "Tap the cards to turn them over";
       // Finalen (0.8.2): det sidste, sjældne kort ligger stort for sig selv og kan først vendes til sidst.
-      var finale = null;
+      var finale = null, rush = false;
       ids.forEach(function (id, i) {
         var c = D.BY[id], fin = i === ids.length - 1;
         var sc = h('<div class="slotc ' + c.r + (fin ? " finale" : "") + '"><div class="flip"><div class="back"></div>' + cardHTML(id, { isNew: newOnes[id] }) + "</div></div>");
@@ -313,7 +319,8 @@
           if (busy || sc.classList.contains("open")) { if (sc.classList.contains("open")) toast(D.BY[id].n + " — " + D.BY[id].t); return; }
           if (fin && left > 1) { el.querySelector("#hint").textContent = "Save the best for last — turn the others first"; sc.classList.remove("nudge"); void sc.offsetWidth; sc.classList.add("nudge"); return; }
           busy = true;
-          var wait0 = fin ? { c: 500, u: 700, r: 1200, m: 1900 }[c.r] : { c: 0, u: 350, r: 800, m: 1300 }[c.r];
+          var wait0 = fin ? { c: 400, u: 600, r: 1100, m: 1700 }[c.r] : { c: 0, u: 300, r: 700, m: 1100 }[c.r];
+          if (rush) wait0 = Math.min(wait0, fin ? 700 : 0);
           var spot = null;
           if (fin) { var rc = sc.getBoundingClientRect(); spot = h('<div class="spot"></div>'); spot.style.background = "radial-gradient(circle at " + (rc.left + rc.width / 2) + "px " + (rc.top + rc.height / 2) + "px," + "transparent " + (rc.height * 0.62) + "px,#000c " + (rc.height * 1.4) + "px)"; document.body.appendChild(spot); }
           if (wait0) { sc.classList.add("charge"); SFX.charge(); }
@@ -331,11 +338,12 @@
       });
       var btns = el.querySelector("#btns");
       var all = h('<button class="btn sec">Reveal all</button>');
+      // 0.9.6 (dommer: "6–8 sekunders venten"): vend resten hurtigt, og finalen kort efter — ca. 1,5 s i alt.
       all.onclick = function () {
-        var k = 0;
-        rv.querySelectorAll(".slotc:not(.open):not(.finale)").forEach(function (s) { setTimeout(function () { s.click(); }, k++ * 220); });
-        if (finale && !finale.classList.contains("open")) setTimeout(function () { finale.click(); }, k * 220 + 1500);
-        all.disabled = true;
+        rush = true; var k = 0;
+        rv.querySelectorAll(".slotc:not(.open):not(.finale)").forEach(function (s) { setTimeout(function () { s.click(); }, k++ * 90); });
+        if (finale && !finale.classList.contains("open")) setTimeout(function () { finale.click(); }, k * 90 + 250);
+        all.remove();
       };
       btns.appendChild(all);
       function done() {
@@ -396,6 +404,11 @@
     deck.forEach(function (id) { var k = rest.indexOf(id); if (k >= 0) rest.splice(k, 1); });
     for (var i = deck.length - 1; i >= 0 && cheapN() < 6 && rest.length; i--) { if (D.BY[deck[i]].c >= 4) deck[i] = rest.shift(); }
     while (deck.length < 15 && rest.length) deck.push(rest.shift());
+    // 0.9.6: mindst 2 kort til 1 lys, hvis man har dem — så tur 1 aldrig er tom.
+    var ones = pool.filter(function (id) { return D.BY[id].c <= 1; });
+    deck.forEach(function (id) { var k = ones.indexOf(id); if (k >= 0) ones.splice(k, 1); });
+    var oneN = function () { return deck.filter(function (id) { return D.BY[id].c <= 1; }).length; };
+    for (var j = deck.length - 1; j >= 0 && oneN() < 2 && ones.length; j--) { if (D.BY[deck[j]].c >= 3) deck[j] = ones.shift(); }
     return deck;
   }
 
@@ -629,6 +642,7 @@
         } else if (b.s[0].board[i]) { info.innerHTML = cardInfo(b.s[0].board[i].id); }
         else toast(E.closed(b, i) ? "This lane is closed (Gale)" : D.BY[b.s[0].hand[sel]].c > b.s[0].lys ? "Not enough light — you have " + b.s[0].lys : "You can’t play there");
       } else if (b.s[0].board[i]) info.innerHTML = cardInfo(b.s[0].board[i].id);
+      else if (!b.over) info.innerHTML = "<span class='dim'>First tap a spirit in your hand — then a glowing space.</span>";
     };
     el.querySelector(".hero.foe").onclick = function () {
       info.innerHTML = "<b>" + esc(isl.foe) + "</b> · " + isl.hp + " life" + (b.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) : "");

@@ -80,7 +80,7 @@ Giv til Darkfisher (Ambush 2 · Veil, før Spark 2) og Barkbeetle (Ambush 1). AI
 overfor baghold. Næste: flere Ambush-kort, så "læg en fælde, hvor spøgelseskortet står" bliver en rigtig strategi.
 
 ## The Voyage (0.8.0, nat 3) — svar på "Der er ikke nok eventyr"
-Telemetri (nat 2): Mathias nåede ø 4 på ~12 min med 26/30 ånder → rejsen var bare 7 kampe i træk, og samlingen
+Telemetri (nat 2): Mathias tændte 4 fyrtårne og tabte på ø 5 (Mist Sound) efter ~12 min, med 26/30 ånder → rejsen var bare 7 kampe i træk, og samlingen
 løb tør. Nu sejler man **mellem øerne** (fra ø 2): hver overfart har 2 skillevejene × 2 synlige valg (`voyage.js`):
 - ⚔ **Wild spirits** — lille kamp mod en flok af ét lys (liv 7+2·ø). Vind → vælg 1 af 3 ånder (ofte en drifter).
   Tab → en flamme går ud (reel indsats, men man valgte selv risikoen ved skillevejen). Bot: 96 % → 67 % (ø2→ø7), `tests/vild.js`.

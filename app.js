@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.9.1";
+  var VERSION = "0.9.2";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -238,8 +238,9 @@
     function showIsl(i) {
       var is = D.ISLANDS[i], known = i <= Math.max(S.island, S.best || 0);
       islInfo.innerHTML = "<b>" + (i + 1) + ". " + esc(is.n) + "</b>" + (i < S.island ? " <span style='color:var(--gold)'>· lit ✦</span>" : i === S.island ? " <span style='color:var(--gold)'>· next</span>" : "") + "<br>" +
-        (known ? "<span class='dim'>Warden: " + esc(is.foe) + " · " + E.warden(i, S.dark).hp + " life</span>" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") : "<span class='dim'>Beyond the dark. Unknown.</span>") +
-        (i === S.island && S.voy && S.voy.to === i && S.voy.boon && VOY.boonText(S.voy.boon) ? "<br><span style='color:#8dffb0'>✧ Voyage: " + VOY.boonText(S.voy.boon) + "</span>" : "");
+        (known ? "<i class='dim'>" + esc(is.lore) + "</i><br><span class='dim'>Warden: " + esc(is.foe) + " · " + E.warden(i, S.dark).hp + " life</span>" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") : "<span class='dim'>Beyond the dark. Unknown.</span>") +
+        (i === S.island && S.voy && S.voy.to === i && S.voy.boon && VOY.boonText(S.voy.boon) ? "<br><span style='color:#8dffb0'>✧ Voyage: " + VOY.boonText(S.voy.boon) + "</span>" : "") +
+        (S.quest && S.quest.to === i ? "<br><span style='color:var(--gold)'>🗺️ Your torn map marks treasure on the way here.</span>" : "");
       map.querySelectorAll(".mi").forEach(function (g) { g.classList.toggle("picked", +g.dataset.i === i); });
     }
     map.onclick = function (ev) { var g = ev.target.closest(".mi"); if (g) { SFX.tap(); showIsl(+g.dataset.i); } };
@@ -760,7 +761,7 @@
   var ROMAN = ["", "I", "II", "III", "IV", "V"];
   function legDone() { return S.island < 1 || !!(S.voy && S.voy.to === S.island && S.voy.step >= 2); }
   function ensureLeg() {
-    if (!S.voy || S.voy.to !== S.island) { var seen = S.voy && S.voy.seenEv; S.voy = VOY.makeLeg(S.island, R); S.voy.seenEv = (seen || []).slice(-4); save(); }
+    if (!S.voy || S.voy.to !== S.island) { var seen = S.voy && S.voy.seenEv; S.voy = VOY.placeTreasure(S, VOY.makeLeg(S.island, R), R); S.voy.seenEv = (seen || []).slice(-4); save(); }
     return S.voy;
   }
   function nodeHTML(type, cls) { var N = VOY.NODES[type]; return '<button class="node ' + type + " " + (cls || "") + '" data-t="' + type + '"><span class="ni">' + N.i + '</span><b>' + N.n + "</b><small>" + N.t + "</small></button>"; }
@@ -776,7 +777,7 @@
     }
     var done = v.step >= 2;
     var el = h('<div class="screen voyage"><div class="hud"><div class="flames">' + flamesHTML() + '</div><span class="pill">✦ ' + S.embers + " glimmer</span></div>" +
-      '<h2 style="margin:8px 0 2px">' + (done ? "Land ho!" : "Crossing to " + esc(to.n)) + '</h2><p class="dim" style="margin:0 0 6px;font-size:14px">' + (done ? esc(to.foe) + " waits on the shore." : "Choose your course. You can see what lies ahead.") + "</p>" +
+      '<h2 style="margin:8px 0 2px">' + (done ? "Land ho!" : "Crossing to " + esc(to.n)) + '</h2><p class="dim" style="margin:0 0 6px;font-size:14px">' + (done ? "<i>" + esc(to.lore) + "</i><br>" + esc(to.foe) + " waits on the shore." : "Choose your course. You can see what lies ahead.") + "</p>" +
       '<div class="route"><div class="port to">⚑ ' + esc(to.n) + "</div>" + rows + '<div class="port from' + (v.step === 0 ? " here" : "") + '">' + (v.step === 0 ? "⛵ " : "⚓ ") + esc(from.n) + "</div></div>" +
       '<div class="info" id="vinfo">' + (v.boon && VOY.boonText(v.boon) ? "<span style='color:#8dffb0'>✧ For the next warden: " + VOY.boonText(v.boon) + "</span>" : "<span class='dim'>Tap a glowing waypoint to sail there.</span>") + "</div>" +
       '<div class="bottom"><div class="row"><button class="btn sec" id="back">Chart</button>' + (done ? '<button class="btn" id="land">Land on ' + esc(to.n) + "</button>" : "") + "</div></div></div>");
@@ -856,6 +857,14 @@
         bx.appendChild(cb);
       });
       return;
+    }
+    if (type === "treasure") {
+      el = stopScreen("treasure", "X marks the spot", "A small beach, a crooked palm, and the X from your map.");
+      var bt = {}; for (var kk in S.coll) bt[kk] = S.coll[kk];
+      res = VOY.dig(S, R); save(); T("voyage_treasure", { card: res.card });
+      el.querySelector(".result").innerHTML = esc(res.t); el.querySelector("#emb").textContent = "✦ " + S.embers + " glimmer";
+      showCard(el, res.card, !bt[res.card]); SFX.chime();
+      continueBtn(el); return;
     }
     if (type === "wreck") {
       el = stopScreen("wreck", "A wreck", "Broken timbers and a cold lamp, half under water.");

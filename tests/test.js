@@ -51,7 +51,12 @@ ok(Array.isArray(E.migrate({sv:1,coll:{},deck:[]}).packq), "gammel gemt tilstand
   { const S = E.newSave(); S.flames = 2; S.voy = V.makeLeg(1, rv); V.rest(S); ok(S.flames === 3, "havn tænder flamme"); V.rest(S); ok(S.flames === 3 && S.voy.boon.hp === 2, "havn ved fulde flammer giver liv"); }
   { const b2 = E.newBattle(Array(15).fill("g2"), 1, 3, { hp: 4, draw: 1 }); ok(b2.s[0].hp === 19 && b2.s[0].hand.length === 5, "voyage-bonus: liv og ekstra kort"); }
   { const b3 = E.newBattle(Array(15).fill("g2"), 1, 3, { hp: -40 }); ok(b3.s[0].hp >= 1, "lygten starter aldrig på 0"); }
-  ok(E.migrate({sv:1,coll:{},deck:[]}).voy === null, "gammel gemt tilstand får voy"); }
+  ok(E.migrate({sv:1,coll:{},deck:[]}).voy === null, "gammel gemt tilstand får voy");
+  { const S = E.newSave(); S.island = 2; S.quest = { to: 3 }; const L = V.placeTreasure(S, V.makeLeg(3, rv), rv); ok(L.nodes[1].includes("treasure") && !S.quest, "skattekort giver skat på næste overfart");
+    const L2 = V.placeTreasure(S, V.makeLeg(4, rv), rv); ok(!L2.nodes[0].concat(L2.nodes[1]).includes("treasure"), "ingen skat uden kort");
+    const res = V.dig(S, rv); ok(D.BY[res.card] && S.coll[res.card] >= 1, "skatten giver en ånd");
+    const S6 = E.newSave(); S6.island = 6; ok(!V.EVENTS.find(e => e.id === "map").need(S6), "intet skattekort på sidste overfart"); }
+  ok(V.NODES.treasure && V.EVENTS.length === 12, "12 historier"); }
 // Darkness (0.9.0)
 ok(E.newSave().dark === 0 && E.migrate({sv:1,coll:{},deck:[]}).dark === 0, "dark i gemt tilstand");
 ok(E.warden(6, 0).hp === D.ISLANDS[6].hp && E.warden(6, 5).hp === Math.round(D.ISLANDS[6].hp * 1.5) && E.warden(1, 2).deck === D.ISLANDS[1].deck, "vogter skaleres med mørke");

@@ -11,6 +11,7 @@
     wreck: { i: "⚓", n: "Wreck", t: "Salvage glimmer — and maybe more." },
     trader: { i: "🏮", n: "Fog Trader", t: "Trade glimmer for a spirit." },
     haven: { i: "🏝", n: "Haven", t: "Rest. Relight a lost flame." },
+    treasure: { i: "🗺️", n: "X marks the spot", t: "Your torn map leads here." },
   };
   var MELT = { c: 1, u: 2, r: 4, m: 8 };
 
@@ -126,6 +127,12 @@
           return { t: "“" + is.n + " is held by " + is.foe + ". " + (tr ? "Beware — " + tr.n + ": " + tr.t : "Strike its open lanes.") + "” (+3 ✦)" }; } },
         { t: "Keep the bottle", sub: "+5 ✦ glimmer (it’s pretty).", fx: function (S) { S.embers += 5; return { t: "It catches the light nicely. (+5 ✦)" }; } },
       ] },
+    { id: "map", i: "🧭", n: "The Torn Map", t: "Half a map, pinned under a dead lantern on a drifting crate. An X near the next island.",
+      need: function (S) { return S.island < D.ISLANDS.length - 1 && !S.quest; },
+      ch: [
+        { t: "Keep the map", sub: "On the next crossing, one path will lead to treasure.", fx: function (S) { S.quest = { to: S.island + 1 }; return { t: "You fold it into your coat. Next crossing — look for the X. 🗺️" }; } },
+        { t: "Trade it to the gulls", sub: "+5 ✦ glimmer now.", fx: function (S) { S.embers += 5; return { t: "The gulls pay in shiny bits. (+5 ✦)" }; } },
+      ] },
     { id: "ghost", i: "🚢", n: "The Ghost Ship", t: "A ship of pale lanterns drifts past. No one at the wheel. Something glows in the hold.",
       ch: [
         { t: "Board it", sub: "Likely a drifter spirit. But the crew may take a flame.", need: function (S) { return S.flames >= 2; }, fx: function (S, r) {
@@ -155,9 +162,21 @@
       ] },
   ];
 
+  // Skattekortet (0.9.2): et kort fra én overfart lover en skat på den næste — hvis man vælger den vej.
+  function placeTreasure(S, leg, r) {
+    if (!S.quest || S.quest.to !== leg.to) return leg;
+    leg.nodes[1][r() < 0.5 ? 0 : 1] = "treasure"; S.quest = null;
+    return leg;
+  }
+  function dig(S, r) {
+    var drift = D.CARDS.filter(function (c) { return c.sea && !(S.coll[c.id] > 0); }), id, g = 5 + Math.floor(r() * 4);
+    id = drift.length ? pick(drift, r).id : randomCard(r, "r");
+    var m = give(S, id); S.embers += g;
+    return { t: "You dig where the X is. A chest — " + g + " ✦ glimmer, and a spirit curled up asleep inside." + (m ? " (A spare — melted into " + m + " ✦.)" : ""), card: id };
+  }
   function pickEvent(S, r) {
     var seen = (S.voy && S.voy.seenEv) || [];
-    var pool = EVENTS.filter(function (e) { return seen.indexOf(e.id) < 0; });
+    var pool = EVENTS.filter(function (e) { return seen.indexOf(e.id) < 0 && (!e.need || e.need(S)); });
     if (!pool.length) pool = EVENTS;
     return pick(pool, r);
   }
@@ -186,6 +205,6 @@
   }
 
   var api = { NODES: NODES, EVENTS: EVENTS, PRICE: PRICE, makeLeg: makeLeg, wildEncounter: wildEncounter, rewardChoices: rewardChoices,
-    give: give, pickEvent: pickEvent, salvage: salvage, rest: rest, traderStock: traderStock, boonText: boonText };
+    give: give, placeTreasure: placeTreasure, dig: dig, pickEvent: pickEvent, salvage: salvage, rest: rest, traderStock: traderStock, boonText: boonText };
   if (typeof module !== "undefined") module.exports = api; else root.VOY = api;
 })(this);

@@ -152,7 +152,7 @@
   }
   // Gemt tilstand + migrering
   var SAVE_VERSION = 1;
-  function newSave() { return { sv: SAVE_VERSION, coll: {}, deck: [], island: 0, flames: 3, best: 0, packs: 2, packq: [], miles: {}, voy: null, dark: 0, embers: 0, wins: 0, losses: 0, runs: 1, seen: {} }; }
+  function newSave() { return { sv: SAVE_VERSION, coll: {}, deck: [], island: 0, flames: 3, best: 0, packs: 2, packq: [], miles: {}, voy: null, quest: null, dark: 0, embers: 0, wins: 0, losses: 0, runs: 1, seen: {} }; }
   function migrate(s) {
     if (!s || typeof s !== "object") return newSave();
     var base = newSave();

@@ -70,9 +70,11 @@
   }
   function randomCard(r, rar, opts) {
     opts = opts || {};
-    var pool = D.CARDS.filter(function (c) { return c.r === rar && !c.set && (opts.sea ? true : !c.sea); });
+    var pool = D.CARDS.filter(function (c) { return c.r === rar && (opts.star ? c.set === 2 : !c.set && (opts.sea ? true : !c.sea)); });
     return pick(pool, r).id;
   }
+  // Starfall (0.10.0) er låst op, når Den Sorte Fyr er tændt første gang.
+  function starOpen(S) { return (S.bestDark || 0) >= 1; }
   function boon(S, k, n) { S.voy.boon = S.voy.boon || {}; S.voy.boon[k] = (S.voy.boon[k] || 0) + n; }
   function boonText(b) {
     if (!b) return "";
@@ -115,8 +117,8 @@
       ] },
     { id: "star", i: "🌠", n: "Starfall", t: "A star falls hissing into the sea just ahead of you.",
       ch: [
-        { t: "Fish it out", sub: "A random spirit — any rarity.", fx: function (S, r) {
-          var x = r(), rar = x < 0.1 ? "m" : x < 0.4 ? "r" : x < 0.75 ? "u" : "c", id = randomCard(r, rar, { sea: rar === "m" });
+        { t: "Fish it out", sub: function (S) { return starOpen(S) ? "A Starfall spirit — any rarity." : "A random spirit — any rarity."; }, fx: function (S, r) {
+          var x = r(), rar = x < 0.1 ? "m" : x < 0.4 ? "r" : x < 0.75 ? "u" : "c", id = starOpen(S) ? randomCard(r, rar, { star: true }) : randomCard(r, rar, { sea: rar === "m" });
           var m = give(S, id); return { t: "Still glowing, it climbs into your lantern." + (m ? " (A spare — melted into " + m + " ✦.)" : ""), card: id }; } },
         { t: "Make a wish", sub: "+3 ✦ glimmer and a lantern blessing (+2 life).", fx: function (S) { S.embers += 3; boon(S, "hp", 2); return { t: "You wish for courage. The sea feels a little brighter. (+3 ✦, +2 life next warden battle)" }; } },
       ] },
@@ -182,6 +184,9 @@
     var seen = (S.voy && S.voy.seenEv) || [];
     var pool = EVENTS.filter(function (e) { return seen.indexOf(e.id) < 0 && (!e.need || e.need(S)); });
     if (!pool.length) pool = EVENTS;
+    // Efter Starfall falder der oftere stjerner (ca. 1 ud af 3 historier, hvis den ikke er set på denne rejse).
+    var st = pool.filter(function (e) { return e.id === "star"; })[0];
+    if (st && starOpen(S) && r() < 0.3) return st;
     return pick(pool, r);
   }
   // Vrag: glimmer, og nogle gange en ånd.
@@ -201,6 +206,7 @@
     var out = [];
     var drift = D.CARDS.filter(function (c) { return c.sea && !(S.coll[c.id] > 0); });
     if (drift.length) out.push(pick(drift, r).id);
+    if (starOpen(S)) { var sf = D.CARDS.filter(function (c) { return c.set === 2 && c.r !== "m" && (S.coll[c.id] || 0) < E.deckLimit(c.id); }); if (sf.length) out.push(pick(sf, r).id); }
     for (var g = 0; out.length < 3 && g < 50; g++) {
       var id = randomCard(r, r() < 0.25 ? "r" : r() < 0.6 ? "u" : "c");
       if (out.indexOf(id) < 0 && (S.coll[id] || 0) < E.deckLimit(id)) out.push(id);
@@ -209,6 +215,6 @@
   }
 
   var api = { NODES: NODES, EVENTS: EVENTS, PRICE: PRICE, makeLeg: makeLeg, wildEncounter: wildEncounter, rewardChoices: rewardChoices,
-    give: give, placeTreasure: placeTreasure, dig: dig, pickEvent: pickEvent, salvage: salvage, rest: rest, traderStock: traderStock, boonText: boonText };
+    starOpen: starOpen, give: give, placeTreasure: placeTreasure, dig: dig, pickEvent: pickEvent, salvage: salvage, rest: rest, traderStock: traderStock, boonText: boonText };
   if (typeof module !== "undefined") module.exports = api; else root.VOY = api;
 })(this);

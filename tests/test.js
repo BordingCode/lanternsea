@@ -78,6 +78,12 @@ ok(D.ISLANDS[1].hp === 16, "Root Witch 16 liv");
     ok(E.openPack(rr).every(id => !D.BY[id].set) && E.openPack(rr, "rod").every(id => !D.BY[id].set), "almindelige pakker uden sæt 2"); }
   ok(D.CARDS.length === 49 && new Set(D.CARDS.map(c => c.id)).size === 49, "49 unikke kort");
   ok(D.CARDS.every(c => Object.keys(c.kw).every(k => D.KW[k])), "alle nøgleord forklaret"); }
+{ const V = require("../voyage.js"), r5 = E.rng(5);
+  for (let i = 0; i < 100; i++) { ok(V.traderStock({ bestDark: 1, coll: {} }, r5).some(id => D.BY[id].set === 2), "handler har Starfall-ånd efter oplåsning");
+    ok(!V.traderStock({ bestDark: 0, coll: {} }, r5).some(id => D.BY[id].set), "handler uden Starfall før oplåsning"); }
+  const st = V.EVENTS.find(e => e.id === "star");
+  for (let i = 0; i < 100; i++) { const S1 = { bestDark: 1, coll: {}, deck: [], embers: 0 }, S0 = { bestDark: 0, coll: {}, deck: [], embers: 0 };
+    ok(D.BY[st.ch[0].fx(S1, r5).card].set === 2 && !D.BY[st.ch[0].fx(S0, r5).card].set, "stjernehændelse giver Starfall kun efter oplåsning"); } }
 // 0.9.6: fair starthånd — et 1-lys-kort på hånden, når decket har ét
 for (let sd = 1; sd < 400; sd++) { const dk = ["g1","g2","g2","g3","g3","g4","g4","g5","g5","g6","t3","t3","r3","r3"]; const bb = E.newBattle(dk, 0, sd);
   ok(bb.s[0].hand.some(id => D.BY[id].c <= 1) && bb.s[0].hand.length === 4 && bb.s[0].hand.length + bb.s[0].deck.length === dk.length, "fair starthånd " + sd); }

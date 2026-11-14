@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.10.0";
+  var VERSION = "0.10.1";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -916,7 +916,7 @@
       var bx = el.querySelector("#sbtns");
       ev.ch.forEach(function (ch) {
         var ok = !ch.need || ch.need(S);
-        var cb = h('<button class="btn choice' + (ok ? "" : " sec") + '"' + (ok ? "" : " disabled") + '><b>' + esc(ch.t) + "</b><small>" + esc(ch.sub) + "</small></button>");
+        var cb = h('<button class="btn choice' + (ok ? "" : " sec") + '"' + (ok ? "" : " disabled") + '><b>' + esc(ch.t) + "</b><small>" + esc(typeof ch.sub === "function" ? ch.sub(S) : ch.sub) + "</small></button>");
         cb.onclick = function () {
           if (!ok) return; SFX.tap();
           var before = {}; for (var k in S.coll) before[k] = S.coll[k];

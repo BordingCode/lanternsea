@@ -119,3 +119,4 @@ Balance: `node tests/kortrate.js 30000` (tilfældige decks mod ø 2–7, Darknes
 **Synergi i deckbyggeren:** tryk på et kort → kort, der spiller sammen med det (Kin-lys, Devour+Spark), lyser grønt, og
 infofeltet siger hvorfor ("Kin: 14 spirits in your deck share its light").
 Samlingen er nu 49; milepæle 42 og 49 (49 → 3 pakker).
+Sejlads (0.10.1): stjernehændelsen ('Starfall' på havet) giver en Starfall-ånd efter oplåsning og dukker op ~30 % af gangene; Fog Trader har altid én Starfall-ånd på hylden.

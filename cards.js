@@ -90,6 +90,10 @@
     { n: "Deadwater", lore: "Still black water over a sunken town. Bells ring below.", foe: "The Drowned King", say: "Every sailor comes to me in the end.", beaten: "Go, then. The sea can wait.", hp: 28, trait: "tide", deck: ["r3","r3","r5","r5","t4","t4","t6","r6","n3","t5","r4","r4","g5","t7"] },
     { n: "The Black Lighthouse", lore: "Where the first light went out. The Dark lives here.", foe: "The Dark", say: "I was here before the first flame. I will be here after the last.", beaten: "…then I will wait. I am good at waiting.", hp: 42, trait: "night", deck: ["g4","g4","t4","t4","r5","r5","g5","t5","t6","g6","r6","n3","g7","r7","t7","n2"] },
   ];
+  // Starlit (0.10.2): i Darkness har vogterne også fået stjerner — 2 Starfall-ånder pr. ø, der passer til deres lys.
+  // [ind, ud]: Starfall-ånderne erstatter kort med samme pris, så vogterens kurve ikke ændres.
+  var STARLIT = [[["s5", "s2"], ["g3", "t2"]], [["s4", "s3"], ["g3", "r3"]], [["s5", "s9"], ["g2", "g4"]], [["s1", "s6"], ["g2", "g5"]],
+    [["s8", "s1"], ["t3", "t2"]], [["s10", "s11"], ["r4", "t6"]], [["s13", "s12"], ["g7", "r6"]]];
   // Vogter-evner: én enkel regel pr. ø, der ændrer hvordan man skal spille (navn + max ~8 ord).
   var TRAITS = {
     regrow: { n: "Regrowth", t: "Her spirits heal 1 after her turn." },
@@ -99,6 +103,6 @@
     tide: { n: "High Tide", t: "His lantern heals 2 after his turn." },
     night: { n: "Endless Night", t: "The Dark draws 2 cards each turn." },
   };
-  var api = { TWIN: TWIN, lights: lights, hasLight: hasLight, shareLight: shareLight, lightName: lightName, TRAITS: TRAITS, CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
+  var api = { STARLIT: STARLIT, TWIN: TWIN, lights: lights, hasLight: hasLight, shareLight: shareLight, lightName: lightName, TRAITS: TRAITS, CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
   if (typeof module !== "undefined") module.exports = api; else root.DATA = api;
 })(this);

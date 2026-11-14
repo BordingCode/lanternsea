@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.10.1";
+  var VERSION = "0.10.2";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -243,7 +243,8 @@
     function showIsl(i) {
       var is = D.ISLANDS[i], known = i <= Math.max(S.island, S.best || 0);
       islInfo.innerHTML = "<b>" + (i + 1) + ". " + esc(is.n) + "</b>" + (i < S.island ? " <span style='color:var(--gold)'>· lit ✦</span>" : i === S.island ? " <span style='color:var(--gold)'>· next</span>" : "") + "<br>" +
-        (known ? "<i class='dim'>" + esc(is.lore) + "</i><br><span class='dim'>Warden: " + esc(is.foe) + " · " + E.warden(i, S.dark).hp + " life</span>" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") : "<span class='dim'>Beyond the dark. Unknown.</span>") +
+        (known ? "<i class='dim'>" + esc(is.lore) + "</i><br><span class='dim'>Warden: " + esc(is.foe) + " · " + E.warden(i, S.dark).hp + " life</span>" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") +
+          (S.dark >= 1 && D.STARLIT[i] ? "<br><span style='color:#fff1a8'>★ Starlit:</span> <span class='dim'>also calls " + D.STARLIT[i][0].map(function (id) { return esc(D.BY[id].n); }).join(" & ") + "</span>" : "") : "<span class='dim'>Beyond the dark. Unknown.</span>") +
         (i === S.island && S.voy && S.voy.to === i && S.voy.boon && VOY.boonText(S.voy.boon) ? "<br><span style='color:#8dffb0'>✧ Voyage: " + VOY.boonText(S.voy.boon) + "</span>" : "") +
         (S.quest && S.quest.to === i ? "<br><span style='color:var(--gold)'>🗺️ Your torn map marks treasure on the way here.</span>" : "");
       map.querySelectorAll(".mi").forEach(function (g) { g.classList.toggle("picked", +g.dataset.i === i); });

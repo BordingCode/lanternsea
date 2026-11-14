@@ -60,7 +60,8 @@ ok(Array.isArray(E.migrate({sv:1,coll:{},deck:[]}).packq), "gammel gemt tilstand
   ok(V.NODES.treasure && V.EVENTS.length === 12, "12 historier"); }
 // Darkness (0.9.0)
 ok(E.newSave().dark === 0 && E.migrate({sv:1,coll:{},deck:[]}).dark === 0, "dark i gemt tilstand");
-ok(E.warden(6, 0).hp === D.ISLANDS[6].hp && E.warden(6, 5).hp === Math.round(D.ISLANDS[6].hp * 1.5) && E.warden(1, 2).deck === D.ISLANDS[1].deck, "vogter skaleres med mørke");
+ok(E.warden(6, 0).hp === D.ISLANDS[6].hp && E.warden(6, 5).hp === Math.round(D.ISLANDS[6].hp * 1.5) && E.warden(1, 0).deck === D.ISLANDS[1].deck, "vogter skaleres med mørke");
+ok(E.warden(3, 1).deck.length === D.ISLANDS[3].deck.length && E.warden(3, 1).deck.filter(id => D.BY[id].set === 2).length === 2 && D.STARLIT.every(x => x[0].every((id, k) => D.BY[id].c === D.BY[x[1][k]].c)) && D.ISLANDS.every((is, i) => E.warden(i, 1).deck.filter(id => D.BY[id].set === 2).length === 2) && D.STARLIT.length === D.ISLANDS.length, "Starlit-vogtere i Darkness");
 ok(D.ISLANDS[1].hp === 16, "Root Witch 16 liv");
 // 0.10.0 Starfall: twin-lys, Shine, Bloom, Starfall-pakker
 { const U = id => ({ id, a: D.BY[id].a, h: D.BY[id].h, mh: D.BY[id].h, shield: !!D.BY[id].kw.taage, el: D.BY[id].el });

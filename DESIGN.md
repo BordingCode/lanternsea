@@ -120,3 +120,7 @@ Balance: `node tests/kortrate.js 30000` (tilfældige decks mod ø 2–7, Darknes
 infofeltet siger hvorfor ("Kin: 14 spirits in your deck share its light").
 Samlingen er nu 49; milepæle 42 og 49 (49 → 3 pakker).
 Sejlads (0.10.1): stjernehændelsen ('Starfall' på havet) giver en Starfall-ånd efter oplåsning og dukker op ~30 % af gangene; Fog Trader har altid én Starfall-ånd på hylden.
+**Starlit-vogtere (0.10.2):** i Darkness I+ har hver vogter byttet 2 kort ud med 2 Starfall-ånder til *samme pris*
+(`D.STARLIT[i] = [ind, ud]`) — så genspilningen føles ny, og man ser de nye mekanikker fra modstanderens side. Første forsøg
+(lægge 2 kort *til*) gjorde Deadwater sejere (længere deck → senere deck-out mod en vogter, der heler); "byt de 2 billigste"
+ændrede kurven for meget. Samme-pris-byt holdt Darkness-tabellen næsten uændret (D1: 100/93/80/75/71/42/43 mod før 98/94/74/84/77/41/30).

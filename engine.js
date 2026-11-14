@@ -144,6 +144,11 @@
   function warden(i, dark) {
     var is = D.ISLANDS[i], o = {}; for (var k in is) o[k] = is[k];
     o.hp = Math.round(is.hp * (1 + 0.1 * (dark || 0)));
+    // Starlit (Darkness): 2 kort byttes med øens 2 Starfall-ånder til samme pris (D.STARLIT[i] = [ind, ud]).
+    if (dark >= 1 && D.STARLIT && D.STARLIT[i]) {
+      var d = is.deck.slice(); D.STARLIT[i][1].forEach(function (id, k) { var j = d.lastIndexOf(id); if (j >= 0) d[j] = D.STARLIT[i][0][k]; });
+      o.deck = d;
+    }
     return o;
   }
   // Pakker

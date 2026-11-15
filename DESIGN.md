@@ -124,3 +124,14 @@ Sejlads (0.10.1): stjernehændelsen ('Starfall' på havet) giver en Starfall-ån
 (`D.STARLIT[i] = [ind, ud]`) — så genspilningen føles ny, og man ser de nye mekanikker fra modstanderens side. Første forsøg
 (lægge 2 kort *til*) gjorde Deadwater sejere (længere deck → senere deck-out mod en vogter, der heler); "byt de 2 billigste"
 ændrede kurven for meget. Samme-pris-byt holdt Darkness-tabellen næsten uændret (D1: 100/93/80/75/71/42/43 mod før 98/94/74/84/77/41/30).
+
+## Darkness-regler (0.11.0) — et langsigtet mål, der ændrer spillet, ikke kun tallene
+Før: hvert niveau = +10 % vogterliv. Nu lægger hvert niveau én synlig regel til (`D.DARK`, gælder fra sit niveau og op),
+og livet stiger kun 4 %/niveau:
+I **Starlit** (vogterne kalder Starfall-ånder) · II **Vanguard** (vogteren starter med sin billigste ånd på brættet, hvis den
+koster ≤ 2 — respekterer Gale) · III **Shroud** (vogterens første planlagte træk vises som "?") · IV **Black Tide** (vogterens
+lygte heler 1 efter dens tur) · V **Deep Night** (vogteren starter med 2 ekstra kort).
+Forkastet: "Hunger" (3 starthåndkort) — alt for hård (D4 Deadwater 4 %); +1 lys til vogteren pr. tur — D5 næsten 0 %.
+`node tests/moerke.js 400`: D1 100/93/81/78/74/42/46 · D3 100/78/63/64/64/35/32 · D5 100/66/52/41/32/11/12 (før: D5 …/13/6).
+Botten bruger ikke vogterens plan, så Shroud koster mennesker mere end tallene viser. Vilde møder får ingen Darkness-regler.
+Sejrsbeskeden fortæller den nye regel; søkortet og vogterens info viser de aktive regler.

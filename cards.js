@@ -94,6 +94,13 @@
   // [ind, ud]: Starfall-ånderne erstatter kort med samme pris, så vogterens kurve ikke ændres.
   var STARLIT = [[["s5", "s2"], ["g3", "t2"]], [["s4", "s3"], ["g3", "r3"]], [["s5", "s9"], ["g2", "g4"]], [["s1", "s6"], ["g2", "g5"]],
     [["s8", "s1"], ["t3", "t2"]], [["s10", "s11"], ["r4", "t6"]], [["s13", "s12"], ["g7", "r6"]]];
+  // Darkness-regler (0.11.0): hvert niveau lægger én synlig regel til (de gælder fra deres niveau og op).
+  var DARK = [null,
+    { n: "Starlit", t: "Wardens call Starfall spirits." },
+    { n: "Vanguard", t: "Wardens start with a cheap spirit on the board." },
+    { n: "Shroud", t: "One of the warden’s next moves is hidden." },
+    { n: "Black Tide", t: "Warden lanterns heal 1 after their turn." },
+    { n: "Deep Night", t: "Wardens start with 2 extra cards." }];
   // Vogter-evner: én enkel regel pr. ø, der ændrer hvordan man skal spille (navn + max ~8 ord).
   var TRAITS = {
     regrow: { n: "Regrowth", t: "Her spirits heal 1 after her turn." },
@@ -103,6 +110,6 @@
     tide: { n: "High Tide", t: "His lantern heals 2 after his turn." },
     night: { n: "Endless Night", t: "The Dark draws 2 cards each turn." },
   };
-  var api = { STARLIT: STARLIT, TWIN: TWIN, lights: lights, hasLight: hasLight, shareLight: shareLight, lightName: lightName, TRAITS: TRAITS, CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
+  var api = { DARK: DARK, STARLIT: STARLIT, TWIN: TWIN, lights: lights, hasLight: hasLight, shareLight: shareLight, lightName: lightName, TRAITS: TRAITS, CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
   if (typeof module !== "undefined") module.exports = api; else root.DATA = api;
 })(this);

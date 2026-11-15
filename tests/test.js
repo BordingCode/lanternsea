@@ -60,7 +60,7 @@ ok(Array.isArray(E.migrate({sv:1,coll:{},deck:[]}).packq), "gammel gemt tilstand
   ok(V.NODES.treasure && V.EVENTS.length === 12, "12 historier"); }
 // Darkness (0.9.0)
 ok(E.newSave().dark === 0 && E.migrate({sv:1,coll:{},deck:[]}).dark === 0, "dark i gemt tilstand");
-ok(E.warden(6, 0).hp === D.ISLANDS[6].hp && E.warden(6, 5).hp === Math.round(D.ISLANDS[6].hp * 1.5) && E.warden(1, 0).deck === D.ISLANDS[1].deck, "vogter skaleres med mørke");
+ok(E.warden(6, 0).hp === D.ISLANDS[6].hp && E.warden(6, 5).hp === Math.round(D.ISLANDS[6].hp * 1.2) && E.warden(1, 0).deck === D.ISLANDS[1].deck, "vogter skaleres med mørke");
 ok(E.warden(3, 1).deck.length === D.ISLANDS[3].deck.length && E.warden(3, 1).deck.filter(id => D.BY[id].set === 2).length === 2 && D.STARLIT.every(x => x[0].every((id, k) => D.BY[id].c === D.BY[x[1][k]].c)) && D.ISLANDS.every((is, i) => E.warden(i, 1).deck.filter(id => D.BY[id].set === 2).length === 2) && D.STARLIT.length === D.ISLANDS.length, "Starlit-vogtere i Darkness");
 ok(D.ISLANDS[1].hp === 16, "Root Witch 16 liv");
 // 0.10.0 Starfall: twin-lys, Shine, Bloom, Starfall-pakker
@@ -85,6 +85,15 @@ ok(D.ISLANDS[1].hp === 16, "Root Witch 16 liv");
   const st = V.EVENTS.find(e => e.id === "star");
   for (let i = 0; i < 100; i++) { const S1 = { bestDark: 1, coll: {}, deck: [], embers: 0 }, S0 = { bestDark: 0, coll: {}, deck: [], embers: 0 };
     ok(D.BY[st.ch[0].fx(S1, r5).card].set === 2 && !D.BY[st.ch[0].fx(S0, r5).card].set, "stjernehændelse giver Starfall kun efter oplåsning"); } }
+// 0.11.0 Darkness-regler
+{ ok(D.DARK.length === E.MAXDARK + 1 && D.DARK.slice(1).every(x => x.n && x.t), "Darkness-regler beskrevet");
+  for (let sd = 1; sd < 60; sd++) { const b2 = E.newBattle(Array(12).fill("g1"), E.warden(0, 2), sd), b1 = E.newBattle(Array(12).fill("g1"), E.warden(0, 1), sd);
+    ok(b2.s[1].board.filter(Boolean).length === 1 && b1.s[1].board.filter(Boolean).length === 0, "Vanguard fra Darkness II"); }
+  { const g = E.newBattle(Array(12).fill("g1"), E.warden(3, 2), 4); ok(!g.s[1].board[0], "Vanguard respekterer Gale"); }
+  { const d5 = E.newBattle(Array(12).fill("g1"), E.warden(5, 5), 4), d4 = E.newBattle(Array(12).fill("g1"), E.warden(5, 4), 4); ok(d5.s[1].hand.length === d4.s[1].hand.length + 2, "Deep Night: +2 startkort"); }
+  { const t = E.newBattle(Array(12).fill("r2"), E.warden(0, 4), 3); E.startTurn(t); E.endTurn(t); t.s[1].hp = 5; t.s[1].hand = []; t.plan = []; E.aiTurn(t); ok(t.s[1].hp === 6, "Black Tide heler 1"); }
+  { const t = E.newBattle(Array(12).fill("r2"), E.warden(0, 3), 3); E.startTurn(t); E.endTurn(t); t.s[1].hp = 5; t.s[1].hand = []; t.plan = []; E.aiTurn(t); ok(t.s[1].hp === 5, "ingen Black Tide før IV"); }
+  { const w = E.newBattle(Array(12).fill("g1"), { hp: 9, deck: Array(12).fill("g1") }, 4); ok(w.dark === 0 && !w.s[1].board.some(Boolean), "vilde møder uden Darkness-regler"); } }
 // 0.9.6: fair starthånd — et 1-lys-kort på hånden, når decket har ét
 for (let sd = 1; sd < 400; sd++) { const dk = ["g1","g2","g2","g3","g3","g4","g4","g5","g5","g6","t3","t3","r3","r3"]; const bb = E.newBattle(dk, 0, sd);
   ok(bb.s[0].hand.some(id => D.BY[id].c <= 1) && bb.s[0].hand.length === 4 && bb.s[0].hand.length + bb.s[0].deck.length === dk.length, "fair starthånd " + sd); }

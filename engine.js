@@ -15,10 +15,18 @@
   function newBattle(playerDeck, island, seed, opt) {
     var r = rng(seed || Date.now()); opt = opt || {};
     var isl = typeof island === "number" ? D.ISLANDS[island] : island;
-    var b = { r: r, turn: 1, who: 0, over: null, log: [], plan: null, trait: isl.trait || null,
+    var b = { r: r, turn: 1, who: 0, over: null, log: [], plan: null, trait: isl.trait || null, dark: isl.dark || 0,
       s: [side(playerDeck, Math.max(1, 15 + (opt.hp || 0)), r), side(isl.deck, isl.hp, r)] };
     for (var k = 0; k < (opt.draw || 0) && b.s[0].deck.length; k++) b.s[0].hand.push(b.s[0].deck.shift());
     fairHand(b.s[0]);
+    // Darkness V — Deep Night: vogteren starter med 2 ekstra kort på hånden.
+    if (b.dark >= 5) for (var x = 0; x < 2 && b.s[1].deck.length; x++) b.s[1].hand.push(b.s[1].deck.shift());
+    // Darkness II — Vanguard: vogteren starter med sin billigste ånd på brættet (på en tilfældig åben plads).
+    if (b.dark >= 2 && b.s[1].hand.some(function (id) { return D.BY[id].c <= 2; })) {
+      var F = b.s[1], lo = 0; F.hand.forEach(function (id, k) { if (D.BY[id].c < D.BY[F.hand[lo]].c) lo = k; });
+      var open = [0, 1, 2, 3].filter(function (k) { return !closed(b, k); }), at = open[Math.floor(r() * open.length)];
+      F.board[at] = unit(F.hand.splice(lo, 1)[0]);
+    }
     planFoe(b);
     return b;
   }
@@ -94,6 +102,8 @@
     }
     P.board.forEach(function (u, i) { if (u && D.BY[u.id].kw.bloom && (u.bl || 0) < 3) { u.bl = (u.bl || 0) + 1; u.a++; u.h++; u.mh++; ev(b, { t: "grow", si: me, slot: i, bloom: 1 }); } });
     P.board.forEach(function (u) { if (u && D.BY[u.id].kw.rod) { var n = D.BY[u.id].kw.rod; P.hp = Math.min(P.mhp, P.hp + n); ev(b, { t: "heal", si: me, n: n }); } });
+    // Darkness IV — Black Tide: vogterens lygte heler 1 efter dens tur.
+    if (me === 1 && b.dark >= 4 && P.hp < P.mhp) { P.hp = Math.min(P.mhp, P.hp + 1); ev(b, { t: "heal", si: 1, n: 1 }); }
     if (me === 1 && b.trait === "tide" && P.hp < P.mhp) { P.hp = Math.min(P.mhp, P.hp + 2); ev(b, { t: "heal", si: 1, n: 2 }); }
     if (me === 1 && b.trait === "regrow") P.board.forEach(function (u, i) { if (u && u.h < u.mh) { u.h++; ev(b, { t: "regrow", si: 1, slot: i }); } });
     if (b.over) return;
@@ -143,7 +153,7 @@
   var MAXDARK = 5;
   function warden(i, dark) {
     var is = D.ISLANDS[i], o = {}; for (var k in is) o[k] = is[k];
-    o.hp = Math.round(is.hp * (1 + 0.1 * (dark || 0)));
+    o.hp = Math.round(is.hp * (1 + 0.04 * (dark || 0))); o.dark = dark || 0; // 0.11.0: 10 % → 4 % pr. niveau, nu hvor hvert niveau har en regel
     // Starlit (Darkness): 2 kort byttes med øens 2 Starfall-ånder til samme pris (D.STARLIT[i] = [ind, ud]).
     if (dark >= 1 && D.STARLIT && D.STARLIT[i]) {
       var d = is.deck.slice(); D.STARLIT[i][1].forEach(function (id, k) { var j = d.lastIndexOf(id); if (j >= 0) d[j] = D.STARLIT[i][0][k]; });

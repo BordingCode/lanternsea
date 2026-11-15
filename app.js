@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.10.2";
+  var VERSION = "0.11.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -244,7 +244,8 @@
       var is = D.ISLANDS[i], known = i <= Math.max(S.island, S.best || 0);
       islInfo.innerHTML = "<b>" + (i + 1) + ". " + esc(is.n) + "</b>" + (i < S.island ? " <span style='color:var(--gold)'>· lit ✦</span>" : i === S.island ? " <span style='color:var(--gold)'>· next</span>" : "") + "<br>" +
         (known ? "<i class='dim'>" + esc(is.lore) + "</i><br><span class='dim'>Warden: " + esc(is.foe) + " · " + E.warden(i, S.dark).hp + " life</span>" + (is.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[is.trait].n + ":</span> " + D.TRAITS[is.trait].t : "") +
-          (S.dark >= 1 && D.STARLIT[i] ? "<br><span style='color:#fff1a8'>★ Starlit:</span> <span class='dim'>also calls " + D.STARLIT[i][0].map(function (id) { return esc(D.BY[id].n); }).join(" & ") + "</span>" : "") : "<span class='dim'>Beyond the dark. Unknown.</span>") +
+          (S.dark >= 1 && D.STARLIT[i] ? "<br><span style='color:#fff1a8'>★ Starlit:</span> <span class='dim'>also calls " + D.STARLIT[i][0].map(function (id) { return esc(D.BY[id].n); }).join(" & ") + "</span>" : "") +
+          (S.dark >= 2 ? "<br><span class='dim' style='font-size:13px'>Darkness " + ROMAN[S.dark] + ": " + darkRules(S.dark).replace("<b>Starlit</b> · ", "") + "</span>" : "") : "<span class='dim'>Beyond the dark. Unknown.</span>") +
         (i === S.island && S.voy && S.voy.to === i && S.voy.boon && VOY.boonText(S.voy.boon) ? "<br><span style='color:#8dffb0'>✧ Voyage: " + VOY.boonText(S.voy.boon) + "</span>" : "") +
         (S.quest && S.quest.to === i ? "<br><span style='color:var(--gold)'>🗺️ Your torn map marks treasure on the way here.</span>" : "");
       map.querySelectorAll(".mi").forEach(function (g) { g.classList.toggle("picked", +g.dataset.i === i); });
@@ -588,7 +589,7 @@
     // Vogterens plan for næste tur (vises kun i din tur, mens intet animeres).
     function ghostAt(slot) {
       if (busy || b.over || b.who !== 0 || !b.plan || b.trait === "fog") return null;
-      for (var k = 0; k < b.plan.length; k++) if (b.plan[k].slot === slot) return b.plan[k].id;
+      for (var k = 0; k < b.plan.length; k++) if (b.plan[k].slot === slot) return k === 0 && b.dark >= 3 ? "?" : b.plan[k].id;
       return null;
     }
     // Forhåndsvisning (0.8.4): hvor stærk bliver det valgte kort på denne plads? Viser Kin/Rally-bonus og fælder.
@@ -608,7 +609,7 @@
           var u = side.board[i];
           var bonus = u ? E.attackOf(side, i) - u.a : 0;
           var g = !u && si === 1 ? ghostAt(i) : null;
-          sl.innerHTML = u ? cardHTML(u.id, { unit: u, bonus: bonus }) : g ? cardHTML(g, { cls: "ghost", badge: "next" }) : "";
+          sl.innerHTML = u ? cardHTML(u.id, { unit: u, bonus: bonus }) : g === "?" ? '<div class="card ghost shroud"><div class="q">?</div><div class="badge">next</div></div>' : g ? cardHTML(g, { cls: "ghost", badge: "next" }) : "";
           var tgt = si === 0 && sel >= 0 && !u && !busy && E.canPlay(b, sel, i);
           sl.classList.toggle("target", tgt);
           if (tgt) sl.innerHTML = previewHTML(b.s[0].hand[sel], i);
@@ -626,6 +627,7 @@
           else if (theirs.shield) txt = "↑" + am + "<br><span style='color:var(--taage)'>veiled</span>";
           else txt = "↑" + am + "<br>" + (am >= theirs.h ? "<span style='color:#8dffb0'>kills</span>" : "<span class='dim'>" + theirs.h + " life</span>");
         } else if (theirs && (theirs.a > 0 || D.BY[theirs.id].kw.ambush)) { var amb = D.BY[theirs.id].kw.ambush; txt = "<span style='color:#ff8a8a'>↓" + theirs.a + "</span><br><span class='" + (amb ? "trait" : "dim") + "'>" + (amb ? "ambush " + amb : "open") + "</span>"; }
+        else if (gh === "?") txt = "<span style='color:#ff8a8a'>⚠ ?</span><br><span class='dim'>shrouded</span>";
         else if (gh && D.BY[gh].a > 0) txt = "<span style='color:#ff8a8a'>⚠ ↓" + D.BY[gh].a + "</span><br><span class='dim'>next turn</span>";
         lanes += "<div>" + txt + "</div>";
       }
@@ -690,11 +692,12 @@
       else if (!b.over) info.innerHTML = "<span class='dim'>First tap a spirit in your hand — then a glowing space.</span>";
     };
     el.querySelector(".hero.foe").onclick = function () {
-      info.innerHTML = "<b>" + esc(isl.foe) + "</b> · " + isl.hp + " life" + (b.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) : "");
+      info.innerHTML = "<b>" + esc(isl.foe) + "</b> · " + isl.hp + " life" + (b.trait ? "<br><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) : "") + (b.dark ? "<br><span class='darkpill'>Darkness " + ROMAN[b.dark] + "</span> " + darkRules(b.dark) : "");
     };
     b1.onclick = function (ev) {
       var sl = ev.target.closest(".slot"); if (!sl) return; var u = b.s[1].board[+sl.dataset.s], g = ghostAt(+sl.dataset.s);
       if (u) info.innerHTML = cardInfo(u.id);
+      else if (g === "?") info.innerHTML = "<b>Shrouded</b> <span class='dim'>(Darkness " + ROMAN[3] + ")</span><br>Something arrives here next turn — the Dark hides what.";
       else if (g) info.innerHTML = cardInfo(g) + "<br><span style='color:#ff8a8a'>Arrives here next turn.</span>";
     };
     function slotEl(si, slot) { return (si ? b1 : b0).querySelectorAll(".slot")[slot]; }
@@ -778,7 +781,7 @@
           S.island = 0; S.flames = 3; S.runs++; S.packs += 2 + was; S.voy = null;
           S.dark = Math.min(E.MAXDARK, was + 1); S.bestDark = Math.max(S.bestDark || 0, was + 1);
           msg = "<h1>The Black Lighthouse burns!</h1><p style='text-align:center'>You lit the whole Dark Sea" + (was ? " — even in Darkness " + ROMAN[was] : "") + ". The spirits sing.<br>You get <b>" + (3 + was) + " packs</b>.</p>" +
-            (was < E.MAXDARK ? "<p class='quote'>“…then I will sink deeper.”</p><p style='text-align:center'>The Dark returns as <b class='darkpill'>Darkness " + ROMAN[S.dark] + "</b>.<br><span class='dim'>Wardens have more life. Wild spirits are tougher. Every victory pays more glimmer.</span></p>"
+            (was < E.MAXDARK ? "<p class='quote'>“…then I will sink deeper.”</p><p style='text-align:center'>The Dark returns as <b class='darkpill'>Darkness " + ROMAN[S.dark] + "</b>.<br>New rule — <b>" + D.DARK[S.dark].n + ":</b> " + D.DARK[S.dark].t + "<br><span class='dim'>Wardens have a little more life. Wild spirits are tougher. Every victory pays more glimmer.</span></p>"
               : "<p style='text-align:center'>You have driven the Dark to its very bottom. Darkness V is yours to sail, again and again.</p>");
         } else {
           T("progress", { island: S.island });
@@ -811,7 +814,7 @@
     if (opt && VOY.boonText(opt)) toast("✧ Voyage: " + VOY.boonText(opt));
     if (!wild && isl.say) { var sp = h('<div class="speech"><b>' + esc(isl.foe) + ':</b> “' + esc(isl.say) + '”</div>'); el.querySelector(".midwrap").appendChild(sp); setTimeout(function () { sp.classList.add("gone"); }, 4200); setTimeout(function () { sp.remove(); }, 4800); }
     if (wild) mid.innerHTML = "<div>Win, and one of them joins you.</div>";
-    else if (b.trait) { mid.innerHTML = "<div><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) + "</div>"; }
+    else if (b.trait || b.dark >= 2) { mid.innerHTML = (b.trait ? "<div><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) + "</div>" : "") + (b.dark >= 2 ? "<div class='dim' style='font-size:12px;margin-top:2px'>Darkness " + ROMAN[b.dark] + ": " + darkRules(b.dark) + "</div>" : ""); }
     else mid.textContent = "Pick a card and place it on an empty space";
     if (!S.seen.battlehint) {
       S.seen.battlehint = 1; save();
@@ -821,6 +824,8 @@
 
   // ---------- sejladsen (The Voyage, 0.8.0) ----------
   var ROMAN = ["", "I", "II", "III", "IV", "V"];
+  // Darkness-reglerne, der gælder på niveau d (alle fra I op til d).
+  function darkRules(d, sep) { var out = []; for (var k = 1; k <= (d || 0); k++) out.push("<b>" + D.DARK[k].n + "</b>" + (sep ? ": " + D.DARK[k].t : "")); return out.join(sep || " · "); }
   function legDone() { return S.island < 1 || !!(S.voy && S.voy.to === S.island && S.voy.step >= 2); }
   function ensureLeg() {
     if (!S.voy || S.voy.to !== S.island) { var seen = S.voy && S.voy.seenEv; S.voy = VOY.placeTreasure(S, VOY.makeLeg(S.island, R), R); S.voy.seenEv = (seen || []).slice(-4); save(); }

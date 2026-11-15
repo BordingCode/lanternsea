@@ -309,3 +309,8 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
 .card.syn{box-shadow:0 0 0 2px #8dffb0,0 0 16px #8dffb0aa!important;opacity:1!important;filter:none!important}.card.focus{box-shadow:0 0 0 2px var(--gold),0 0 18px var(--gold)!important}
 .card.ghost.shroud{display:grid;place-items:center;background:repeating-linear-gradient(45deg,#1a1030 0 6px,#140c26 6px 12px);border-color:#b46bff}
 .card.ghost.shroud .q{font-size:2.6em;font-weight:900;color:#b46bff}
+/* 0.11.1: vifte-hånd */
+.hand.fan{gap:0;overflow-x:visible}
+.hand.fan>.card+.card{margin-left:calc(var(--ov) * -1)}
+.hand.fan>.card{box-shadow:-4px 0 10px #000a}
+.hand.fan>.card.sel{z-index:3}

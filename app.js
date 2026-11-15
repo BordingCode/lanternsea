@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.11.0";
+  var VERSION = "0.11.1";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -653,11 +653,21 @@
         };
         hand.appendChild(c);
       });
+      fanHand();
       el.querySelector("#deckn").textContent = "Turn " + b.turn + " · " + p.deck.length + " in deck";
       el.querySelector("#end").disabled = busy;
       var canAny = p.hand.some(function (id, hi) { for (var k = 0; k < 4; k++) if (E.canPlay(b, hi, k)) return true; return false; });
       el.querySelector("#end").classList.toggle("ready", !busy && !b.over && b.who === 0 && !canAny);
     }
+    // 0.11.1: mange kort på hånden lægger sig som en vifte i stedet for at kræve vandret scroll (telefon).
+    function fanHand() {
+      if (!document.body.contains(hand)) return window.removeEventListener("resize", fanHand);
+      var n = hand.children.length, W = hand.clientWidth; if (!n || !W) return;
+      var w = hand.children[0].getBoundingClientRect().width, need = n * w + (n - 1) * 6;
+      hand.classList.toggle("fan", need > W);
+      if (need > W) hand.style.setProperty("--ov", Math.ceil((n * w - W) / (n - 1) + 2) + "px");
+    }
+    window.addEventListener("resize", fanHand);
     function full() { snap(); drawBoards(); drawHand(); teachKw(); }
     // Første gang et nøgleord er på hånden: forklar det i info-feltet (dommer, nat 2: "Kin, Veil, Devour forklares ikke").
     var KWN = { gnist: "Spark", taage: "Veil", flok: "Kin", rod: "Mend", sluger: "Devour", rally: "Rally", ambush: "Ambush", bloom: "Bloom", shine: "Shine" };

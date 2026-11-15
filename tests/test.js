@@ -98,6 +98,33 @@ ok(D.ISLANDS[1].hp === 16, "Root Witch 16 liv");
 for (let sd = 1; sd < 400; sd++) { const dk = ["g1","g2","g2","g3","g3","g4","g4","g5","g5","g6","t3","t3","r3","r3"]; const bb = E.newBattle(dk, 0, sd);
   ok(bb.s[0].hand.some(id => D.BY[id].c <= 1) && bb.s[0].hand.length === 4 && bb.s[0].hand.length + bb.s[0].deck.length === dk.length, "fair starthånd " + sd); }
 { const bb = E.newBattle(Array(12).fill("g2"), 0, 5); ok(bb.s[0].hand.length === 4, "fair starthånd uden 1-lys-kort rører intet"); }
+// 0.12.0: Constellations
+{ const ST = require("../stars.js"); const u = id => ({ id, a: D.BY[id].a, h: D.BY[id].h, mh: D.BY[id].h, shield: !!D.BY[id].kw.taage, el: D.BY[id].el });
+  const mk = () => { const b = E.newBattle(Array(12).fill("g1"), { hp: 30, deck: Array(12).fill("r1") }, 7); b.s[1].board = [null, null, null, null]; return b; };
+  let b = mk(); b.s[0].board = [u("g2"), u("g3"), u("g1"), u("n1")]; ok(ST.check(b, []).includes("wildfire"), "Wildfire: Kin + 3 af samme lys");
+  b.s[0].board = [u("g2"), u("g3"), u("t1"), u("n1")]; ok(!ST.check(b, []).includes("wildfire"), "ikke Wildfire med kun 2 slægt");
+  b.s[0].board = [u("g8"), u("g3"), u("r8"), null]; ok(ST.check(b, []).includes("warband"), "Warband: mellem to Rally");
+  b.s[0].board = [u("t1"), u("t2"), null, u("n3")]; ok(ST.check(b, []).includes("mistwall"), "Mist Wall");
+  b.s[0].board = [u("s1"), u("g3"), u("t1"), null]; ok(ST.check(b, []).includes("twin"), "Twin Fire: Steamling med Blaze + Mist");
+  b.s[0].board = [u("s1"), u("g3"), u("g1"), null]; ok(!ST.check(b, []).includes("twin"), "ikke Twin Fire med kun ét lys");
+  b.s[0].board = [Object.assign(u("s4"), { bl: 3 }), null, null, null]; ok(ST.check(b, []).includes("bloom"), "Full Bloom");
+  // hændelser: spil rigtige træk
+  b = mk(); b.s[0].board = [null, null, null, null]; b.s[1].board = [u("r2"), null, null, null]; b.s[0].hand = ["g5", "g4"]; b.s[0].lys = 8; b.turn = 8;
+  const st = b.log.length; E.play(b, 0, 1); ok(!ST.check(b, b.log.slice(st)).includes("feast"), "ikke Feast uden Devour-drab");
+  b.s[1].board = [null, Object.assign(u("r5"), {}), null, null];
+  b = mk(); b.s[1].board = [null, u("r3"), null, null]; b.s[0].hand = ["g5", "g4"]; b.s[0].lys = 8; b.turn = 8; b.s[0].board = [null, null, null, null];
+  let s0 = b.log.length; E.play(b, 0, 1); /* Spark 3 på Rootsnake (4) → 1 liv */ b.s[0].board[1] = null; E.play(b, 0, 1); E.endTurn(b);
+  ok(ST.check(b, b.log.slice(s0)).includes("feast"), "Feast: Spark og Devour-drab i samme tur");
+  b = mk(); b.s[0].board = [u("r6"), u("r7"), null, null]; b.s[0].hp = 5; s0 = b.log.length; E.endTurn(b); ok(ST.check(b, b.log.slice(s0)).includes("deeproots"), "Deep Roots: Mend 5");
+  b = mk(); b.s[0].board = [u("g7"), u("g6"), null, null]; s0 = b.log.length; E.endTurn(b); ok(ST.check(b, b.log.slice(s0)).includes("strike"), "Lantern Strike: 6+5 ≥ 10");
+  b = mk(); b.s[0].board = [u("g7"), u("g7"), u("g7"), null]; b.s[1].board = [u("r1"), u("r1"), u("r1"), null]; s0 = b.log.length; E.endTurn(b); ok(ST.check(b, b.log.slice(s0)).includes("sweep"), "Clean Sweep");
+  b = mk(); b.s[0].board = [u("s5"), null, u("g3"), null]; b.s[0].hand = ["s12"]; b.s[0].lys = 8; b.s[0].board[0] = u("g3"); s0 = b.log.length; E.play(b, 0, 1); ok(ST.check(b, b.log.slice(s0)).includes("crown"), "Star Crown");
+  b = mk(); b.s[0].board = [u("n3"), null, null, null]; b.who = 1; b.s[1].hand = ["g1"]; b.s[1].lys = 1; s0 = b.log.length; E.play(b, 0, 0); ok(ST.check(b, [], b.log.slice(s0)).includes("trap"), "The Trap: Ambush dræber ved landing");
+  b = mk(); b.s[0].hp = 2; b.s[1].hp = 3; b.s[0].board = [u("g7"), null, null, null]; s0 = b.log.length; E.endTurn(b); ok(b.over === "win" && ST.check(b, b.log.slice(s0)).includes("lastlight"), "Last Light");
+  { const r = ST.reach(["g2","g3","g1","n1","g4","g5"]); ok(r.includes("wildfire") && r.includes("feast") && !r.includes("mistwall") && !r.includes("twin"), "reach: Blaze-deck"); }
+  { const r = ST.reach(["s1","g3","t1","t2","t8","r4","r1","n2"]); ok(r.includes("twin") && r.includes("mistwall") && r.includes("deeproots"), "reach: blandet deck"); }
+  ok(ST.LIST.every(x => x.pts.length >= 3 && x.hint && x.t && x.n), "alle stjernebilleder har figur og tekst");
+  ok(typeof E.migrate({ sv: 1, coll: {}, deck: [] }).stars === "object", "gammel gemt tilstand får stars"); }
 // AI-decks gyldige
 D.ISLANDS.forEach(is => ok(is.deck.every(id => D.BY[id]), "ø-deck " + is.n));
 // gemte tilstande fra tidligere versioner

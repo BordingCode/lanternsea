@@ -135,3 +135,16 @@ Forkastet: "Hunger" (3 starthåndkort) — alt for hård (D4 Deadwater 4 %); +1 
 `node tests/moerke.js 400`: D1 100/93/81/78/74/42/46 · D3 100/78/63/64/64/35/32 · D5 100/66/52/41/32/11/12 (før: D5 …/13/6).
 Botten bruger ikke vogterens plan, så Shroud koster mennesker mere end tallene viser. Vilde møder får ingen Darkness-regler.
 Sejrsbeskeden fortæller den nye regel; søkortet og vogterens info viser de aktive regler.
+
+## Nat 5 (0.11.2 → 0.12.0) — Constellations
+Dom nat 4: 6,6 — **kombinationer 5** (laveste): "Kin/Rally/Veil lærer man ikke at bruge bevidst … giv et par tydelige
+sæt-kombinationer som mål". Telemetri: Mathias spiller stadig mono-Blaze (nu med 3 Starfall-kort) og taber i Darkness I ved ø 3–4.
+**Constellations** (`stars.js`, ren logik): 12 navngivne kombinationer, man *opdager* i kamp — Wildfire (Kin +3), Warband
+(mellem to Rally), Feast (Spark + Devour-drab i samme tur), Mist Wall (3 Veil), Deep Roots (Mend 4+), The Trap (Ambush dræber),
+Clean Sweep (3 drab i ét angreb), Lantern Strike (10+ på lygten), Last Light (vind på ≤3 liv) + 3 Starfall (Star Crown, Full Bloom,
+Twin Fire). Første gang: stjernefigur tegnes, +1 pakke. Senere gange: lille banner "✦ Wildfire", så kombinationen kan *ses*
+hver gang. Bogen ligger i Collection (ukendte viser et hint = en opskrift). Mål: få spilleren til at bygge andre decks end
+mono-Blaze for at finde resten. `node tests/stjerner.js` måler hvor ofte en bot rammer hvert billede (Feast/Sweep/Trap er sjældne
+med en tilfældig bot — de kræver vilje). Lantern Strike 8 → 10 (52 % af bot-kampe var for let).
+0.11.2-rettelser: samlingstælleren stiger, mens nye ånder vendes; båden lægger til ved stoppets kant; tablet-kampen bruger
+720 px (før 560 → stort tomt hul); månen på havet er en lille segl med stjerner (den grå cirkel lignede en fejl).

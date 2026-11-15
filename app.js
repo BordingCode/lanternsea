@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.11.1";
+  var VERSION = "0.12.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -199,7 +199,8 @@
     for (var k = 0; k < 14; k++) { var x = r() * 96, y = 26 + r() * 13; waves += '<path d="M' + x.toFixed(1) + " " + y.toFixed(1) + ' q1.5 -1 3 0 t3 0" stroke="#6fc3ff" stroke-opacity="' + (0.08 + (y - 26) / 100).toFixed(2) + '" stroke-width=".35" fill="none"/>'; }
     var iw = 18 + r() * 8, top = 20 - r() * 3;
     if (wild) return '<svg class="scene" viewBox="0 0 100 40" preserveAspectRatio="xMidYMid slice"><rect width="100" height="24.5" fill="#0b1020" fill-opacity=".3"/><rect y="24.5" width="100" height="16" fill="#0d1430"/>' +
-      '<circle cx="' + (20 + r() * 60).toFixed(1) + '" cy="9" r="3" fill="#eef0ff" fill-opacity=".5"/>' + waves + waves.replace(/stroke-opacity="[^"]*"/g, 'stroke-opacity=".12" transform="translate(4 -3)"') + "</svg>";
+      (function () { var mx = 20 + r() * 60, st = ""; for (var q = 0; q < 9; q++) st += '<circle cx="' + (r() * 100).toFixed(1) + '" cy="' + (2 + r() * 18).toFixed(1) + '" r=".25" fill="#fff" fill-opacity="' + (0.3 + r() * 0.5).toFixed(2) + '"/>';
+        return st + '<path d="M' + mx.toFixed(1) + ' 6.4 A1.6 1.6 0 1 0 ' + mx.toFixed(1) + ' 9.6 A1.25 1.25 0 1 1 ' + mx.toFixed(1) + ' 6.4Z" fill="#eef0ff" fill-opacity=".8"/>'; })() /* 0.11.2: måne-segl + stjerner (en stor grå cirkel lignede en fejl på tablet) */ + waves + waves.replace(/stroke-opacity="[^"]*"/g, 'stroke-opacity=".12" transform="translate(4 -3)"') + "</svg>";
     return '<svg class="scene" viewBox="0 0 100 40" preserveAspectRatio="xMidYMid slice"><defs>' +
       '<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1020" stop-opacity="0"/><stop offset="1" stop-color="#1a2348"/></linearGradient>' +
       '<radialGradient id="beam"><stop offset="0" stop-color="#fff1a8" stop-opacity=".9"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient></defs>' +
@@ -280,6 +281,15 @@
         "<p style='text-align:center'>Here are <b>2 Starfall packs</b>. After every warden, you can now choose a Starfall pack.</p>", [{ t: "Open them", v: 1 }, { t: "Later", v: 0, sec: true }]).then(function (v) { if (v) packScreen(false); });
       return;
     }
+    // Constellations (0.12.0): præsenteres én gang, når man har vundet to kampe (ikke i de allerførste minutter).
+    if (window.STARS && S.wins >= 2 && !S.seen.cst) {
+      S.seen.cst = 1; save();
+      var ex = STARS.BY.wildfire;
+      modal("<h1 style='color:#fff1a8'>✦ Constellations</h1><div style='width:120px;margin:0 auto'>" + starSVG(ex, true) + "</div><p style='text-align:center'>Old sailors read <b>12 combinations</b> in the stars — spirits that are stronger together.</p>" +
+        "<p style='text-align:center;line-height:1.5'>Pull one off in battle to discover it.<br><b style='color:var(--gold)'>Each one gives a pack</b> the first time.</p><p class='dim' style='text-align:center;font-size:13px'>Find them under 📖 Collection.</p>",
+        [{ t: "Show me", v: 1 }, { t: "Later", v: 0, sec: true }]).then(function (v) { if (v) starsScreen(home); });
+      return;
+    }
     if (caught.length) toast("🏆 Collection " + caught[caught.length - 1] + "/" + D.CARDS.length + " — bonus pack!");
     else if (S.packs > 0 && !S.seen.packhint) { S.seen.packhint = 1; save(); toast("You have an unopened pack!"); }
   }
@@ -290,7 +300,7 @@
   function packScreen(first) {
     if (S.packs < 1) return home();
     var ptype = S.packq && S.packq.length ? S.packq[0] : null;
-    var el = h('<div class="screen"><div class="hud"><span class="pill">Packs: ' + S.packs + '</span><span class="pill">' + uniqueOwned() + "/" + D.CARDS.length + ' spirits</span></div>' +
+    var el = h('<div class="screen"><div class="hud"><span class="pill">Packs: ' + S.packs + '</span><span class="pill" id="ucount">' + uniqueOwned() + "/" + D.CARDS.length + ' spirits</span></div>' +
       '<div class="packzone"><div class="pack"><div class="lbl">' + (ptype ? PACKNAME[ptype] : "THE DARK SEA") + '<br><span style="font-size:13px;color:#dfe3ff">5 light-spirits</span></div></div></div>' +
       '<div class="bottom"><div class="dim" style="text-align:center" id="hint">Tap the pack to tear it open</div><div class="row" id="btns"></div></div></div>');
     var pack = el.querySelector(".pack"), zone = el.querySelector(".packzone");
@@ -311,7 +321,7 @@
       S.packs--; if (ptype) S.packq.shift();
       el.querySelector(".hud .pill").textContent = "Packs: " + S.packs;
       var ids = E.openPack(R, ptype).sort(function (a, b) { return RORD[D.BY[a].r] - RORD[D.BY[b].r]; });
-      var newOnes = {}, melted = 0;
+      var newOnes = {}, melted = 0, shownU = uniqueOwned(); // 0.11.2 (dommer): tælleren stiger, efterhånden som nye ånder vendes
       ids.forEach(function (id) {
         if (!owned(id)) newOnes[id] = 1;
         S.coll[id] = owned(id) + 1;
@@ -344,6 +354,7 @@
           setTimeout(function () {
             if (spot) { spot.classList.add("off"); setTimeout(function () { spot.remove(); }, 600); }
             sc.classList.remove("charge"); sc.classList.add("open"); SFX.flip(c.r);
+            if (newOnes[id]) { var uc = el.querySelector("#ucount"); uc.textContent = ++shownU + "/" + D.CARDS.length + " spirits"; uc.classList.remove("bump"); void uc.offsetWidth; uc.classList.add("bump"); }
             if (c.r === "m" || c.r === "r") { var f = h('<div class="flash"></div>'); if (c.r === "r") f.style.background = "radial-gradient(#ffc861aa,#ffc86100 60%)"; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 800); burst(sc, c.r); }
             if (navigator.vibrate && c.r !== "c") try { navigator.vibrate(c.r === "m" ? [30, 40, 60] : 25); } catch (e) {}
             left--; if (!left) done();
@@ -464,7 +475,7 @@
     var miles = MILES.map(function (m) { var done = S.miles && S.miles[m]; return '<span class="mile' + (done ? " done" : n >= m ? " ready" : "") + '">' + (done ? "✦ " : "") + m + "</span>"; }).join("");
     var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Collection</h2><div class="row"><span class="pill">✦ ' + S.embers + '</span><span class="pill">' + n + "/" + D.CARDS.length + "</span></div></div>" +
       '<div class="bars">' + bars + "</div>" +
-      '<div class="miles">' + miles + '</div><div class="dim" style="font-size:13px;text-align:center;margin:2px 0 8px">' +
+      '<div class="miles">' + miles + '</div>' + (window.STARS ? '<button class="btn sec cstbtn" id="cst">✦ Constellations <b>' + Object.keys(S.stars || {}).length + "/" + STARS.LIST.filter(function (st) { return !st.set2 || starOpen(); }).length + "</b></button>" : "") + '<div class="dim" style="font-size:13px;text-align:center;margin:2px 0 8px">' +
       (next ? "Catch " + (next - n) + " more for a bonus pack" + (next === 30 ? " — and the Keeper's reward" : "") + "." : "Every spirit of the Dark Sea is yours.") + "</div>" +
       '<div class="grid"></div><div class="info" id="binfo">Tap a spirit to read it — or lure one you’re missing with ✦ glimmer.</div>' +
       '<div class="bottom" style="margin-top:8px"><button class="btn" id="back">Back</button></div></div>');
@@ -496,6 +507,7 @@
       grid.appendChild(w);
     });
     el.querySelector("#back").onclick = function () { SFX.tap(); home(); };
+    if (el.querySelector("#cst")) el.querySelector("#cst").onclick = function () { SFX.tap(); starsScreen(); };
     show(el);
   }
 
@@ -518,11 +530,12 @@
   function deckScreen() {
     var filter = "all", focus = null;
     var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Your deck</h2><div class="row"><div class="curve"></div><span class="pill" id="cnt"></span></div></div>' +
-      '<div class="dim" style="font-size:13px;margin:4px 0 8px">Tap a spirit to add it. Tap − to remove. 12–20 cards.</div><div id="elmix" class="elmix"></div>' +
+      '<div class="dim" style="font-size:13px;margin:4px 0 8px">Tap a spirit to add it. Tap − to remove. 12–20 cards.</div><div id="elmix" class="elmix"></div><div id="reach" class="reach"></div>' +
       '<div class="filters"><button class="chip on" data-f="all">All</button><button class="chip" data-f="deck">In deck</button><button class="chip" data-f="glod">Blaze</button><button class="chip" data-f="taage">Mist</button><button class="chip" data-f="rod">Root</button><button class="chip" data-f="missing">Missing</button></div>' +
       '<div class="grid"></div><div class="info" id="dinfo">Tap a card to read it.</div>' +
       '<div class="bottom" style="margin-top:8px"><div class="row"><button class="btn sec" id="auto">Build for me</button><button class="btn" id="back">Done</button></div></div></div>');
     var grid = el.querySelector(".grid");
+    el.querySelector("#reach").onclick = function () { SFX.tap(); if (window.STARS) starsScreen(deckScreen); };
     function inDeck(id) { return S.deck.filter(function (x) { return x === id; }).length; }
     function render() {
       grid.innerHTML = "";
@@ -550,6 +563,11 @@
       });
       var n = S.deck.length, cnt = el.querySelector("#cnt");
       cnt.textContent = n + " cards"; cnt.style.background = n < 12 || n > 20 ? "#5a1f12" : "#14402a";
+      // 0.12.0: hvilke Constellations kan decket nå? Nye (ikke opdaget) fremhæves — en grund til at bygge om.
+      if (window.STARS) {
+        var rc = STARS.reach(S.deck).filter(function (id) { return (!STARS.BY[id].set2 || starOpen()) && ["sweep", "strike", "lastlight"].indexOf(id) < 0; }), nw = rc.filter(function (id) { return !(S.stars || {})[id]; });
+        el.querySelector("#reach").innerHTML = "✦ " + (nw.length ? "Undiscovered in reach: " + nw.map(function (id) { return "<b>" + esc(STARS.BY[id].n) + "</b>"; }).join(", ") : "No undiscovered constellations in reach — try other spirits.");
+      }
       var ec = { glod: 0, taage: 0, rod: 0 }; S.deck.forEach(function (id) { ec[D.BY[id].el]++; });
       el.querySelector("#elmix").innerHTML = "<span class='e glod'>🔥 " + ec.glod + "</span><span class='e taage'>🌫 " + ec.taage + "</span><span class='e rod'>🌱 " + ec.rod + "</span>";
       var cv = [0, 0, 0, 0, 0, 0, 0]; S.deck.forEach(function (id) { cv[Math.min(6, D.BY[id].c - 1 < 0 ? 0 : D.BY[id].c - 1)]++; });
@@ -567,6 +585,42 @@
     show(el); render();
   }
 
+  // ---------- Constellations (0.12.0) ----------
+  function starSVG(st, on) {
+    var pts = st.pts.map(function (p) { return (p[0] * 10) + "," + (p[1] * 10); });
+    return '<svg class="cst' + (on ? " on" : "") + '" viewBox="-6 -6 112 112"><polyline points="' + pts.join(" ") + '" pathLength="100"/>' +
+      st.pts.map(function (p) { return '<circle cx="' + p[0] * 10 + '" cy="' + p[1] * 10 + '" r="' + (on ? 5 : 4) + '"/>'; }).join("") + "</svg>";
+  }
+  function starFound(id, mid) {
+    var st = STARS.BY[id]; if (!st) return;
+    S.stars = S.stars || {};
+    if (!S.stars[id]) {
+      S.stars[id] = 1; S.packs++; save(); T("constellation", { id: id, n: Object.keys(S.stars).length });
+      var ov = h('<div class="stardisc">' + starSVG(st, true) + '<div class="sdk">✦ Constellation discovered ✦</div><div class="sdn">' + esc(st.n) + '</div><div class="sdt">' + esc(st.t) + '</div><div class="sdr">+1 pack</div></div>');
+      document.body.appendChild(ov); SFX.chime(); setTimeout(function () { SFX.win(); }, 350);
+      particles(ov.querySelector(".sdn"), ["#fff1a8", "#ffffff", "#c9a2ff"], 18, 120);
+      ov.onclick = function () { ov.remove(); };
+      setTimeout(function () { ov.classList.add("gone"); }, 2800); setTimeout(function () { ov.remove(); }, 3400);
+    } else {
+      var bn = h('<div class="starping">✦ ' + esc(st.n) + "</div>");
+      (mid ? mid.parentNode : document.body).appendChild(bn); SFX.chime(); setTimeout(function () { bn.remove(); }, 1700);
+    }
+  }
+  function starsScreen(back) {
+    S.stars = S.stars || {};
+    var list = STARS.LIST.filter(function (st) { return !st.set2 || starOpen(); }), n = list.filter(function (st) { return S.stars[st.id]; }).length;
+    var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Constellations</h2><span class="pill">' + n + "/" + list.length + "</span></div>" +
+      '<p class="dim" style="margin:4px 0 10px;font-size:14px">Combinations written in the stars. Pull one off in battle to discover it — <b style="color:var(--gold)">each one gives a pack</b> the first time.</p>' +
+      '<div class="cgrid"></div><div class="bottom" style="margin-top:10px"><button class="btn" id="back">Back</button></div></div>');
+    var g = el.querySelector(".cgrid");
+    STARS.LIST.forEach(function (st) {
+      var on = !!S.stars[st.id], lock = st.set2 && !starOpen();
+      g.appendChild(h('<div class="cbox' + (on ? " on" : "") + '">' + starSVG(st, on) + "<b>" + (on ? esc(st.n) : lock ? "★ Starfall" : "?") + "</b><small>" + (lock ? "Light the Black Lighthouse first." : on ? esc(st.t) : esc(st.hint)) + "</small></div>"));
+    });
+    el.querySelector("#back").onclick = function () { SFX.tap(); (back || binderScreen)(); };
+    show(el);
+  }
+
   // ---------- kamp ----------
   // enc: et vildt møde på havet (VOY.wildEncounter); ellers øens vogter.
   function battleScreen(enc) {
@@ -575,6 +629,41 @@
     var b = E.newBattle(S.deck, isl, (R() * 1e9) >>> 0, opt);
     E.startTurn(b);
     var sel = -1, busy = false;
+    // Constellations (0.12.0): myStart = hvor din tur begyndte i loggen; boardOn/turnShown forhindrer, at det samme banner gentages.
+    var myStart = b.log.length, boardOn = {}, turnShown = {};
+    // 0.12.0 (dommer: "en flamme slukkes, uden at man kan se, hvordan man skulle have valgt anderledes"): hvad ramte dig?
+    var hurt = { lanes: [0, 0, 0, 0], by: {}, spark: 0, deck: 0, dealt: 0 }, lastSrc = null;
+    function track(e, V) {
+      if (e.t === "play") lastSrc = { k: "play", si: e.si, id: e.id };
+      else if (e.t === "atk") lastSrc = { k: "atk", si: e.si, slot: e.slot, id: V[e.si].board[e.slot] && V[e.si].board[e.slot].id };
+      else if (e.t === "face" && e.si === 1) hurt.dealt += e.n;
+      else if (e.t === "face" && e.si === 0) {
+        if (lastSrc && lastSrc.si === 1 && lastSrc.k === "atk") hurt.lanes[lastSrc.slot] += e.n;
+        else if (lastSrc && lastSrc.si === 1 && lastSrc.k === "play") hurt.spark += e.n;
+        else hurt.deck += e.n;
+        if (lastSrc && lastSrc.si === 1 && lastSrc.id) hurt.by[lastSrc.id] = (hurt.by[lastSrc.id] || 0) + e.n;
+      }
+    }
+    function recapHTML() {
+      var lanes = hurt.lanes.reduce(function (a, x) { return a + x; }, 0), tot = lanes + hurt.spark + hurt.deck; if (!tot) return "";
+      var worst = Object.keys(hurt.by).sort(function (x, y) { return hurt.by[y] - hurt.by[x]; })[0], mhp = b.s[1].mhp;
+      var parts = []; if (lanes) parts.push("<b>" + lanes + "</b> through open lanes"); if (hurt.spark) parts.push("<b>" + hurt.spark + "</b> from Spark"); if (hurt.deck) parts.push("<b>" + hurt.deck + "</b> from an empty deck");
+      var adv = hurt.deck >= 3 ? "Your deck ran dry — a few more cards would help." : lanes >= tot * 0.6 && hurt.dealt >= mhp * 0.5 ? "Most of it came through lanes you left open. Put a spirit where the faded cards land." :
+        hurt.dealt < mhp * 0.5 ? "They outlasted you. Build more attack — Kin, Rally, Spark — and aim for empty lanes." : "It was close. Cheaper spirits early can buy you the turn you needed.";
+      return "<div class='recap'><div>💔 You took " + tot + ": " + parts.join(", ") + ".</div>" + (worst ? "<div>Hardest hitter: <b>" + esc(D.BY[worst].n) + "</b> (" + hurt.by[worst] + ")</div>" : "") +
+        "<div>⚔ You hit their lantern for <b>" + hurt.dealt + "</b> of " + mhp + ".</div><div class='adv'>→ " + adv + "</div></div>";
+    }
+    function starCheck(evs, foeEvs) {
+      if (!window.STARS) return;
+      var ids = STARS.check(b, evs, foeEvs), board = STARS.boardFeats(b), on = {};
+      board.forEach(function (id) { on[id] = 1; });
+      ids.forEach(function (id) {
+        if (on[id] ? boardOn[id] : turnShown[id]) return;
+        if (!on[id]) turnShown[id] = 1;
+        starFound(id, mid);
+      });
+      boardOn = on;
+    }
     var el = h('<div class="screen battle">' +
       '<div class="hero foe"><span>' + (wild ? "🌊" : "🌑") + ' <b>' + esc(isl.foe) + '</b></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
       '<div class="board" id="b1"></div><div class="midwrap">' + battleScene(wild && enc.el) + '<div class="mid" id="mid"></div></div><div class="lanes" id="lanes"></div><div class="board" id="b0"></div>' +
@@ -695,7 +784,7 @@
       if (sel >= 0) {
         if (E.canPlay(b, sel, i)) {
           var start = b.log.length; E.play(b, sel, i); sel = -1; info.innerHTML = "";
-          animate(b.log.slice(start)).then(after);
+          animate(b.log.slice(start)).then(function () { starCheck(b.log.slice(myStart)); after(); });
         } else if (b.s[0].board[i]) { info.innerHTML = cardInfo(b.s[0].board[i].id); }
         else toast(E.closed(b, i) ? "This lane is closed (Gale)" : D.BY[b.s[0].hand[sel]].c > b.s[0].lys ? "Not enough light — you have " + b.s[0].lys : "You can’t play there");
       } else if (b.s[0].board[i]) info.innerHTML = cardInfo(b.s[0].board[i].id);
@@ -728,7 +817,7 @@
       var p = Promise.resolve();
       evs.forEach(function (e) {
         p = p.then(function () {
-          var V = view.s;
+          var V = view.s; track(e, V);
           if (e.t === "play") { V[e.si].board[e.slot] = JSON.parse(JSON.stringify(b.s[e.si].board[e.slot] || { id: e.id, a: D.BY[e.id].a, h: D.BY[e.id].h, mh: D.BY[e.id].h, shield: !!D.BY[e.id].kw.taage, el: D.BY[e.id].el })); var u0 = V[e.si].board[e.slot]; u0.h = D.BY[e.id].h; u0.a = D.BY[e.id].a; u0.mh = u0.h; u0.shield = !!D.BY[e.id].kw.taage; drawBoards(); var c = slotEl(e.si, e.slot).querySelector(".card"); if (c) c.classList.add("drop"); SFX.play(); if (e.si === 1) mid.textContent = wild ? "A wild " + D.BY[e.id].n + " joins the fight" : isl.foe + " calls " + D.BY[e.id].n; kinPing(e.si, e.slot); return wait(380); }
           if (e.t === "ambush") { var ca = slotEl(e.si, e.slot).querySelector(".card"); if (ca) { ca.classList.remove("lunge0", "lunge1"); void ca.offsetWidth; ca.classList.add("lunge" + e.si); } floatTxt(slotEl(e.si, e.slot), "Ambush!", "b"); SFX.atk(); return wait(320); }
           if (e.t === "atk") { var c2 = slotEl(e.si, e.slot).querySelector(".card"); if (c2) { c2.classList.remove("lunge0", "lunge1"); void c2.offsetWidth; c2.classList.add("lunge" + e.si); } SFX.atk(); return wait(200); }
@@ -757,11 +846,12 @@
       var start = b.log.length; E.endTurn(b);
       mid.textContent = "Your spirits attack…";
       animate(b.log.slice(start)).then(function () {
+        starCheck(b.log.slice(myStart));
         if (b.over) return finish();
         mid.textContent = wild ? "The wild spirits move…" : isl.foe + "'s turn…";
         return wait(350).then(function () {
           var s2 = b.log.length; E.aiTurn(b);
-          return animate(b.log.slice(s2));
+          return animate(b.log.slice(s2)).then(function () { turnShown = {}; starCheck([], b.log.slice(s2)); myStart = b.log.length; });
         }).then(function () {
           mid.textContent = b.over ? "" : b.trait === "fog" ? "Fog hides the pilot's plan" : (b.plan && b.plan.length ? "Faded cards: " + (wild ? "the spirits’" : "the warden’s") + " next move" : "Your turn — light: " + b.s[0].lys);
           after();
@@ -779,7 +869,7 @@
       if (b.over === "win") el.querySelector(".scene").classList.add("lit");
       var won = b.over === "win";
       T("battle_end", { won: won, fled: !!fled, island: S.island, turns: b.turn, deck: S.deck, hp: b.s[0].hp, wild: wild ? enc.el : undefined });
-      if (wild) return finishWild(won, enc);
+      if (wild) return finishWild(won, enc, won || fled ? "" : recapHTML());
       var msg;
       if (won) {
         S.wins++; S.packs++; S.island++; S.best = Math.max(S.best, S.island); S.voy = null;
@@ -802,9 +892,9 @@
         if (S.flames <= 0) {
           T("progress", { step: "voyage_lost", reached: S.island });
           S.island = 0; S.flames = 3; S.runs++; S.voy = null;
-          msg = "<h1 style='color:#b46bff'>The lantern goes out</h1><p style='text-align:center'>Your last flame died. The Dark takes the islands back, and the voyage must begin again.<br><br>But the spirits are still yours.</p>" + tipHTML(isl);
+          msg = "<h1 style='color:#b46bff'>The lantern goes out</h1><p style='text-align:center'>Your last flame died. The Dark takes the islands back, and the voyage must begin again.<br><br>But the spirits are still yours.</p>" + (fled ? "" : recapHTML()) + tipHTML(isl);
         } else {
-          msg = "<h1 style='color:#b46bff'>Defeat</h1><p style='text-align:center'>" + esc(isl.foe) + " put out one of your flames.<br>" + S.flames + " flame" + (S.flames === 1 ? "" : "s") + " left.</p>" + tipHTML(isl);
+          msg = "<h1 style='color:#b46bff'>Defeat</h1><p style='text-align:center'>" + esc(isl.foe) + " put out one of your flames.<br>" + S.flames + " flame" + (S.flames === 1 ? "" : "s") + " left.</p>" + (fled ? "" : recapHTML()) + tipHTML(isl);
         }
       }
       save();
@@ -867,7 +957,7 @@
         // lille sejltur: båden glider fra sin plads hen til det valgte stop
         var from0 = el.querySelector(".here"), boat = h('<div class="sailboat">⛵</div>');
         if (from0) { var a0 = from0.getBoundingClientRect(), a1 = nb.getBoundingClientRect(); boat.style.left = (a0.left + a0.width / 2) + "px"; boat.style.top = (a0.top + a0.height / 2) + "px"; document.body.appendChild(boat);
-          requestAnimationFrame(function () { requestAnimationFrame(function () { boat.style.left = (a1.left + a1.width / 2) + "px"; boat.style.top = (a1.top + a1.height / 2) + "px"; }); }); }
+          requestAnimationFrame(function () { requestAnimationFrame(function () { boat.style.left = (a1.left + a1.width / 2) + "px"; boat.style.top = (a1.top - 4) + "px"; }); }); } // 0.11.2: lægger til ved kanten, ikke oven på teksten
         nb.classList.add("chosen"); el.querySelectorAll(".node.open").forEach(function (o) { if (o !== nb) o.classList.add("skip"); });
         setTimeout(function () { boat.remove(); nodeScreen(t); }, 750);
       };
@@ -996,7 +1086,7 @@
     }
   }
   // Efter en kamp mod vilde ånder.
-  function finishWild(won, enc) {
+  function finishWild(won, enc, recap) {
     save();
     if (won) {
       SFX.win();
@@ -1026,7 +1116,7 @@
       T("progress", { step: "voyage_lost", reached: S.island, at: "sea" });
       S.island = 0; S.flames = 3; S.runs++; S.voy = null;
       msg = "<h1 style='color:#b46bff'>The lantern goes out</h1><p style='text-align:center'>The wild spirits put out your last flame. The Dark takes the islands back, and the voyage must begin again.<br><br>But the spirits are still yours.</p>";
-    } else msg = "<h1 style='color:#b46bff'>Driven off</h1><p style='text-align:center'>The wild spirits put out one of your flames.<br>" + S.flames + " flame" + (S.flames === 1 ? "" : "s") + " left. You sail on, shaken.</p>";
+    } else msg = "<h1 style='color:#b46bff'>Driven off</h1><p style='text-align:center'>The wild spirits put out one of your flames.<br>" + S.flames + " flame" + (S.flames === 1 ? "" : "s") + " left. You sail on, shaken.</p>" + (recap || "");
     save();
     setTimeout(function () { modal(msg, [{ t: S.voy ? "Sail on" : "To the map", v: 1 }]).then(function () { if (S.voy) voyageScreen(); else home(); }); }, 500);
   }

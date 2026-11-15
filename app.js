@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.12.0";
+  var VERSION = "0.12.1";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -69,13 +69,15 @@
     },
     charge: function () { tone(220, 0.9, "sine", 0.06, 660); },
     play: function () { tone(330, 0.12, "triangle", 0.2, 520); },
-    atk: function () { noise(0.08, 0.35); },
-    hit: function () { tone(140, 0.15, "square", 0.16, 70); noise(0.06, 0.25); },
-    die: function () { tone(300, 0.35, "sawtooth", 0.14, 60); },
-    face: function () { tone(110, 0.25, "square", 0.1, 55); noise(0.15, 0.2); },
+    // 0.12.0 (dommer: "handlinger skal føles tungere"): sus før slaget, dyb bas i slaget, knas når en ånd dør.
+    atk: function () { noise(0.12, 0.32); tone(460, 0.12, "triangle", 0.07, 170); },
+    hit: function (big) { tone(140, 0.15, "square", 0.16, 70); tone(85, big ? 0.3 : 0.18, "sine", big ? 0.32 : 0.22, 40); noise(big ? 0.14 : 0.06, big ? 0.4 : 0.25); },
+    die: function () { tone(300, 0.35, "sawtooth", 0.14, 60); noise(0.25, 0.3, 0.04); tone(70, 0.3, "sine", 0.2, 35); },
+    face: function () { tone(110, 0.25, "square", 0.1, 55); noise(0.15, 0.2); tone(62, 0.4, "sine", 0.3, 32); },
     heal: function () { tone(523, 0.15, "sine", 0.08); tone(784, 0.2, "sine", 0.06, null, 0.08); },
     dodge: function () { tone(900, 0.14, "sine", 0.14, 1400); },
-    win: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.35, "triangle", 0.12, null, i * 0.12); }); },
+    win: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.35, "triangle", 0.12, null, i * 0.12); });
+      tone(131, 1.1, "triangle", 0.12, null, 0.36); tone(196, 1.1, "sine", 0.08, null, 0.36); [1568, 2093, 2637].forEach(function (f, i) { tone(f, 0.25, "sine", 0.05, null, 0.5 + i * 0.07); }); },
     lose: function () { [392, 330, 262, 196].forEach(function (f, i) { tone(f, 0.45, "sine", 0.1, null, i * 0.18); }); },
   };
 
@@ -821,7 +823,7 @@
           if (e.t === "play") { V[e.si].board[e.slot] = JSON.parse(JSON.stringify(b.s[e.si].board[e.slot] || { id: e.id, a: D.BY[e.id].a, h: D.BY[e.id].h, mh: D.BY[e.id].h, shield: !!D.BY[e.id].kw.taage, el: D.BY[e.id].el })); var u0 = V[e.si].board[e.slot]; u0.h = D.BY[e.id].h; u0.a = D.BY[e.id].a; u0.mh = u0.h; u0.shield = !!D.BY[e.id].kw.taage; drawBoards(); var c = slotEl(e.si, e.slot).querySelector(".card"); if (c) c.classList.add("drop"); SFX.play(); if (e.si === 1) mid.textContent = wild ? "A wild " + D.BY[e.id].n + " joins the fight" : isl.foe + " calls " + D.BY[e.id].n; kinPing(e.si, e.slot); return wait(380); }
           if (e.t === "ambush") { var ca = slotEl(e.si, e.slot).querySelector(".card"); if (ca) { ca.classList.remove("lunge0", "lunge1"); void ca.offsetWidth; ca.classList.add("lunge" + e.si); } floatTxt(slotEl(e.si, e.slot), "Ambush!", "b"); SFX.atk(); return wait(320); }
           if (e.t === "atk") { var c2 = slotEl(e.si, e.slot).querySelector(".card"); if (c2) { c2.classList.remove("lunge0", "lunge1"); void c2.offsetWidth; c2.classList.add("lunge" + e.si); } SFX.atk(); return wait(200); }
-          if (e.t === "hit") { var u = V[e.si].board[e.slot]; if (u) u.h -= e.n; drawBoards(); var se = slotEl(e.si, e.slot), c3 = se.querySelector(".card"); if (c3) c3.classList.add("hitfx"); floatTxt(se, "−" + e.n, e.n >= 4 ? "big" : ""); SFX.hit(); return wait(260); }
+          if (e.t === "hit") { var u = V[e.si].board[e.slot]; if (u) u.h -= e.n; drawBoards(); var se = slotEl(e.si, e.slot), c3 = se.querySelector(".card"); if (c3) c3.classList.add("hitfx"); floatTxt(se, "−" + e.n, e.n >= 4 ? "big" : ""); SFX.hit(e.n >= 4); return wait(260); }
           if (e.t === "dodge") { var u2 = V[e.si].board[e.slot]; if (u2) u2.shield = false; drawBoards(); floatTxt(slotEl(e.si, e.slot), "veiled!", "b"); SFX.dodge(); return wait(260); }
           if (e.t === "die") { var c4 = slotEl(e.si, e.slot).querySelector(".card"); if (c4) { c4.classList.add("die"); particles(c4, ELCOL[D.BY[e.id].el], 12, 70); } SFX.die(); return wait(330).then(function () { V[e.si].board[e.slot] = null; drawBoards(); }); }
           if (e.t === "grow") { var u3 = V[e.si].board[e.slot]; if (u3) { u3.a++; u3.h++; u3.mh++; } drawBoards(); floatTxt(slotEl(e.si, e.slot), e.bloom ? "bloom +1/+1" : "+1/+1", "g"); SFX.heal(); return wait(e.bloom ? 300 : 260); }

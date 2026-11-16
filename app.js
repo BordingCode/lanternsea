@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.12.1";
+  var VERSION = "0.13.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -322,7 +322,11 @@
       if (revealed) return; revealed = true;
       S.packs--; if (ptype) S.packq.shift();
       el.querySelector(".hud .pill").textContent = "Packs: " + S.packs;
-      var ids = E.openPack(R, ptype).sort(function (a, b) { return RORD[D.BY[a].r] - RORD[D.BY[b].r]; });
+      // 0.13.0 (dommer: "vis kombinationer tidligt"): den allerførste pakke er Blaze og giver Coalcub nr. 2 — Kin kan mærkes i første kamp.
+      var veryFirst = first && !S.seen.firstpack; if (veryFirst) S.seen.firstpack = 1;
+      var ids = E.openPack(R, veryFirst ? "glod" : ptype);
+      if (veryFirst) ids[0] = "g2";
+      ids = ids.sort(function (a, b) { return RORD[D.BY[a].r] - RORD[D.BY[b].r]; });
       var newOnes = {}, melted = 0, shownU = uniqueOwned(); // 0.11.2 (dommer): tælleren stiger, efterhånden som nye ånder vendes
       ids.forEach(function (id) {
         if (!owned(id)) newOnes[id] = 1;
@@ -348,11 +352,11 @@
           if (busy || sc.classList.contains("open")) { if (sc.classList.contains("open")) toast(D.BY[id].n + " — " + D.BY[id].t); return; }
           if (fin && left > 1) { el.querySelector("#hint").textContent = "Save the best for last — turn the others first"; sc.classList.remove("nudge"); void sc.offsetWidth; sc.classList.add("nudge"); return; }
           busy = true;
-          var wait0 = fin ? { c: 400, u: 600, r: 1100, m: 1700 }[c.r] : { c: 0, u: 300, r: 700, m: 1100 }[c.r];
+          var wait0 = fin ? { c: 300, u: 450, r: 800, m: 1200 }[c.r] : { c: 0, u: 300, r: 700, m: 1100 }[c.r];
           if (rush) wait0 = Math.min(wait0, fin ? 700 : 0);
           var spot = null;
           if (fin) { var rc = sc.getBoundingClientRect(); spot = h('<div class="spot"></div>'); spot.style.background = "radial-gradient(circle at " + (rc.left + rc.width / 2) + "px " + (rc.top + rc.height / 2) + "px," + "transparent " + (rc.height * 0.62) + "px,#000c " + (rc.height * 1.4) + "px)"; document.body.appendChild(spot); }
-          if (wait0) { sc.classList.add("charge"); SFX.charge(); }
+          if (wait0) { sc.classList.add("charge"); SFX.charge(); if (fin) el.querySelector("#hint").textContent = { c: "…", u: "Something stirs…", r: "It’s glowing…", m: "The whole pack is shaking…" }[c.r]; }
           setTimeout(function () {
             if (spot) { spot.classList.add("off"); setTimeout(function () { spot.remove(); }, 600); }
             sc.classList.remove("charge"); sc.classList.add("open"); SFX.flip(c.r);
@@ -373,13 +377,15 @@
         rush = true; var k = 0;
         rv.querySelectorAll(".slotc:not(.open):not(.finale)").forEach(function (s) { setTimeout(function () { s.click(); }, k++ * 90); });
         if (finale && !finale.classList.contains("open")) setTimeout(function () { finale.click(); }, k * 90 + 250);
-        all.remove();
+        all.disabled = true; all.textContent = "Revealing…"; // 0.13.0 (dommer): knappen forsvandt uden feedback
+
       };
       btns.appendChild(all);
       function done() {
         var nNew = Object.keys(newOnes).length;
         el.querySelector("#hint").innerHTML = (nNew ? "<b style='color:var(--gold)'>" + nNew + " new spirits!</b> " : "") + (melted ? "Duplicates melted into <b>" + melted + " ✦ glimmer</b>." : "") + (!nNew && !melted ? "More spirits for your collection." : "");
         btns.innerHTML = "";
+        if (veryFirst) el.querySelector("#hint").innerHTML += "<br><span class='trait'>Kin:</span> a Coalcub gets +1 attack for each other Blaze spirit you have out.";
         var got = claimMiles();
         if (got.length) {
           el.querySelector("#hint").innerHTML += "<br><b style='color:var(--m)'>🏆 Collection " + got[got.length - 1] + "/" + D.CARDS.length + "!</b> Bonus pack" + (got.reduce(function (a, m) { return a + mileReward(m); }, 0) > 1 ? "s" : "") + " earned.";
@@ -750,13 +756,19 @@
       var canAny = p.hand.some(function (id, hi) { for (var k = 0; k < 4; k++) if (E.canPlay(b, hi, k)) return true; return false; });
       el.querySelector("#end").classList.toggle("ready", !busy && !b.over && b.who === 0 && !canAny);
     }
-    // 0.11.1: mange kort på hånden lægger sig som en vifte i stedet for at kræve vandret scroll (telefon).
+    // 0.13.0: kortene i hånden krymper, så de altid står side om side uden overlap (dommer nat 5: viften fik
+    // tryk til at ramme nabokortet). Meget store hænder (>7) lægger sig i to rækker.
     function fanHand() {
       if (!document.body.contains(hand)) return window.removeEventListener("resize", fanHand);
-      var n = hand.children.length, W = hand.clientWidth; if (!n || !W) return;
-      var w = hand.children[0].getBoundingClientRect().width, need = n * w + (n - 1) * 6;
-      hand.classList.toggle("fan", need > W);
-      if (need > W) hand.style.setProperty("--ov", Math.ceil((n * w - W) / (n - 1) + 2) + "px");
+      hand.style.removeProperty("--w");
+      var n = hand.children.length, W = hand.clientWidth - 4; if (!n || !W) return;
+      var base = parseFloat(getComputedStyle(hand).getPropertyValue("--w")) || 78, gap = 5;
+      var fit = function (k) { return Math.floor((W - (k - 1) * gap) / k); };
+      var per = fit(n) >= Math.max(58, base * 0.7) ? n : Math.ceil(n / 2); // hellere to rækker læsbare kort end én række frimærker
+      var w = Math.min(per < n ? Math.round(base * 0.9) : base, fit(per));
+      hand.classList.toggle("rows", per < n);
+      hand.classList.toggle("tiny", w < 66);
+      if (w < base) hand.style.setProperty("--w", w + "px");
     }
     window.addEventListener("resize", fanHand);
     function full() { snap(); drawBoards(); drawHand(); teachKw(); }

@@ -118,7 +118,7 @@ h2{margin:4px 0 8px;font-size:20px}
 .lys .dots{display:flex;gap:3px;margin-top:2px}
 .lys i{width:9px;height:9px;border-radius:50%;background:#2a3256}
 .lys i.on{background:radial-gradient(#fff6d8,#ffb347);box-shadow:0 0 6px #ffb347}
-.hand{display:flex;gap:6px;overflow-x:auto;padding:10px 2px 4px;--w:78px;min-height:122px}
+.hand{display:flex;gap:5px;overflow-x:auto;padding:10px 2px 4px;--w:78px;min-height:122px}
 .hand .card.sel{transform:translateY(-10px);box-shadow:0 0 0 3px var(--gold),0 0 18px #ffb347}
 .hand .card.cant{filter:brightness(.55)}
 .info{min-height:38px;font-size:13px;color:#dfe3ff;background:#141b33aa;border-radius:10px;padding:6px 10px;line-height:1.3}
@@ -310,10 +310,8 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
 .card.ghost.shroud{display:grid;place-items:center;background:repeating-linear-gradient(45deg,#1a1030 0 6px,#140c26 6px 12px);border-color:#b46bff}
 .card.ghost.shroud .q{font-size:2.6em;font-weight:900;color:#b46bff}
 /* 0.11.1: vifte-hånd */
-.hand.fan{gap:0;overflow-x:visible}
-.hand.fan>.card+.card{margin-left:calc(var(--ov) * -1)}
-.hand.fan>.card{box-shadow:-4px 0 10px #000a}
-.hand.fan>.card.sel{z-index:3}
+.hand.rows{flex-wrap:wrap;justify-content:center;row-gap:5px}.hand.rows>.card{margin:0!important}
+.hand.tiny .card .kw{display:none}.hand.tiny .card .nm{font-size:.85em;top:62%}
 
 /* 0.11.2 */
 .pill.bump{animation:ubump .4s}

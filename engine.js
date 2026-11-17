@@ -98,7 +98,7 @@
         var killed = damageUnit(b, o, i, a);
         if (back > 0 && P.board[i]) damageUnit(b, me, i, back);
         if (killed && P.board[i] && D.BY[u.id].kw.sluger) { u.a++; u.h++; u.mh++; ev(b, { t: "grow", si: me, slot: i }); }
-      } else damageHero(b, o, a);
+      } else damageHero(b, o, a + (me === 1 && b.trait === "dive" ? 1 : 0)); // Dive (Skerrystone): mågens ånder rammer åbne baner hårdere
     }
     P.board.forEach(function (u, i) { if (u && D.BY[u.id].kw.bloom && (u.bl || 0) < 3) { u.bl = (u.bl || 0) + 1; u.a++; u.h++; u.mh++; ev(b, { t: "grow", si: me, slot: i, bloom: 1 }); } });
     P.board.forEach(function (u) { if (u && D.BY[u.id].kw.rod) { var n = D.BY[u.id].kw.rod; P.hp = Math.min(P.mhp, P.hp + n); ev(b, { t: "heal", si: me, n: n }); } });

@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.13.0";
+  var VERSION = "0.14.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -450,6 +450,7 @@
 
   // Et konkret råd efter et nederlag, så tabet peger fremad (kort: maks ~12 ord).
   var TRAITTIP = {
+    dive: "Block the gulls: open lanes let them dive at your lantern.",
     regrow: "Hit hard: wounded spirits of hers heal. Kill in one blow.",
     embers: "Keep fragile spirits out of lanes where his Blaze will land.",
     gale: "Only three lanes — every space counts. Pack stronger spirits.",
@@ -656,7 +657,7 @@
       var lanes = hurt.lanes.reduce(function (a, x) { return a + x; }, 0), tot = lanes + hurt.spark + hurt.deck; if (!tot) return "";
       var worst = Object.keys(hurt.by).sort(function (x, y) { return hurt.by[y] - hurt.by[x]; })[0], mhp = b.s[1].mhp;
       var parts = []; if (lanes) parts.push("<b>" + lanes + "</b> through open lanes"); if (hurt.spark) parts.push("<b>" + hurt.spark + "</b> from Spark"); if (hurt.deck) parts.push("<b>" + hurt.deck + "</b> from an empty deck");
-      var adv = hurt.deck >= 3 ? "Your deck ran dry — a few more cards would help." : lanes >= tot * 0.6 && hurt.dealt >= mhp * 0.5 ? "Most of it came through lanes you left open. Put a spirit where the faded cards land." :
+      var adv = hurt.deck >= 3 ? "Your deck ran dry — a few more cards would help." : (lanes >= tot * 0.6 && hurt.dealt >= mhp * 0.5) || lanes >= tot * 0.8 ? "Most of it came through lanes you left open" + (b.trait === "dive" ? " — that’s where the gulls dive" : "") + ". Put a spirit where the faded cards land." :
         hurt.dealt < mhp * 0.5 ? "They outlasted you. Build more attack — Kin, Rally, Spark — and aim for empty lanes." : "It was close. Cheaper spirits early can buy you the turn you needed.";
       return "<div class='recap'><div>💔 You took " + tot + ": " + parts.join(", ") + ".</div>" + (worst ? "<div>Hardest hitter: <b>" + esc(D.BY[worst].n) + "</b> (" + hurt.by[worst] + ")</div>" : "") +
         "<div>⚔ You hit their lantern for <b>" + hurt.dealt + "</b> of " + mhp + ".</div><div class='adv'>→ " + adv + "</div></div>";
@@ -723,9 +724,9 @@
           else if (!theirs) txt = "<b style='color:var(--gold)'>↑" + am + "</b><br><span class='dim'>lantern</span>";
           else if (theirs.shield) txt = "↑" + am + "<br><span style='color:var(--taage)'>veiled</span>";
           else txt = "↑" + am + "<br>" + (am >= theirs.h ? "<span style='color:#8dffb0'>kills</span>" : "<span class='dim'>" + theirs.h + " life</span>");
-        } else if (theirs && (theirs.a > 0 || D.BY[theirs.id].kw.ambush)) { var amb = D.BY[theirs.id].kw.ambush; txt = "<span style='color:#ff8a8a'>↓" + theirs.a + "</span><br><span class='" + (amb ? "trait" : "dim") + "'>" + (amb ? "ambush " + amb : "open") + "</span>"; }
+        } else if (theirs && (theirs.a > 0 || D.BY[theirs.id].kw.ambush)) { var amb = D.BY[theirs.id].kw.ambush; var fa = E.attackOf(view.s[1], L); txt = "<span style='color:#ff8a8a'>↓" + (fa + (b.trait === "dive" && fa > 0 ? 1 : 0)) + "</span><br><span class='" + (amb ? "trait" : "dim") + "'>" + (amb ? "ambush " + amb : "open") + "</span>"; }
         else if (gh === "?") txt = "<span style='color:#ff8a8a'>⚠ ?</span><br><span class='dim'>shrouded</span>";
-        else if (gh && D.BY[gh].a > 0) txt = "<span style='color:#ff8a8a'>⚠ ↓" + D.BY[gh].a + "</span><br><span class='dim'>next turn</span>";
+        else if (gh && D.BY[gh].a > 0) txt = "<span style='color:#ff8a8a'>⚠ ↓" + (D.BY[gh].a + (b.trait === "dive" ? 1 : 0)) + "</span><br><span class='dim'>next turn</span>";
         lanes += "<div>" + txt + "</div>";
       }
       lanesEl.innerHTML = lanes;
@@ -840,7 +841,7 @@
           if (e.t === "die") { var c4 = slotEl(e.si, e.slot).querySelector(".card"); if (c4) { c4.classList.add("die"); particles(c4, ELCOL[D.BY[e.id].el], 12, 70); } SFX.die(); return wait(330).then(function () { V[e.si].board[e.slot] = null; drawBoards(); }); }
           if (e.t === "grow") { var u3 = V[e.si].board[e.slot]; if (u3) { u3.a++; u3.h++; u3.mh++; } drawBoards(); floatTxt(slotEl(e.si, e.slot), e.bloom ? "bloom +1/+1" : "+1/+1", "g"); SFX.heal(); return wait(e.bloom ? 300 : 260); }
           if (e.t === "shine") { var u6 = V[e.si].board[e.slot]; if (u6) { u6.a += e.n; u6.h += e.n; u6.mh += e.n; } drawBoards(); var c6 = slotEl(e.si, e.slot).querySelector(".card"); if (c6) particles(c6, ["#fff1a8", "#ffffff", "#ffd27a"], 10, 50); floatTxt(slotEl(e.si, e.slot), "✧ +" + e.n + "/+" + e.n, "g"); SFX.heal(); return wait(320); }
-          if (e.t === "face") { V[e.si].hp -= e.n; drawBoards(); var he = el.querySelector(e.si ? ".hero.foe" : ".hero.me"); he.classList.remove("hit"); void he.offsetWidth; he.classList.add("hit"); floatTxt(he, "−" + e.n); SFX.face();
+          if (e.t === "face") { V[e.si].hp -= e.n; drawBoards(); var he = el.querySelector(e.si ? ".hero.foe" : ".hero.me"); he.classList.remove("hit"); void he.offsetWidth; he.classList.add("hit"); floatTxt(he, "−" + e.n + (e.si === 0 && b.trait === "dive" && e.n > 1 ? " dive!" : "")); SFX.face();
             if (e.si === 0) { var vg = h('<div class="vignette"></div>'); document.body.appendChild(vg); setTimeout(function () { vg.remove(); }, 520); app.classList.remove("quake"); void app.offsetWidth; app.classList.add("quake"); }
             else particles(he, ["#ffc861", "#fff1c9", "#ff9a3d"], 10, 60); if (navigator.vibrate && e.si === 0) try { navigator.vibrate(30); } catch (x) {} return wait(300); }
           if (e.t === "regrow") { var u5 = V[e.si].board[e.slot]; if (u5) u5.h = Math.min(u5.mh, u5.h + 1); drawBoards(); floatTxt(slotEl(e.si, e.slot), "+1", "g"); SFX.heal(); return wait(200); }
@@ -928,7 +929,7 @@
     if (opt && VOY.boonText(opt)) toast("✧ Voyage: " + VOY.boonText(opt));
     if (!wild && isl.say) { var sp = h('<div class="speech"><b>' + esc(isl.foe) + ':</b> “' + esc(isl.say) + '”</div>'); el.querySelector(".midwrap").appendChild(sp); setTimeout(function () { sp.classList.add("gone"); }, 4200); setTimeout(function () { sp.remove(); }, 4800); }
     if (wild) mid.innerHTML = "<div>Win, and one of them joins you.</div>";
-    else if (b.trait || b.dark >= 2) { mid.innerHTML = (b.trait ? "<div><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) + "</div>" : "") + (b.dark >= 2 ? "<div class='dim' style='font-size:12px;margin-top:2px'>Darkness " + ROMAN[b.dark] + ": " + darkRules(b.dark) + "</div>" : ""); }
+    else if (b.trait || b.dark >= 2) { mid.innerHTML = (b.trait ? "<div><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) + "</div>" : "") + (b.trait === "dive" && !S.wins ? "<div class='dim' style='font-size:12px;margin-top:2px'>Put spirits in front of its faded cards.</div>" : "") + (b.dark >= 2 ? "<div class='dim' style='font-size:12px;margin-top:2px'>Darkness " + ROMAN[b.dark] + ": " + darkRules(b.dark) + "</div>" : ""); }
     else mid.textContent = "Pick a card and place it on an empty space";
     if (!S.seen.battlehint) {
       S.seen.battlehint = 1; save();

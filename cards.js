@@ -82,7 +82,7 @@
   var TWIN = "Twin light: it counts as both lights — for its own Kin, and for its allies’ Kin.";
   // The islands: wardens with fixed decks
   var ISLANDS = [
-    { n: "Skerrystone", lore: "A bare rock where gulls fight over washed-up lights.", foe: "The Hungry Gull", say: "Mine! Every light on this rock is MINE!", beaten: "Fine… keep your little lamp. Skraak.", hp: 10, deck: ["n1","n1","g1","g1","t1","t1","r2","r2","g3","t2","n1","g2"] },
+    { n: "Skerrystone", lore: "A bare rock where gulls fight over washed-up lights.", foe: "The Hungry Gull", say: "Mine! Every light on this rock is MINE!", beaten: "Fine… keep your little lamp. Skraak.", hp: 10, trait: "dive", deck: ["n1","n1","g1","g1","t1","t1","r2","r2","t1","t2","n1","g2"] },
     { n: "Kelpwood", lore: "A forest that grows out of the sea. Its roots drink the dark.", foe: "The Root Witch", say: "Roots remember, little light. They will hold you here forever.", beaten: "Then grow, little light. Grow far from my wood.", hp: 16, trait: "regrow", deck: ["r1","r2","r2","r3","r3","r3","r4","n2","r5","r5","g2","g3","g2","n1"] },
     { n: "Ash Holm", lore: "An island of cinders. The ground is still warm.", foe: "The Coal Reeve", say: "Burn bright, and ash is all that’s left. Let me show you.", beaten: "Hm. You burn hotter than I ever did.", hp: 12, trait: "embers", deck: ["r2","n1","g2","g2","g3","g3","g4","g4","g5","n1","g2","g6"] },
     { n: "Storm Skerry", lore: "Two peaks, one storm. The lightning never stops.", foe: "The Twins", say: "One of us strikes. The other one laughs.", beaten: "We’ll argue later about whose fault this was.", hp: 30, trait: "gale", deck: ["g2","g2","t3","t3","g4","t4","g5","t5","n3","g6","g4","t4","g3","t2"] },
@@ -92,7 +92,7 @@
   ];
   // Starlit (0.10.2): i Darkness har vogterne også fået stjerner — 2 Starfall-ånder pr. ø, der passer til deres lys.
   // [ind, ud]: Starfall-ånderne erstatter kort med samme pris, så vogterens kurve ikke ændres.
-  var STARLIT = [[["s5", "s2"], ["g3", "t2"]], [["s4", "s3"], ["g3", "r3"]], [["s5", "s9"], ["g2", "g4"]], [["s1", "s6"], ["g2", "g5"]],
+  var STARLIT = [[["s5", "s2"], ["g2", "t2"]], [["s4", "s3"], ["g3", "r3"]], [["s5", "s9"], ["g2", "g4"]], [["s1", "s6"], ["g2", "g5"]],
     [["s8", "s1"], ["t3", "t2"]], [["s10", "s11"], ["r4", "t6"]], [["s13", "s12"], ["g7", "r6"]]];
   // Darkness-regler (0.11.0): hvert niveau lægger én synlig regel til (de gælder fra deres niveau og op).
   var DARK = [null,
@@ -101,8 +101,11 @@
     { n: "Shroud", t: "One of the warden’s next moves is hidden." },
     { n: "Black Tide", t: "Warden lanterns heal 1 after their turn." },
     { n: "Deep Night", t: "Wardens start with 2 extra cards." }];
+  // 0.14.0 (nat 7): Skerrystone fik Dive — første kamp havde intet valg (tests/beslutninger.js: tilfældig spiller vandt 99 %).
+  // Nu: tilfældig ~80 %, grådig ~87 %, tænkende ~99 %. Ashrunner (3/1) byttet ud med Dewveil, så tærsklen ikke blev for høj.
   // Vogter-evner: én enkel regel pr. ø, der ændrer hvordan man skal spille (navn + max ~8 ord).
   var TRAITS = {
+    dive: { n: "Dive", t: "Its spirits hit your lantern +1 through open lanes." },
     regrow: { n: "Regrowth", t: "Her spirits heal 1 after her turn." },
     embers: { n: "Live Coals", t: "His Blaze spirits arrive with Spark 1." },
     gale: { n: "Gale", t: "The leftmost lane is closed." },

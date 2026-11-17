@@ -244,6 +244,9 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
 .speech{position:absolute;left:8%;right:8%;top:10%;background:#0b1020e6;border:1px solid #b46bff88;border-radius:14px;padding:8px 12px;font-size:14px;line-height:1.35;text-align:center;z-index:3;animation:fadein .4s;transition:opacity .6s;box-shadow:0 0 20px #b46bff33}
 .speech b{color:#d4a8ff}
 .speech.gone{opacity:0}
+/* 0.14.1: mens vogteren taler, står regelteksten under boblen i stedet for bagved (nat 7) */
+.midwrap.talking .speech{top:6px}
+.midwrap.talking .mid{place-items:end center;padding-bottom:10px}
 .quote{text-align:center;font-style:italic;color:#d4a8ff;margin:4px 0 0;font-size:15px}
 .info.teach{animation:teachglow 1.6s ease-out}
 @keyframes teachglow{0%{box-shadow:0 0 0 2px var(--gold),0 0 24px #ffb34788}100%{box-shadow:0 0 0 0 transparent}}

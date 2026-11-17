@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.14.0";
+  var VERSION = "0.14.1";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -927,7 +927,7 @@
     }
     show(el); full();
     if (opt && VOY.boonText(opt)) toast("✧ Voyage: " + VOY.boonText(opt));
-    if (!wild && isl.say) { var sp = h('<div class="speech"><b>' + esc(isl.foe) + ':</b> “' + esc(isl.say) + '”</div>'); el.querySelector(".midwrap").appendChild(sp); setTimeout(function () { sp.classList.add("gone"); }, 4200); setTimeout(function () { sp.remove(); }, 4800); }
+    if (!wild && isl.say) { var sp = h('<div class="speech"><b>' + esc(isl.foe) + ':</b> “' + esc(isl.say) + '”</div>'); var mw = el.querySelector(".midwrap"); mw.appendChild(sp); mw.classList.add("talking"); setTimeout(function () { sp.classList.add("gone"); }, 4200); setTimeout(function () { sp.remove(); mw.classList.remove("talking"); }, 4800); }
     if (wild) mid.innerHTML = "<div>Win, and one of them joins you.</div>";
     else if (b.trait || b.dark >= 2) { mid.innerHTML = (b.trait ? "<div><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) + "</div>" : "") + (b.trait === "dive" && !S.wins ? "<div class='dim' style='font-size:12px;margin-top:2px'>Put spirits in front of its faded cards.</div>" : "") + (b.dark >= 2 ? "<div class='dim' style='font-size:12px;margin-top:2px'>Darkness " + ROMAN[b.dark] + ": " + darkRules(b.dark) + "</div>" : ""); }
     else mid.textContent = "Pick a card and place it on an empty space";

@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.15.0";
+  var VERSION = "0.15.1";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -87,7 +87,7 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   var toastT;
-  function toast(msg) { var t = document.getElementById("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove("on"); }, 2200); }
+  function toast(msg) { var t = document.getElementById("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove("on"); toastT = setTimeout(function () { t.textContent = ""; }, 350); }, 2200); }
   function modal(html, buttons) {
     var m = document.getElementById("modal");
     m.innerHTML = '<div class="sheet">' + html + '<div class="row" style="width:100%"></div></div>';
@@ -373,7 +373,7 @@
           if (busy || sc.classList.contains("open")) { if (sc.classList.contains("open")) toast(D.BY[id].n + " — " + D.BY[id].t); return; }
           if (fin && left > 1) { el.querySelector("#hint").textContent = "Save the best for last — turn the others first"; sc.classList.remove("nudge"); void sc.offsetWidth; sc.classList.add("nudge"); return; }
           busy = true;
-          var wait0 = fin ? { c: 300, u: 450, r: 800, m: 1200 }[c.r] : { c: 0, u: 300, r: 700, m: 1100 }[c.r];
+          var wait0 = fin ? { c: 200, u: 350, r: 650, m: 1000 }[c.r] : { c: 0, u: 150, r: 450, m: 800 }[c.r]; // 0.15.1 (dommer: "lange glowing-pauser")
           if (rush) wait0 = Math.min(wait0, fin ? 700 : 0);
           var spot = null;
           if (fin) { var rc = sc.getBoundingClientRect(); spot = h('<div class="spot"></div>'); spot.style.background = "radial-gradient(circle at " + (rc.left + rc.width / 2) + "px " + (rc.top + rc.height / 2) + "px," + "transparent " + (rc.height * 0.62) + "px,#000c " + (rc.height * 1.4) + "px)"; document.body.appendChild(spot); }
@@ -703,9 +703,9 @@
       boardOn = on;
     }
     var el = h('<div class="screen battle">' +
-      '<div class="hero foe"><span>' + (wild ? "🌊" : "🌑") + ' <b>' + esc(isl.foe) + '</b></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
+      '<div class="hero foe"><span>' + (wild ? "🌊" : "🌑") + ' <b>' + esc(isl.foe) + '</b></span><div class="hpbar"><div></div></div><span class="warn"></span><span class="num"></span></div>' +
       '<div class="board" id="b1"></div><div class="midwrap">' + battleScene(wild && enc.el) + '<div class="mid" id="mid"></div></div><div class="lanes" id="lanes"></div><div class="board" id="b0"></div>' +
-      '<div class="hero me"><span class="lys"></span><div class="hpbar"><div></div></div><span class="num"></span></div>' +
+      '<div class="hero me"><span class="lys"></span><div class="hpbar"><div></div></div><span class="warn"></span><span class="num"></span></div>' +
       '<div class="info" id="info"></div><div class="hand"></div>' +
       '<div class="row"><button class="btn sec" id="quit" style="padding:12px 14px;font-size:15px">Flee</button><div class="grow dim" style="font-size:13px;text-align:center" id="deckn"></div><button class="btn endbtn" id="end">End turn</button></div></div>');
     var b0 = el.querySelector("#b0"), b1 = el.querySelector("#b1"), hand = el.querySelector(".hand"), info = el.querySelector("#info"), mid = el.querySelector("#mid"), lanesEl = el.querySelector("#lanes");
@@ -764,6 +764,21 @@
         hero.querySelector(".hpbar div").style.width = Math.max(0, p.hp / p.mhp * 100) + "%";
         hero.querySelector(".num").textContent = "♥ " + Math.max(0, p.hp) + "/" + p.mhp;
       });
+      var fc = forecast(), wMe = el.querySelector(".hero.me .warn"), wFoe = el.querySelector(".hero.foe .warn");
+      wFoe.className = "warn" + (fc && fc.win ? " win" : ""); wFoe.textContent = fc && fc.win ? "⚔ End turn to win!" : "";
+      wMe.className = "warn" + (fc && fc.lose ? " lethal" : "");
+      wMe.textContent = !fc || fc.win || !fc.dmg ? "" : (fc.lose ? "☠ " : "⚠ ") + "−" + fc.dmg + (fc.hidden ? "+" : "") + " next turn";
+    }
+    // 0.15.1 (dommer: "10 til 0 liv uden varsel"): spil resten af turen og vogterens svar igennem på en kopi.
+    function forecast() {
+      if (busy || b.over || b.who !== 0) return null;
+      var r = b.r; b.r = null; var c = JSON.parse(JSON.stringify(b)); b.r = r;
+      var k = 1; c.r = function () { k = (k * 16807) % 2147483647; return (k % 100000) / 100000; }; c.log = [];
+      var hidden = false;
+      if (c.plan && b.trait === "fog") { c.plan = []; hidden = true; } // tågen skjuler planen — varslet må ikke afsløre den
+      else if (c.plan && c.plan.length && b.dark >= 3) { c.plan = c.plan.slice(1); hidden = true; }
+      try { E.endTurn(c); if (c.over === "win") return { win: 1 }; if (!c.over) E.aiTurn(c); } catch (e) { return null; }
+      return { dmg: Math.max(0, b.s[0].hp - c.s[0].hp), lose: c.over === "lose", hidden: hidden };
     }
     function drawHand() {
       var p = b.s[0];

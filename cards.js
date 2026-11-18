@@ -59,11 +59,27 @@
     { id: "s11", n: "Marsh Mother", el: "taage", el2: "rod", r: "r", c: 5, a: 3, h: 5, kw: { flok: 1, bloom: 1 }, t: "Every reed in the marsh is one of her children.", set: 2 },
     { id: "s12", n: "Old Starwarden", el: "rod", r: "r", c: 5, a: 3, h: 5, kw: { shine: 2 }, t: "It caught the first falling star — and kept it.", set: 2 },
     { id: "s13", n: "Heart of the Starfall", el: "glod", el2: "*", r: "m", c: 7, a: 4, h: 6, kw: { shine: 2, bloom: 1, flok: 1 }, t: "Every light in the sea leans toward it.", set: 2 },
+    // Set 3 — The Deep (0.15.0): a fourth light, found in the Deepreach (the sea beyond the Black Lighthouse). Only in Deep packs and Deepreach waters.
+    // Echo: the first time it dies in a battle, it returns to your hand. Afterglow N: when it dies, N damage to the enemy lantern.
+    { id: "x1", n: "Lanternfry", el: "dyb", r: "c", c: 1, a: 1, h: 1, kw: { glow: 1 }, t: "Goes out with a pop of light.", set: 3 },
+    { id: "x2", n: "Glass Jelly", el: "dyb", r: "c", c: 2, a: 2, h: 2, kw: { echo: 1 }, t: "Break it, and it drifts back together.", set: 3 },
+    { id: "x3", n: "Bonefish", el: "dyb", r: "c", c: 2, a: 2, h: 1, kw: { flok: 1, glow: 1 }, t: "Swims with the shoal. Dies with a flash.", set: 3 },
+    { id: "x4", n: "Reefling", el: "dyb", el2: "rod", r: "c", c: 2, a: 1, h: 3, kw: { flok: 1 }, t: "Half coral, half curious.", set: 3 },
+    { id: "x5", n: "Gulper", el: "dyb", r: "c", c: 3, a: 3, h: 3, kw: { echo: 1 }, t: "Mostly mouth. Always comes back hungry.", set: 3 },
+    { id: "x6", n: "Angler", el: "dyb", r: "u", c: 3, a: 2, h: 3, kw: { ambush: 1, glow: 1 }, t: "Its light is a promise. It never keeps it.", set: 3 },
+    { id: "x7", n: "Ghostlight Shoal", el: "dyb", r: "u", c: 3, a: 3, h: 3, kw: { flok: 1, echo: 1 }, t: "Count them. Now count again.", set: 3 },
+    { id: "x8", n: "Pressure Crab", el: "dyb", r: "u", c: 4, a: 3, h: 5, kw: { glow: 2 }, t: "The deeper it lives, the harder it pops.", set: 3 },
+    { id: "x9", n: "Tidewraith", el: "dyb", el2: "taage", r: "u", c: 4, a: 3, h: 2, kw: { taage: 1, echo: 1 }, t: "You can’t kill the tide.", set: 3 },
+    { id: "x10", n: "Vent Eel", el: "dyb", el2: "glod", r: "u", c: 3, a: 2, h: 3, kw: { gnist: 1, glow: 1 }, t: "Born in the boiling cracks of the sea floor.", set: 3 },
+    { id: "x11", n: "The Pale Choir", el: "dyb", r: "r", c: 5, a: 4, h: 5, kw: { rally: 1, echo: 1 }, t: "Drowned voices, singing the shoal forward.", set: 3 },
+    { id: "x12", n: "Leviathan Calf", el: "dyb", r: "r", c: 5, a: 4, h: 6, kw: { glow: 3 }, t: "Only a baby. Its mother is watching.", set: 3 },
+    { id: "x13", n: "Coral Matron", el: "dyb", el2: "rod", r: "r", c: 5, a: 3, h: 6, kw: { flok: 1, rod: 2 }, t: "The reef is her family. All of it.", set: 3 },
+    { id: "x14", n: "The Sleeper Below", el: "dyb", r: "m", c: 7, a: 6, h: 7, kw: { echo: 1, glow: 3 }, t: "When it dreams, the whole sea glows.", set: 3 },
   ];
   var BY = {}; CARDS.forEach(function (c) { BY[c.id] = c; });
-  var EL = { glod: "Blaze", taage: "Mist", rod: "Root" };
+  var EL = { glod: "Blaze", taage: "Mist", rod: "Root", dyb: "Deep" };
   // Lysene et kort har (twin-kort har to; "*" = alle tre).
-  function lights(c) { return c.el2 === "*" ? ["glod", "taage", "rod"] : c.el2 ? [c.el, c.el2] : [c.el]; }
+  function lights(c) { return c.el2 === "*" ? ["glod", "taage", "rod", "dyb"] : c.el2 ? [c.el, c.el2] : [c.el]; }
   function hasLight(c, el) { return lights(c).indexOf(el) >= 0; }
   function shareLight(a, b) { return lights(a).some(function (e) { return hasLight(b, e); }); }
   function lightName(c) { return c.el2 === "*" ? "Every light" : lights(c).map(function (e) { return EL[e]; }).join(" & "); }
@@ -78,6 +94,8 @@
     ambush: "Ambush N: an enemy landing opposite takes N damage.",
     bloom: "Bloom: grows +1/+1 at the end of your turn — up to 3 times.",
     shine: "Shine N: when played, the spirits beside it get +N/+N.",
+    echo: "Echo: the first time it dies in a battle, it returns to your hand.",
+    glow: "Afterglow N: when it dies, it deals N damage to the enemy lantern.",
   };
   var TWIN = "Twin light: it counts as both lights — for its own Kin, and for its allies’ Kin.";
   // The islands: wardens with fixed decks
@@ -89,6 +107,19 @@
     { n: "Mist Sound", lore: "Fog so thick that sailors steer by sound alone.", foe: "The Blind Pilot", say: "I cannot see you. I do not need to.", beaten: "So that is what light looks like. I had forgotten.", hp: 15, trait: "fog", deck: ["t1","t1","t2","t2","t3","t3","t4","n1","t5","n1","t6","t3"] },
     { n: "Deadwater", lore: "Still black water over a sunken town. Bells ring below.", foe: "The Drowned King", say: "Every sailor comes to me in the end.", beaten: "Go, then. The sea can wait.", hp: 28, trait: "tide", deck: ["r3","r3","r5","r5","t4","t4","t6","r6","n3","t5","r4","r4","g5","t7"] },
     { n: "The Black Lighthouse", lore: "Where the first light went out. The Dark lives here.", foe: "The Dark", say: "I was here before the first flame. I will be here after the last.", beaten: "…then I will wait. I am good at waiting.", hp: 42, trait: "night", deck: ["g4","g4","t4","t4","r5","r5","g5","t5","t6","g6","r6","n3","g7","r7","t7","n2"] },
+  ];
+  // The Deepreach (0.15.0): the second sea, beyond the Black Lighthouse. Reached by ship (the Shipwright).
+  var DEEP = [
+    { n: "Glasswater", lore: "Water so clear you can see the drowned lights glowing far below.", foe: "The Glass Heron", say: "Step where you like, little lamp. Every step is a lure.", beaten: "Hm. You looked before you stepped. Rare.", hp: 12, trait: "lure", deck: ["x1","x1","x2","x2","x3","x3","x6","x6","t1","t2","x5","x4","x8","t4"] },
+    { n: "Bonereef", lore: "A reef grown over the bones of something enormous.", foe: "The Bone Choir", say: "We died once. It did not take.", beaten: "Rest, then. We will sing about you.", hp: 23, trait: "echoes", deck: ["x2","x2","x5","x5","x7","x7","x4","x4","r2","r3","x13","x9","x8","r5"] },
+    { n: "The Gulf of Teeth", lore: "Everything here eats. Everything here is eaten.", foe: "The Old Gulper", say: "Ahh. Something shiny swims into my mouth.", beaten: "Bah. Too bony anyway.", hp: 25, trait: "hunger", deck: ["g2","g3","x3","x3","x5","x5","x10","x10","g4","x6","x8","g5","x12","x9"] },
+    { n: "Coralspire", lore: "A tower of living coral. Its queen feeds on every fallen light.", foe: "The Coral Queen", say: "Fall, little spirits. My reef is always hungry.", beaten: "Then my reef will grow without you. Go.", hp: 25, trait: "feast", deck: ["x4","x4","r2","r2","x7","x6","r4","x8","x13","r6","x11","x9","r5","x12"] },
+    { n: "The Sunless Trench", lore: "The bottom of the world. Something huge is sleeping here.", foe: "The Dreamer in the Trench", say: "You woke me. Now you are part of my dream.", beaten: "…the dream ends. The deep is yours, lantern-bearer.", hp: 46, trait: "abyss", deck: ["x2","x3","x5","x5","x7","x7","x8","x8","x9","x10","x11","x12","x13","t6","g6","x14"] },
+  ];
+  // Søkort-positioner pr. hav (x, y i 100×162).
+  var SEAS = [
+    { id: "dark", n: "The Dark Sea", islands: ISLANDS, pos: [[30, 148], [70, 128], [34, 106], [68, 84], [30, 62], [66, 40], [50, 15]] },
+    { id: "deep", n: "The Deepreach", islands: DEEP, pos: [[50, 146], [26, 116], [70, 90], [32, 58], [56, 20]] },
   ];
   // Starlit (0.10.2): i Darkness har vogterne også fået stjerner — 2 Starfall-ånder pr. ø, der passer til deres lys.
   // [ind, ud]: Starfall-ånderne erstatter kort med samme pris, så vogterens kurve ikke ændres.
@@ -112,7 +143,12 @@
     fog: { n: "Fog", t: "You can't see the pilot's next move." },
     tide: { n: "High Tide", t: "His lantern heals 2 after his turn." },
     night: { n: "Endless Night", t: "The Dark draws 2 cards each turn." },
+    lure: { n: "Glow Lure", t: "Its spirits have Ambush 1." },
+    echoes: { n: "Echoes", t: "Its spirits have Echo." },
+    hunger: { n: "Hunger", t: "Its spirits have Devour." },
+    feast: { n: "Feast", t: "Her lantern heals 2 when one of your spirits dies." },
+    abyss: { n: "Abyss", t: "Its spirits have Afterglow 1." },
   };
-  var api = { DARK: DARK, STARLIT: STARLIT, TWIN: TWIN, lights: lights, hasLight: hasLight, shareLight: shareLight, lightName: lightName, TRAITS: TRAITS, CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
+  var api = { STARLIT0: STARLIT, SEAS: SEAS, DEEP: DEEP, DARK: DARK, STARLIT: STARLIT, TWIN: TWIN, lights: lights, hasLight: hasLight, shareLight: shareLight, lightName: lightName, TRAITS: TRAITS, CARDS: CARDS, BY: BY, EL: EL, RAR: RAR, KW: KW, ISLANDS: ISLANDS };
   if (typeof module !== "undefined") module.exports = api; else root.DATA = api;
 })(this);

@@ -77,7 +77,9 @@ ok(D.ISLANDS[1].hp === 16, "Root Witch 16 liv");
   ok(sd.a === 3 && sd.mh === 5, "Bloom højst 3 gange");
   const rr = E.rng(11); for (let i = 0; i < 200; i++) { const st = E.openPack(rr, "star"); ok(st.length === 5 && st.every(id => D.BY[id].set === 2), "Starfall-pakke kun sæt 2");
     ok(E.openPack(rr).every(id => !D.BY[id].set) && E.openPack(rr, "rod").every(id => !D.BY[id].set), "almindelige pakker uden sæt 2"); }
-  ok(D.CARDS.length === 49 && new Set(D.CARDS.map(c => c.id)).size === 49, "49 unikke kort");
+  ok(D.CARDS.length === 63 && new Set(D.CARDS.map(c => c.id)).size === 63, "63 unikke kort");
+  for (let i = 0; i < 200; i++) { ok(E.openPack(rr, "deep").every(id => D.BY[id].set === 3), "Deep-pakke kun sæt 3");
+    ok(!E.openPack(rr).some(id => D.BY[id].set === 3) && !E.openPack(rr, "star").some(id => D.BY[id].set === 3), "andre pakker uden sæt 3"); }
   ok(D.CARDS.every(c => Object.keys(c.kw).every(k => D.KW[k])), "alle nøgleord forklaret"); }
 { const V = require("../voyage.js"), r5 = E.rng(5);
   for (let i = 0; i < 100; i++) { ok(V.traderStock({ bestDark: 1, coll: {} }, r5).some(id => D.BY[id].set === 2), "handler har Starfall-ånd efter oplåsning");
@@ -125,6 +127,33 @@ for (let sd = 1; sd < 400; sd++) { const dk = ["g1","g2","g2","g3","g3","g4","g4
   { const r = ST.reach(["s1","g3","t1","t2","t8","r4","r1","n2"]); ok(r.includes("twin") && r.includes("mistwall") && r.includes("deeproots"), "reach: blandet deck"); }
   ok(ST.LIST.every(x => x.pts.length >= 3 && x.hint && x.t && x.n), "alle stjernebilleder har figur og tekst");
   ok(typeof E.migrate({ sv: 1, coll: {}, deck: [] }).stars === "object", "gammel gemt tilstand får stars"); }
+// 0.15.0 The Deep: Echo, Afterglow, vogter-evner, hav-skift
+{ const nb = (deck, isl) => { const b = E.newBattle(deck, isl, 3); b.s[0].hand = []; b.s[1].hand = []; return b; };
+  // Echo: dør → tilbage på hånden, kun første gang
+  let b = nb(Array(12).fill("g1"), { hp: 20, deck: Array(12).fill("g1") });
+  b.s[0].board[1] = { id: "x2", a: 1, h: 2, mh: 2, shield: false, el: "dyb" }; b.s[1].board[1] = { id: "g3", a: 5, h: 9, mh: 9, shield: false, el: "glod" };
+  E.endTurn(b); ok(!b.s[0].board[1] && b.s[0].hand.includes("x2"), "Echo: død ånd kommer tilbage på hånden");
+  b.s[0].board[2] = { id: "x2", a: 1, h: 2, mh: 2, shield: false, el: "dyb" }; b.s[0].hand = []; b.s[1].board[2] = { id: "g3", a: 5, h: 9, mh: 9, shield: false, el: "glod" }; b.who = 0;
+  E.endTurn(b); ok(!b.s[0].hand.includes("x2"), "Echo: kun første gang i kampen");
+  // Afterglow: dør → skade på fjendens lygte
+  b = nb(Array(12).fill("g1"), { hp: 20, deck: Array(12).fill("g1") });
+  b.s[0].board[0] = { id: "x12", a: 1, h: 1, mh: 6, shield: false, el: "dyb" }; b.s[1].board[0] = { id: "g3", a: 5, h: 9, mh: 9, shield: false, el: "glod" };
+  E.endTurn(b); ok(b.s[1].hp === 17, "Afterglow 3 rammer fjendens lygte (" + b.s[1].hp + ")");
+  // vogter-evner
+  E.setSea(1); ok(D.ISLANDS.length === 5 && D.ISLANDS[0].n === "Glasswater", "Deepreach aktiv");
+  D.ISLANDS.forEach(is => ok(is.deck.every(id => D.BY[id]) && D.TRAITS[is.trait], "Deepreach-ø " + is.n));
+  b = nb(Array(12).fill("g1"), 0); b.s[1].board[2] = { id: "t1", a: 1, h: 1, mh: 1, shield: false, el: "taage" }; b.s[0].hand = ["g3"]; b.s[0].lys = 5;
+  E.play(b, 0, 2); ok(b.s[0].board[2] === null, "Glow Lure: vogterens ånder har Ambush 1");
+  b = nb(Array(12).fill("g1"), 3); b.s[1].hp = 20; b.s[0].board[0] = { id: "g1", a: 1, h: 1, mh: 1, shield: false, el: "glod" }; b.s[1].board[0] = { id: "r5", a: 3, h: 6, mh: 6, shield: false, el: "rod" };
+  E.endTurn(b); ok(b.s[1].hp === 22, "Feast: vogteren heler 2, når din ånd dør");
+  b = nb(Array(12).fill("g1"), 1); b.who = 1; b.s[1].board[0] = { id: "r2", a: 1, h: 1, mh: 1, shield: false, el: "rod" }; b.s[0].board[0] = { id: "g3", a: 3, h: 9, mh: 9, shield: false, el: "glod" };
+  E.endTurn(b); ok(b.s[1].hand.includes("r2"), "Echoes: vogterens ånder har Echo");
+  // hav-skift bevarer hver rejse
+  const S = E.newSave(); S.island = 4; S.dark = 2; S.flames = 2; E.switchSea(S, 1);
+  ok(S.island === 0 && S.dark === 0 && S.flames === 3 && D.ISLANDS === D.SEAS[1].islands, "nyt hav starter forfra");
+  S.island = 2; E.switchSea(S, 0); ok(S.island === 4 && S.dark === 2 && S.flames === 2 && S.seas[1].island === 2 && D.ISLANDS === D.SEAS[0].islands, "tilbage til Mørkhavet: rejsen er bevaret");
+  const S2 = E.migrate(JSON.parse(JSON.stringify(Object.assign(S, { sea: 1 })))); ok(D.ISLANDS === D.SEAS[1].islands, "migrate vælger det gemte hav");
+  E.setSea(0); }
 // AI-decks gyldige
 D.ISLANDS.forEach(is => ok(is.deck.every(id => D.BY[id]), "ø-deck " + is.n));
 // gemte tilstande fra tidligere versioner
@@ -132,6 +161,7 @@ const dir = path.join(__dirname, "gemte");
 for (const f of fs.readdirSync(dir)) { const s = E.migrate(JSON.parse(fs.readFileSync(path.join(dir, f)))); ok(s.sv === E.SAVE_VERSION && Array.isArray(s.deck) && typeof s.coll === "object", "gemt " + f); }
 // balance-bot: AI mod AI med ø-decks, ingen uendelige kampe
 let turns = 0, wins = 0;
+E.setSea(0);
 for (let g = 0; g < 300; g++) { const isl = g % 7; const bb = E.newBattle(D.ISLANDS[(isl + 1) % 7].deck, isl, g + 1); E.startTurn(bb);
   let n = 0; while (!bb.over && n < 200) { E.aiTurn(bb); n++; }
   ok(bb.over, "kamp slutter " + g); turns += n; if (bb.over === "win") wins++; }

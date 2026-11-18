@@ -1,7 +1,7 @@
 // Procedural ånde-kunst (0.7.0): hver ånd har sin egen form bygget af simple dele.
 // window.ART(id, card, rng) → SVG-streng (viewBox 0 0 100 100). Ingen eksterne billeder.
 (function (root) {
-  var COL = { glod: ["#ffb347", "#ff6a2a", "#fff1c9", "#7a2a08"], taage: ["#9fd8ff", "#4a7dff", "#eaf6ff", "#1a2f6a"], rod: ["#8ff0a6", "#2f9c5a", "#eaffef", "#12401f"] };
+  var COL = { glod: ["#ffb347", "#ff6a2a", "#fff1c9", "#7a2a08"], taage: ["#9fd8ff", "#4a7dff", "#eaf6ff", "#1a2f6a"], rod: ["#8ff0a6", "#2f9c5a", "#eaffef", "#12401f"], dyb: ["#ffa8e8", "#c03aa8", "#ffe8fa", "#4a0f40"] };
   // Hver ånds opskrift: krop + ekstra dele.
   var FORM = {
     g1: ["orb:12", "flame"], g2: ["beast", "ears:round", "flame"], g3: ["runner", "trail"], g4: ["beast", "ears:point", "tail", "flame"],
@@ -16,6 +16,10 @@
     s5: ["drop", "flame", "star"], s6: ["eel", "horns", "flame", "star"], s7: ["beast", "antlers", "flame", "star"], s8: ["orb:12", "cap", "star"],
     s9: ["bird", "flame", "star"], s10: ["orb:14", "moon", "waves", "star"], s11: ["willow", "veil", "star"], s12: ["beast:big", "antlers", "rings", "star"],
     s13: ["orb:17", "rays", "crown", "star"],
+    x1: ["orb:10", "lure", "bubbles"], x2: ["orb:13", "tentacles", "bubbles"], x3: ["fish", "rings", "bubbles"], x4: ["orb:12", "sprout", "crest", "bubbles"],
+    x5: ["beast", "lure", "bubbles"], x6: ["fish", "lure", "horns", "bubbles"], x7: ["fish", "veil", "bubbles"], x8: ["beetle", "rays", "bubbles"],
+    x9: ["drop", "hood", "waves", "bubbles"], x10: ["eel", "flame", "bubbles"], x11: ["drop", "hood", "trumpet", "bubbles"], x12: ["ray", "rings", "bubbles"],
+    x13: ["tree", "tentacles", "bubbles"], x14: ["orb:18", "tentacles", "rays", "crown", "bubbles"],
     d1: ["drop", "hood", "veil"], d2: ["fish", "crown"], d3: ["bird", "rays"], d4: ["ray", "waves"], d5: ["drop", "hood", "lamp", "waves"], d6: ["orb:16", "rays", "crown"],
   };
   function f(n) { return n.toFixed(1); }
@@ -113,6 +117,7 @@
       else if (n === "rings") { back += '<circle cx="50" cy="58" r="26" fill="none" stroke="' + col[2] + '" stroke-width=".8" opacity=".6"/><circle cx="50" cy="58" r="33" fill="none" stroke="' + col[2] + '" stroke-width=".6" opacity=".4"/>'; }
       else if (n === "shield") { front += '<path d="M60 58 l12 -2 l0 10 q-2 8 -6 10 q-4 -2 -6 -10z" fill="#c9a86a" stroke="#6a4a2a" stroke-width=".8"/>'; }
       else if (n === "moth") { back += '<path d="M48 54 C30 30 14 40 20 54 C14 66 30 74 48 60Z M52 54 C70 30 86 40 80 54 C86 66 70 74 52 60Z" fill="' + col[0] + '" opacity=".8"/><circle cx="28" cy="48" r="4" fill="' + col[2] + '"/><circle cx="72" cy="48" r="4" fill="' + col[2] + '"/>'; }
+      else if (n === "bubbles") { front += '<circle cx="18" cy="30" r="3" fill="none" stroke="#ffd0f2" stroke-width="1" opacity=".8"/><circle cx="24" cy="20" r="1.8" fill="none" stroke="#ffd0f2" stroke-width=".8" opacity=".7"/><circle cx="82" cy="26" r="2.4" fill="none" stroke="#ffd0f2" stroke-width=".9" opacity=".75"/><circle cx="20" cy="30" r="5" fill="#f06bd0" opacity=".15"/>'; }
       else if (n === "star") { front += '<path d="M50 9 l2.6 5.6 l6 .7 l-4.5 4.1 l1.3 6 l-5.4 -3.1 l-5.4 3.1 l1.3 -6 l-4.5 -4.1 l6 -.7z" fill="#fff1a8" stroke="#c9a2ff" stroke-width=".8"/><circle cx="50" cy="17" r="11" fill="#fff1a8" opacity=".18"/>'; }
       else if (n === "cap") { front += '<path d="M28 50 C30 28 70 28 72 50 Q50 44 28 50Z" fill="' + col[1] + '"' + st + '/>' + [[40, 40], [52, 35], [62, 43]].map(function (q) { return '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="2.6" fill="' + col[2] + '" opacity=".85"/>'; }).join(""); eyeY = 60; }
       else if (n === "lamp") { front += '<path d="M66 60 l0 -6" stroke="#c9a86a" stroke-width="1.4"/><rect x="62" y="60" width="9" height="11" rx="2" fill="#ffd27a" stroke="#9a5f17" stroke-width=".8"/>'; }

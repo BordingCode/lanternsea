@@ -36,26 +36,35 @@
   }
 
   // Vilde ånder: en lille flok af ét lys. Bliver stærkere jo længere ude.
-  var WILDNAME = { glod: "Wild Blaze spirits", taage: "Wild Mist spirits", rod: "Wild Root spirits" };
+  var WILDNAME = { glod: "Wild Blaze spirits", taage: "Wild Mist spirits", rod: "Wild Root spirits", dyb: "Wild Deep spirits" };
+  // Deepreach (0.15.0): i det andet hav er de fleste vilde flokke Deep-ånder, og havet er farligere (som om man var 3 øer længere ude).
+  function deep() { return !!(D.SEA && D.SEA.id === "deep"); }
+  function native(c, el) { return el === "dyb" ? c.set === 3 && c.el === "dyb" : c.el === el && !c.sea && !c.set; }
   function wildEncounter(to, r, dark) {
-    var el = pick(["glod", "taage", "rod"], r);
-    var pool = D.CARDS.filter(function (c) { return c.el === el && !c.sea && !c.set && (c.r === "c" || (c.r === "u" && to >= 2) || (c.r === "r" && to >= 4)); });
+    var el = deep() && r() < 0.65 ? "dyb" : pick(["glod", "taage", "rod"], r);
+    if (deep()) to += 3;
+    var pool = D.CARDS.filter(function (c) { return native(c, el) && (c.r === "c" || (c.r === "u" && to >= 2) || (c.r === "r" && to >= 4)); });
     var deck = [];
     for (var i = 0; i < 9 + to; i++) deck.push(pick(pool, r).id);
     // Fra ø 4: nogle flokke har en leder — en sjælden ånd, man kan vinde (0.9.3).
     var leader = null;
-    if (to >= 3 && r() < 0.4) { leader = pick(D.CARDS.filter(function (c) { return c.el === el && c.r === "r" && !c.sea && !c.set; }), r).id; deck.push(leader); }
+    if (to >= 3 && r() < 0.4) { leader = pick(D.CARDS.filter(function (c) { return native(c, el) && c.r === "r"; }), r).id; deck.push(leader); }
     return { el: el, n: "Open sea", foe: WILDNAME[el], hp: 7 + to * 2 + (dark || 0) * 2 + (leader ? 3 : 0), deck: deck, trait: null, wild: true, leader: leader };
   }
 
   // Tre ånder at vælge imellem: en ukendt drifter (hvis der er nogen), ellers en sjælden, + to fra flokkens lys.
   function rewardChoices(el, coll, r, leader) {
     var out = [];
+    if (el === "dyb") {
+      var miss = D.CARDS.filter(function (c) { return c.set === 3 && !(coll[c.id] > 0) && c.r !== "m"; });
+      out.push(pick(miss.length ? miss : D.CARDS.filter(function (c) { return c.set === 3 && c.r === "r"; }), r).id);
+    } else {
     var drift = D.CARDS.filter(function (c) { return c.sea && !(coll[c.id] > 0) && c.r !== "m"; });
     var dEl = drift.filter(function (c) { return c.el === el; });
     if (dEl.length) out.push(pick(dEl, r).id); else if (drift.length) out.push(pick(drift, r).id);
     else out.push(pick(D.CARDS.filter(function (c) { return c.r === "r" && !c.sea && !c.set; }), r).id);
-    var rest = D.CARDS.filter(function (c) { return c.el === el && !c.sea && !c.set && (c.r === "c" || c.r === "u"); });
+    }
+    var rest = D.CARDS.filter(function (c) { return native(c, el) && (c.r === "c" || c.r === "u"); });
     if (leader && out.indexOf(leader) < 0) out.push(leader);
     for (var g = 0; out.length < 3 && g < 40; g++) { var id = pick(rest, r).id; if (out.indexOf(id) < 0) out.push(id); }
     return out;
@@ -70,7 +79,8 @@
   }
   function randomCard(r, rar, opts) {
     opts = opts || {};
-    var pool = D.CARDS.filter(function (c) { return c.r === rar && (opts.star ? c.set === 2 : !c.set && (opts.sea ? true : !c.sea)); });
+    var d3 = !opts.star && deep() && r() < 0.5; // i Deepreach er halvdelen af fundene Deep-ånder
+    var pool = D.CARDS.filter(function (c) { return c.r === rar && (opts.star ? c.set === 2 : d3 ? c.set === 3 : !c.set && (opts.sea ? true : !c.sea)); });
     return pick(pool, r).id;
   }
   // Starfall (0.10.0) er låst op, når Den Sorte Fyr er tændt første gang.
@@ -197,7 +207,7 @@
   }
   // Havn: tænd en flamme igen — eller, hvis alle brænder, hvil og få glimmer.
   function rest(S) {
-    if (S.flames < 3) { S.flames++; return { t: "Warm fires and quiet water. A lost flame is lit again. 🔥", flame: 1 }; }
+    if (S.flames < E.maxFlames(S)) { S.flames++; return { t: "Warm fires and quiet water. A lost flame is lit again. 🔥", flame: 1 }; }
     S.embers += 5; boon(S, "hp", 2); return { t: "All your flames burn bright. You rest anyway. (+5 ✦, +2 life next warden battle)" };
   }
   // Tågehandleren: 3 ånder til salg (en drifter, hvis der er nogen tilbage).
@@ -205,6 +215,7 @@
   function traderStock(S, r) {
     var out = [];
     var drift = D.CARDS.filter(function (c) { return c.sea && !(S.coll[c.id] > 0); });
+    if (deep()) { var dp = D.CARDS.filter(function (c) { return c.set === 3 && c.r !== "m" && (S.coll[c.id] || 0) < E.deckLimit(c.id); }); if (dp.length) out.push(pick(dp, r).id); }
     if (drift.length) out.push(pick(drift, r).id);
     if (starOpen(S)) { var sf = D.CARDS.filter(function (c) { return c.set === 2 && c.r !== "m" && (S.coll[c.id] || 0) < E.deckLimit(c.id); }); if (sf.length) out.push(pick(sf, r).id); }
     for (var g = 0; out.length < 3 && g < 50; g++) {
@@ -214,7 +225,7 @@
     return out;
   }
 
-  var api = { NODES: NODES, EVENTS: EVENTS, PRICE: PRICE, makeLeg: makeLeg, wildEncounter: wildEncounter, rewardChoices: rewardChoices,
+  var api = { deep: deep, NODES: NODES, EVENTS: EVENTS, PRICE: PRICE, makeLeg: makeLeg, wildEncounter: wildEncounter, rewardChoices: rewardChoices,
     starOpen: starOpen, give: give, placeTreasure: placeTreasure, dig: dig, pickEvent: pickEvent, salvage: salvage, rest: rest, traderStock: traderStock, boonText: boonText };
   if (typeof module !== "undefined") module.exports = api; else root.VOY = api;
 })(this);

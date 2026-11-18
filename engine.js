@@ -9,8 +9,17 @@
   function unit(id) { var c = D.BY[id]; return { id: id, a: c.a, h: c.h, mh: c.h, shield: !!c.kw.taage, el: c.el }; }
   function side(deck, hp, r) {
     var d = shuffle(deck.slice(), r);
-    return { hp: hp, mhp: hp, deck: d, hand: d.splice(0, 4), board: [null, null, null, null], lys: 0 };
+    return { hp: hp, mhp: hp, deck: d, hand: d.splice(0, 4), board: [null, null, null, null], lys: 0, echoed: {} };
   }
+  // Nøgleord inkl. dem en vogter-evne giver dens ånder (Deepreach, 0.15.0).
+  var TRAITKW = { lure: ["ambush", 1], echoes: ["echo", 1], hunger: ["sluger", 1], abyss: ["glow", 1] };
+  function kwOf(b, si, id, k) {
+    var n = D.BY[id].kw[k] || 0, t = si === 1 && b && TRAITKW[b.trait];
+    if (t && t[0] === k) n = Math.max(n, t[1]);
+    return n;
+  }
+  // Hvilket hav er aktivt: D.ISLANDS peger på havets øer (motoren og testene læser D.ISLANDS).
+  function setSea(sea) { var S0 = D.SEAS[sea] || D.SEAS[0]; D.ISLANDS = S0.islands; D.STARLIT = S0.id === "dark" ? D.STARLIT0 : []; D.SEA = S0; }
   // island: index i D.ISLANDS eller et møde-objekt {hp, deck, trait}. opt (valgfri): {hp: ±lygteliv, draw: ekstra startkort}.
   function newBattle(playerDeck, island, seed, opt) {
     var r = rng(seed || Date.now()); opt = opt || {};
@@ -44,8 +53,16 @@
     var u = b.s[si].board[slot]; if (!u || n <= 0) return false;
     if (u.shield) { u.shield = false; ev(b, { t: "dodge", si: si, slot: slot }); return false; }
     u.h -= n; ev(b, { t: "hit", si: si, slot: slot, n: n });
-    if (u.h <= 0) { b.s[si].board[slot] = null; ev(b, { t: "die", si: si, slot: slot, id: u.id }); return true; }
+    if (u.h <= 0) { b.s[si].board[slot] = null; ev(b, { t: "die", si: si, slot: slot, id: u.id }); onDeath(b, si, u); return true; }
     return false;
+  }
+  // Deep (0.15.0): Echo (første gang den dør i kampen → tilbage på hånden), Afterglow N (N skade på fjendens lygte), Feast (vogter-evne).
+  function onDeath(b, si, u) {
+    var P = b.s[si];
+    if (kwOf(b, si, u.id, "echo") && !P.echoed[u.id]) { P.echoed[u.id] = 1; P.hand.push(u.id); ev(b, { t: "echo", si: si, id: u.id }); }
+    var g = kwOf(b, si, u.id, "glow");
+    if (g && !b.over) { ev(b, { t: "glow", si: si, n: g }); damageHero(b, 1 - si, g); }
+    if (si === 0 && b.trait === "feast" && !b.over && b.s[1].hp < b.s[1].mhp) { b.s[1].hp = Math.min(b.s[1].mhp, b.s[1].hp + 2); ev(b, { t: "heal", si: 1, n: 2 }); }
   }
   function damageHero(b, si, n) {
     b.s[si].hp -= n; ev(b, { t: "face", si: si, n: n });
@@ -67,7 +84,7 @@
     var p = b.s[b.who], id = p.hand.splice(hi, 1)[0], c = D.BY[id];
     p.lys -= c.c; p.board[slot] = unit(id); ev(b, { t: "play", si: b.who, slot: slot, id: id });
     // Ambush: en ånd overfor rammer den, der lander (svaret på vogterens synlige plan).
-    var opp = b.s[1 - b.who].board[slot], amb = opp && D.BY[opp.id].kw.ambush;
+    var opp = b.s[1 - b.who].board[slot], amb = opp && kwOf(b, 1 - b.who, opp.id, "ambush");
     if (amb) { ev(b, { t: "ambush", si: 1 - b.who, slot: slot }); if (damageUnit(b, b.who, slot, amb)) return true; }
     // Shine (Starfall): naboerne i din egen række får +N/+N.
     if (c.kw.shine) [slot - 1, slot + 1].forEach(function (j) { var v = p.board[j]; if (v) { v.a += c.kw.shine; v.h += c.kw.shine; v.mh += c.kw.shine; ev(b, { t: "shine", si: b.who, slot: j, n: c.kw.shine }); } });
@@ -97,7 +114,7 @@
         var back = attackOf(O, i);
         var killed = damageUnit(b, o, i, a);
         if (back > 0 && P.board[i]) damageUnit(b, me, i, back);
-        if (killed && P.board[i] && D.BY[u.id].kw.sluger) { u.a++; u.h++; u.mh++; ev(b, { t: "grow", si: me, slot: i }); }
+        if (killed && P.board[i] && kwOf(b, me, u.id, "sluger")) { u.a++; u.h++; u.mh++; ev(b, { t: "grow", si: me, slot: i }); }
       } else damageHero(b, o, a + (me === 1 && b.trait === "dive" ? 1 : 0)); // Dive (Skerrystone): mågens ånder rammer åbne baner hårdere
     }
     P.board.forEach(function (u, i) { if (u && D.BY[u.id].kw.bloom && (u.bl || 0) < 3) { u.bl = (u.bl || 0) + 1; u.a++; u.h++; u.mh++; ev(b, { t: "grow", si: me, slot: i, bloom: 1 }); } });
@@ -120,7 +137,7 @@
         var c = D.BY[id]; if (c.c > lys) return;
         for (var s = 0; s < SLOTS; s++) {
           if (taken[s]) continue;
-          var foe = opp.board[s], sc = c.c * 10, amb = foe && D.BY[foe.id].kw.ambush;
+          var foe = opp.board[s], sc = c.c * 10, amb = foe && kwOf(b, 1 - si, foe.id, "ambush");
           if (amb) sc -= c.h <= amb && !c.kw.taage ? 25 : 4;
           if (foe) { sc += (c.a >= foe.h ? 8 : 0) + (c.h > foe.a ? 4 : -3) + (c.kw.gnist ? 6 : 0); }
           else sc += 3;
@@ -151,6 +168,7 @@
   }
   // Darkness (0.9.0): hver gang Den Sorte Fyr tændes, bliver Mørket dybere. Vogterne får +10 % liv pr. niveau (20 % gjorde Den Sorte Fyr umulig ved V — tests/moerke.js).
   var MAXDARK = 5;
+  if (D.SEAS) setSea(0);
   function warden(i, dark) {
     var is = D.ISLANDS[i], o = {}; for (var k in is) o[k] = is[k];
     o.hp = Math.round(is.hp * (1 + 0.04 * (dark || 0))); o.dark = dark || 0; // 0.11.0: 10 % → 4 % pr. niveau, nu hvor hvert niveau har en regel
@@ -166,7 +184,8 @@
   function openPack(r, el) {
     function pick(rar) {
       // "star" = Starfall-pakke (kun sæt 2); ellers aldrig sæt 2.
-      var pool = D.CARDS.filter(function (c) { return c.r === rar && !c.sea && (el === "star" ? c.set === 2 : !c.set && (!el || rar === "r" || rar === "m" || c.el === el)); });
+      // "deep" = Deep-pakke (kun sæt 3, Deepreach).
+      var pool = D.CARDS.filter(function (c) { return c.r === rar && !c.sea && (el === "star" ? c.set === 2 : el === "deep" ? c.set === 3 : !c.set && (!el || rar === "r" || rar === "m" || c.el === el)); });
       return pool[Math.floor(r() * pool.length)].id;
     }
     var top = r() < 1 / 6 ? "m" : "r";
@@ -182,7 +201,20 @@
   }
   // Gemt tilstand + migrering
   var SAVE_VERSION = 1;
-  function newSave() { return { sv: SAVE_VERSION, coll: {}, deck: [], island: 0, flames: 3, best: 0, packs: 2, packq: [], miles: {}, voy: null, quest: null, dark: 0, embers: 0, wins: 0, losses: 0, runs: 1, seen: {}, stars: {} }; }
+  // Hav-skift (0.15.0): hvert hav har sin egen rejse. Det aktive havs felter ligger øverst i S (så al gammel kode virker),
+  // de andre havs ligger i S.seas[havnummer]. Samling, deck, glimmer, pakker og skib er fælles.
+  var SEAFIELDS = ["island", "best", "flames", "voy", "quest", "dark", "runs"];
+  function switchSea(s, to, flames) {
+    if (to === s.sea) return s;
+    var cur = {}; SEAFIELDS.forEach(function (k) { cur[k] = s[k]; }); s.seas[s.sea] = cur;
+    var nx = s.seas[to] || { island: 0, best: 0, flames: maxFlames(s), voy: null, quest: null, dark: 0, runs: 1 };
+    SEAFIELDS.forEach(function (k) { s[k] = nx[k]; }); delete s.seas[to];
+    s.sea = to; setSea(to);
+    return s;
+  }
+  // Skibet (0.15.0): Spare Wick giver en 4. flamme.
+  function maxFlames(s) { return s && s.ship && s.ship.wick ? 4 : 3; }
+  function newSave() { return { sv: SAVE_VERSION, coll: {}, deck: [], island: 0, flames: 3, best: 0, packs: 2, packq: [], miles: {}, voy: null, quest: null, dark: 0, embers: 0, wins: 0, losses: 0, runs: 1, seen: {}, stars: {}, sea: 0, seas: {}, ship: {} }; }
   function migrate(s) {
     if (!s || typeof s !== "object") return newSave();
     var base = newSave();
@@ -191,8 +223,10 @@
     for (var id in s.coll) if (!D.BY[id]) delete s.coll[id];
     s.deck = s.deck.filter(function (id) { return D.BY[id]; });
     s.sv = SAVE_VERSION;
+    if (!D.SEAS[s.sea]) s.sea = 0;
+    setSea(s.sea);
     return s;
   }
-  var api = { MAXDARK: MAXDARK, warden: warden, SLOTS: SLOTS, closed: closed, chooseMoves: chooseMoves, planFoe: planFoe, rng: rng, newBattle: newBattle, startTurn: startTurn, canPlay: canPlay, play: play, endTurn: endTurn, aiTurn: aiTurn, attackOf: attackOf, openPack: openPack, deckLimit: deckLimit, validDeck: validDeck, newSave: newSave, migrate: migrate, SAVE_VERSION: SAVE_VERSION };
+  var api = { maxFlames: maxFlames, kwOf: kwOf, setSea: setSea, SEAFIELDS: SEAFIELDS, switchSea: switchSea, MAXDARK: MAXDARK, warden: warden, SLOTS: SLOTS, closed: closed, chooseMoves: chooseMoves, planFoe: planFoe, rng: rng, newBattle: newBattle, startTurn: startTurn, canPlay: canPlay, play: play, endTurn: endTurn, aiTurn: aiTurn, attackOf: attackOf, openPack: openPack, deckLimit: deckLimit, validDeck: validDeck, newSave: newSave, migrate: migrate, SAVE_VERSION: SAVE_VERSION };
   if (typeof module !== "undefined") module.exports = api; else root.ENG = api;
 })(this);

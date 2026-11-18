@@ -148,3 +148,19 @@ mono-Blaze for at finde resten. `node tests/stjerner.js` måler hvor ofte en bot
 med en tilfældig bot — de kræver vilje). Lantern Strike 8 → 10 (52 % af bot-kampe var for let).
 0.11.2-rettelser: samlingstælleren stiger, mens nye ånder vendes; båden lægger til ved stoppets kant; tablet-kampen bruger
 720 px (før 560 → stort tomt hul); månen på havet er en lille segl med stjerner (den grå cirkel lignede en fejl).
+
+## Nat 8 (0.15.0) — Skibet og The Deepreach. Svar på Mathias: "hurtigt færdig, bygger ikke op til noget stort, vildt meget glimmer, rejse til nye steder"
+Telemetri: Mathias spillede fra 06:34 til 19:19 på tablet, tændte Den Sorte Fyr to gange (Darkness I), havde hele samlingen (49/49)
+→ hver pakke smeltede til glimmer, og der var intet at bruge det på. Løsning, der binder alle tre ønsker sammen:
+- **⚓ Skibet** (glimmer-sink med et synligt mål): Lantern Glass I–III (+1 lygteliv/niveau i alle kampe; 40/90/160),
+  Spare Wick (4. flamme; 150) og tre dele til et nyt hav — Deep Hull (100), Storm Sails (150), Star Compass (200, kræver
+  Den Sorte Fyr tændt). Båden på skærmen får dele på, efterhånden som man bygger.
+- **The Deepreach** — et andet hav med 5 øer og egne vogtere (Glow Lure / Echoes / Hunger / Feast / Abyss). Hvert hav har sin egen
+  rejse (`S.sea`, `S.seas[k]` med island/best/flames/voy/quest/dark/runs; `E.switchSea`). Samling, deck, glimmer og skib er fælles.
+  Man skifter hav ved at trykke på havets navn (⇄). `D.ISLANDS` peger på det aktive havs øer (`E.setSea`), så al gammel kode virker.
+- **Et fjerde lys: Deep** (14 ånder, sæt 3, kun i Deep-pakker/Deepreach-farvande): **Echo** (første gang den dør → tilbage på hånden),
+  **Afterglow N** (dør → N skade på fjendens lygte). Døden er en ressource — modsat Devour/Bloom, der vil overleve.
+- Glimmer-sink nr. 2: købte pakker i Deepreach er Deep-pakker; Deep-ånder kan lokkes, når man har været der. Milepæle 56/63.
+Balance: `node tests/dybet.js 400` (færdigt Mørkhavs-deck mod Deepreach, D0): 79/79/61/46/51 % — som Mørkhavet på Darkness I–II.
+Kortrate (`tests/kortrate.js`): Echo-kort var svage (−3 til −6) → +1 liv/angreb; nu alle Deep-kort mellem −4 og +3.
+Botten bruger ikke vogterens plan, og Glow Lure (Ambush på alle vogterens ånder) kræver, at man læser brættet.

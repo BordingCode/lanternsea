@@ -1,7 +1,7 @@
 // Lanternsea — UI. Rules live in engine.js, cards in cards.js.
 (function () {
   "use strict";
-  var VERSION = "0.14.1";
+  var VERSION = "0.15.0";
   var KEY = "lanternsea_save", OLDKEY = "lygtebaerer_save"; // the game was called Lygtebærer before 0.2.0 — same origin, so old saves are still here
   var D = window.DATA, E = window.ENG, VOY = window.VOY;
   var app = document.getElementById("app");
@@ -56,6 +56,7 @@
   }
   var SFX = {
     tap: function () { tone(660, 0.06, "triangle", 0.14); },
+    deep: function () { [196, 247, 294, 392].forEach(function (f, i) { tone(f, 1.2, "sine", 0.1, f * 0.98, i * 0.22); }); noise(1.2, 0.08, 0.1); [1175, 1568].forEach(function (f, i) { tone(f, 0.6, "sine", 0.04, null, 0.9 + i * 0.2); }); },
     sail: function () { noise(0.7, 0.2); tone(170, 0.7, "sine", 0.08, 110); noise(0.55, 0.13, 0.35); },
     chime: function () { [784, 988, 1319].forEach(function (f, i) { tone(f, 0.28, "triangle", 0.11, null, i * 0.09); }); },
     tear: function () { noise(0.35, 0.35); tone(200, 0.3, "sawtooth", 0.05, 900); },
@@ -112,7 +113,7 @@
     var k = c.kw, out = [];
     if (k.gnist) out.push("Spark " + k.gnist); if (k.taage) out.push("Veil"); if (k.flok) out.push("Kin");
     if (k.rod) out.push("Mend " + k.rod); if (k.sluger) out.push("Devour"); if (k.rally) out.push("Rally"); if (k.ambush) out.push("Ambush " + k.ambush);
-    if (k.bloom) out.push("Bloom"); if (k.shine) out.push("Shine " + k.shine);
+    if (k.bloom) out.push("Bloom"); if (k.shine) out.push("Shine " + k.shine); if (k.echo) out.push("Echo"); if (k.glow) out.push("Afterglow " + k.glow);
     return out.join(" · ");
   }
   function cardHTML(id, o) {
@@ -133,16 +134,16 @@
     var c = D.BY[id], s = "<b>" + esc(c.n) + "</b> · " + D.lightName(c) + " · " + D.RAR[c.r] + " · costs " + c.c + " light<br>";
     var k = c.kw, parts = [];
     Object.keys(k).forEach(function (key) { parts.push(D.KW[key].replace(/\bN\b/g, k[key])); });
-    if (c.el2) parts.push(c.el2 === "*" ? "Every light: it counts as Blaze, Mist and Root — for Kin." : D.TWIN);
+    if (c.el2) parts.push(c.el2 === "*" ? "Every light: it counts as Blaze, Mist, Root and Deep — for Kin." : D.TWIN);
     return s + (parts.length ? parts.join("<br>") : "<i>" + esc(c.t) + "</i>");
   }
-  function flamesHTML() { var s = ""; for (var i = 0; i < 3; i++) s += '<i class="flame' + (i < S.flames ? "" : " out") + '"></i> '; return s; }
+  function flamesHTML() { var s = ""; for (var i = 0; i < E.maxFlames(S); i++) s += '<i class="flame' + (i < S.flames ? "" : " out") + '"></i> '; return s; }
   function owned(id) { return S.coll[id] || 0; }
   function uniqueOwned() { return D.CARDS.filter(function (c) { return owned(c.id) > 0; }).length; }
   // Samle-milepæle: et langsigtet mål ved siden af rejsen. Belønninger gives automatisk (og indhentes, hvis de blev sprunget over).
-  var MILES = [10, 15, 20, 25, 30, 36, 42, 49]; // 42/49 = Starfall (0.10.0) // 36 = alle, også drifterne fra havet (0.8.0)
+  var MILES = [10, 15, 20, 25, 30, 36, 42, 49, 56, 63]; // 56/63 = Deep (0.15.0) // 42/49 = Starfall (0.10.0) // 36 = alle, også drifterne fra havet (0.8.0)
   var LURE = { c: 5, u: 10, r: 22, m: 40 }; // glimmer-pris for at lokke en bestemt ånd (som Hearthstones dust)
-  function mileReward(m) { return m === 30 || m === 49 ? 3 : m === 36 ? 2 : 1; }
+  function mileReward(m) { return m === 30 || m === 49 || m === 63 ? 3 : m === 36 ? 2 : 1; }
   // Starfall (sæt 2) låses op, første gang Den Sorte Fyr tændes.
   function starOpen() { return (S.bestDark || 0) >= 1; }
   function claimMiles() {
@@ -154,11 +155,11 @@
   }
 
   // Søkort: øerne snor sig fra bunden (start) mod The Black Lighthouse øverst. Procedural SVG.
-  var ISLPOS = [[30, 148], [70, 128], [34, 106], [68, 84], [30, 62], [66, 40], [50, 15]];
   function seaChart() {
+    var ISLPOS = D.SEA.pos, LAST = D.ISLANDS.length - 1, DEEP = D.SEA.id === "deep";
     var W = '<svg viewBox="0 0 100 162" preserveAspectRatio="xMidYMid meet" class="chart"><defs>' +
       '<radialGradient id="lit"><stop offset="0" stop-color="#fff6d8"/><stop offset=".4" stop-color="#ffb347" stop-opacity=".6"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient>' +
-      '<radialGradient id="dark"><stop offset=".3" stop-color="#000" stop-opacity=".75"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><radialGradient id="sea" cx="50%" cy="100%" r="100%"><stop offset="0" stop-color="#1d2a55"/><stop offset="1" stop-color="#080c1a"/></radialGradient></defs>' +
+      '<radialGradient id="dark"><stop offset=".3" stop-color="#000" stop-opacity=".75"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><radialGradient id="sea" cx="50%" cy="100%" r="100%"><stop offset="0" stop-color="' + (DEEP ? "#3a1450" : "#1d2a55") + '"/><stop offset="1" stop-color="#080c1a"/></radialGradient></defs>' +
       '<rect width="100" height="162" fill="url(#sea)" rx="6"/>';
     var r = E.rng(77);
     for (var k = 0; k < 26; k++) { var wx = r() * 92 + 2, wy = r() * 156 + 3; W += '<path d="M' + wx.toFixed(1) + " " + wy.toFixed(1) + " q2 -1.4 4 0 t4 0" + '" stroke="#6fc3ff" stroke-opacity=".13" stroke-width=".5" fill="none"/>'; }
@@ -176,13 +177,13 @@
     }
     D.ISLANDS.forEach(function (is, i) {
       var p = ISLPOS[i], st = i < S.island ? "done" : i === S.island ? "cur" : "lock", rr = E.rng(hash(is.n));
-      var n = 9, R = i === 6 ? 9.5 : 7.5 + rr() * 1.5, pts = [];
+      var n = 9, R = i === LAST ? 9.5 : 7.5 + rr() * 1.5, pts = [];
       for (var j = 0; j < n; j++) { var ang = j / n * Math.PI * 2, rad = R * (0.75 + rr() * 0.4); pts.push([p[0] + Math.cos(ang) * rad * 1.25, p[1] + Math.sin(ang) * rad * 0.8]); }
       function mid(u, v) { return ((u[0] + v[0]) / 2).toFixed(1) + " " + ((u[1] + v[1]) / 2).toFixed(1); }
       var d = "M" + mid(pts[n - 1], pts[0]);
       for (j = 0; j < n; j++) d += " Q" + pts[j][0].toFixed(1) + " " + pts[j][1].toFixed(1) + " " + mid(pts[j], pts[(j + 1) % n]);
       var land = st === "lock" ? "#1a2036" : st === "done" ? "#3a5a3a" : "#4a4a6a", rim = st === "lock" ? "#2a3150" : "#c9a86a";
-      W += '<g class="mi ' + st + '" data-i="' + i + '">' + (i === 6 && st !== "done" ? '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="18" fill="url(#dark)" class="darkaura"/>' : "") + (st === "done" ? '<circle cx="' + p[0] + '" cy="' + (p[1] - 4) + '" r="11" fill="url(#lit)"/>' : "") +
+      W += '<g class="mi ' + st + '" data-i="' + i + '">' + (i === LAST && st !== "done" ? '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="18" fill="url(#dark)" class="darkaura"/>' : "") + (st === "done" ? '<circle cx="' + p[0] + '" cy="' + (p[1] - 4) + '" r="11" fill="url(#lit)"/>' : "") +
         '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="11" fill="transparent"/>' +
         '<path d="' + d + 'Z" fill="' + land + '" stroke="' + rim + '" stroke-width=".5"/>' +
         // fyrtårn
@@ -236,9 +237,9 @@
 
   function home() {
     var caught = claimMiles();
-    var el = h('<div class="screen"><div class="hud"><div class="flames">' + flamesHTML() + '</div><div class="row"><span class="pill">✦ ' + S.embers + ' glimmer</span><button class="pill" id="binder">📖 ' + uniqueOwned() + "/" + D.CARDS.length + " spirits</button></div></div>" +
-      '<h2 style="margin-top:10px">The Dark Sea' + (S.runs > 1 ? ' <span class="dim" style="font-size:14px">· voyage ' + S.runs + "</span>" : "") + (S.dark ? ' <span class="darkpill">Darkness ' + ROMAN[S.dark] + "</span>" : "") + '</h2><div class="map"></div><div class="info" id="islinfo" style="min-height:64px"></div>' +
-      '<div class="bottom"><div class="row"><button class="btn sec" id="deck">Deck (' + S.deck.length + ')</button><button class="btn sec" id="packs">Packs (' + S.packs + ")</button></div>" +
+    var el = h('<div class="screen"><div class="hud"><div class="flames">' + flamesHTML() + '</div><div class="row"><span class="pill">✦ ' + S.embers + '</span><button class="pill" id="binder">📖 ' + uniqueOwned() + "/" + D.CARDS.length + " spirits</button></div></div>" +
+      '<h2 style="margin-top:10px" id="seaname">' + esc(D.SEA.n) + (seasOpen() ? ' <span class="seaswap">⇄</span>' : "") + (S.runs > 1 ? ' <span class="dim" style="font-size:14px">· voyage ' + S.runs + "</span>" : "") + (S.dark ? ' <span class="darkpill">Darkness ' + ROMAN[S.dark] + "</span>" : "") + '</h2><div class="map"></div><div class="info" id="islinfo" style="min-height:64px"></div>' +
+      '<div class="bottom"><div class="row"><button class="btn sec" id="deck">Deck (' + S.deck.length + ')</button><button class="btn sec" id="packs">Packs (' + S.packs + ')</button><button class="btn sec" id="ship">⚓ Ship' + (shipReady() ? '<i class="dot"></i>' : "") + "</button></div>" +
       '<button class="btn" id="sail">' + (legDone() ? "Land on " : "Set sail for ") + esc(D.ISLANDS[S.island].n) + "</button></div></div>");
     var map = el.querySelector(".map");
     map.innerHTML = seaChart();
@@ -257,11 +258,13 @@
     showIsl(S.island);
     el.querySelector("#deck").onclick = function () { SFX.tap(); deckScreen(); };
     el.querySelector("#binder").onclick = function () { SFX.tap(); binderScreen(); };
+    el.querySelector("#ship").onclick = function () { SFX.tap(); shipScreen(); };
+    el.querySelector("#seaname").onclick = function () { if (seasOpen()) { SFX.tap(); seasModal(); } };
     var pb = el.querySelector("#packs"); pb.disabled = S.packs < 1 && S.embers < 12;
     if (S.packs < 1 && S.embers >= 12) pb.textContent = "Buy pack (12 ✦)";
     pb.onclick = function () {
       SFX.tap();
-      if (S.packs < 1 && S.embers >= 12) { S.embers -= 12; S.packs++; save(); }
+      if (S.packs < 1 && S.embers >= 12) { S.embers -= 12; S.packs++; if (D.SEA.id === "deep") { S.packq = S.packq || []; S.packq.unshift("deep"); } save(); }
       if (S.packs > 0) packScreen(false);
     };
     el.querySelector("#sail").onclick = function () {
@@ -272,6 +275,24 @@
     };
     show(el);
 
+    // Skibet (0.15.0): præsenteres én gang, når man har vundet et par kampe (Mathias havde masser af glimmer og intet at bruge det på).
+    if (S.wins >= 3 && !S.seen.ship) {
+      S.seen.ship = 1; save();
+      modal("<h1>⚓ Your ship</h1><div style='width:220px;margin:0 auto'>" + boatSVG() + "</div><p style='text-align:center'>Glimmer can now <b>build your ship</b>: brighter lantern glass, a spare wick for a 4th flame…</p>" +
+        "<p style='text-align:center'>…and, one day, the hull, sails and compass to cross into <b style='color:var(--dyb)'>a sea no one has charted</b>.</p>", [{ t: "Show me", v: 1 }, { t: "Later", v: 0, sec: true }]).then(function (v) { if (v) shipScreen(); });
+      return;
+    }
+    // Deepreach (0.15.0): første ankomst — en lille begivenhed og 2 Deep-pakker.
+    if (D.SEA.id === "deep" && !S.seen.deep) {
+      S.seen.deep = 1; S.packs += 2; S.packq = S.packq || []; S.packq.unshift("deep", "deep"); save();
+      T("progress", { step: "deepreach" });
+      var bub = h('<div class="bubbles"></div>'); for (var qb = 0; qb < 16; qb++) { var bb = h("<i></i>"); bb.style.left = (4 + Math.random() * 92) + "%"; bb.style.animationDelay = (Math.random() * 2.4).toFixed(2) + "s"; bub.appendChild(bb); }
+      document.body.appendChild(bub); setTimeout(function () { bub.remove(); }, 6000); SFX.deep();
+      modal("<h1 style='color:var(--dyb)'>🐚 The Deepreach</h1><p style='text-align:center'>Your new sails catch a wind no one has felt in a hundred years. Past the Black Lighthouse, the water turns violet — and far below, <b>something glows back</b>.</p>" +
+        "<p style='text-align:center;line-height:1.5'>A new light: <b style='color:var(--dyb)'>Deep</b> — 14 spirits to catch.<br><span class='dim'>✧ <b>Echo</b> — comes back to your hand the first time it dies<br>✧ <b>Afterglow</b> — hits the enemy lantern when it dies</span></p>" +
+        "<p style='text-align:center'>5 new islands, 5 new wardens. Here are <b>2 Deep packs</b>.<br><span class='dim' style='font-size:13px'>Your voyage on the Dark Sea waits for you — tap the sea’s name to switch.</span></p>", [{ t: "Open them", v: 1 }, { t: "Later", v: 0, sec: true }]).then(function (v) { if (v) packScreen(false); });
+      return;
+    }
     // Starfall lander (0.10.0): én gang, når Den Sorte Fyr er tændt første gang — med 2 gratis Starfall-pakker.
     if (starOpen() && !S.seen.starfall) {
       S.seen.starfall = 1; S.packs += 2; S.packq = S.packq || []; S.packq.unshift("star", "star"); save();
@@ -298,7 +319,7 @@
 
   // ---------- pakke-ritualet ----------
   var RORD = { c: 0, u: 1, r: 2, m: 3 };
-  var PACKNAME = { glod: "BLAZE TIDE", taage: "MIST TIDE", rod: "ROOT TIDE", star: "STARFALL" };
+  var PACKNAME = { glod: "BLAZE TIDE", taage: "MIST TIDE", rod: "ROOT TIDE", star: "STARFALL", deep: "THE DEEP" };
   function packScreen(first) {
     if (S.packs < 1) return home();
     var ptype = S.packq && S.packq.length ? S.packq[0] : null;
@@ -416,7 +437,7 @@
       (function (e) { setTimeout(function () { e.remove(); }, 1200); })(sp);
     }
   }
-  var ELCOL = { glod: ["#ffb347", "#ff6a2a", "#fff1c9"], taage: ["#9fd8ff", "#4a7dff", "#eaf6ff"], rod: ["#8ff0a6", "#2f9c5a", "#eaffef"] };
+  var ELCOL = { glod: ["#ffb347", "#ff6a2a", "#fff1c9"], taage: ["#9fd8ff", "#4a7dff", "#eaf6ff"], rod: ["#8ff0a6", "#2f9c5a", "#eaffef"], dyb: ["#ffa8e8", "#c03aa8", "#ffe8fa"] };
   function burst(target, r) {
     particles(target, r === "m" ? ["#d48bff", "#fff", "#9fd8ff"] : ["#ffc861", "#fff1c9", "#ff9a3d"], r === "m" ? 28 : 16, r === "m" ? 220 : 160);
     var bn = h('<div class="rarebanner">' + (r === "m" ? "MYTHIC!" : "RARE!") + "</div>");
@@ -480,22 +501,26 @@
       return '<div class="ebar ' + e + '"><span>' + D.EL[e] + '</span><div><i style="width:' + (have / all.length * 100) + '%"></i></div><b>' + have + "/" + all.length + "</b></div>";
     }).join("");
     var st = D.CARDS.filter(function (c) { return c.set === 2; }), stHave = st.filter(function (c) { return owned(c.id); }).length;
+    var dp = D.CARDS.filter(function (c) { return c.set === 3; }), dpHave = dp.filter(function (c) { return owned(c.id); }).length;
+    bars += '<div class="ebar dyb"><span>Deep</span><div><i style="width:' + (dpHave / dp.length * 100) + '%"></i></div><b>' + (S.seen.deep ? dpHave + "/" + dp.length : "🔒") + "</b></div>";
     bars += '<div class="ebar star"><span>Starfall</span><div><i style="width:' + (stHave / st.length * 100) + '%"></i></div><b>' + (starOpen() ? stHave + "/" + st.length : "🔒") + "</b></div>";
     var miles = MILES.map(function (m) { var done = S.miles && S.miles[m]; return '<span class="mile' + (done ? " done" : n >= m ? " ready" : "") + '">' + (done ? "✦ " : "") + m + "</span>"; }).join("");
     var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Collection</h2><div class="row"><span class="pill">✦ ' + S.embers + '</span><span class="pill">' + n + "/" + D.CARDS.length + "</span></div></div>" +
       '<div class="bars">' + bars + "</div>" +
       '<div class="miles">' + miles + '</div>' + (window.STARS ? '<button class="btn sec cstbtn" id="cst">✦ Constellations <b>' + Object.keys(S.stars || {}).length + "/" + STARS.LIST.filter(function (st) { return !st.set2 || starOpen(); }).length + "</b></button>" : "") + '<div class="dim" style="font-size:13px;text-align:center;margin:2px 0 8px">' +
-      (next ? "Catch " + (next - n) + " more for a bonus pack" + (next === 30 ? " — and the Keeper's reward" : "") + "." : "Every spirit of the Dark Sea is yours.") + "</div>" +
+      (next ? "Catch " + (next - n) + " more for a bonus pack" + (next === 30 ? " — and the Keeper's reward" : "") + "." : "Every spirit in the sea is yours.") + "</div>" +
       '<div class="grid"></div><div class="info" id="binfo">Tap a spirit to read it — or lure one you’re missing with ✦ glimmer.</div>' +
       '<div class="bottom" style="margin-top:8px"><button class="btn" id="back">Back</button></div></div>');
     var grid = el.querySelector(".grid"), binfo = el.querySelector("#binfo");
     D.CARDS.forEach(function (c) {
       var o = owned(c.id);
-      var lock = c.set === 2 && !o && !starOpen();
+      var lock = (c.set === 2 && !o && !starOpen()) || (c.set === 3 && !o && !S.seen.deep);
       if (c.id === "s1") grid.appendChild(h('<div class="sethead">★ Starfall' + (starOpen() ? "" : " · <span class='dim'>locked</span>") + "</div>"));
+      if (c.id === "x1") grid.appendChild(h('<div class="sethead" style="color:var(--dyb)">🐚 The Deep' + (S.seen.deep ? "" : " · <span class='dim'>locked</span>") + "</div>"));
       var w = h('<div>' + (o ? cardHTML(c.id, { badge: "×" + o }) : '<div class="card unknown ' + c.r + (c.sea ? " sea" : "") + (c.set ? " star" : "") + '"><div class="q">' + (c.sea ? "🌊" : c.set ? "★" : "?") + '</div><div class="nm">' + (c.sea ? "Found at sea" : lock ? "Starfall" : D.RAR[c.r]) + "</div></div>") + "</div>");
       w.onclick = function () {
         SFX.tap();
+        if (lock && c.set === 3) { binfo.innerHTML = "<b>The Deep.</b> <span class='dim'>Spirits of a sea beyond the Black Lighthouse. Build your ship (⚓ Ship) to sail there.</span>"; return; }
         if (lock) { binfo.innerHTML = "<b>Starfall.</b> <span class='dim'>Something is waiting beyond the Black Lighthouse. Light it, and see what falls from the sky.</span>"; return; }
         if (c.sea && !o) { binfo.innerHTML = "<b>A drifter.</b> <span class='dim'>Some spirits never come in packs. Look for them on the voyage between islands — catch wild spirits, trade with the Fog Trader, or brave strange waters.</span>"; return; }
         binfo.innerHTML = (o ? cardInfo(c.id) : "<span class='dim'>Not caught yet:</span><br>" + cardInfo(c.id)) + (c.sea ? "<br><span style='color:#6fc3ff'>🌊 Drifter — found only at sea.</span>" : "");
@@ -540,7 +565,7 @@
     var filter = "all", focus = null;
     var el = h('<div class="screen"><div class="hud"><h2 style="margin:0">Your deck</h2><div class="row"><div class="curve"></div><span class="pill" id="cnt"></span></div></div>' +
       '<div class="dim" style="font-size:13px;margin:4px 0 8px">Tap a spirit to add it. Tap − to remove. 12–20 cards.</div><div id="elmix" class="elmix"></div><div id="reach" class="reach"></div>' +
-      '<div class="filters"><button class="chip on" data-f="all">All</button><button class="chip" data-f="deck">In deck</button><button class="chip" data-f="glod">Blaze</button><button class="chip" data-f="taage">Mist</button><button class="chip" data-f="rod">Root</button><button class="chip" data-f="missing">Missing</button></div>' +
+      '<div class="filters"><button class="chip on" data-f="all">All</button><button class="chip" data-f="deck">In deck</button><button class="chip" data-f="glod">Blaze</button><button class="chip" data-f="taage">Mist</button><button class="chip" data-f="rod">Root</button>' + (S.seen.deep ? '<button class="chip" data-f="dyb">Deep</button>' : "") + '<button class="chip" data-f="missing">Missing</button></div>' +
       '<div class="grid"></div><div class="info" id="dinfo">Tap a card to read it.</div>' +
       '<div class="bottom" style="margin-top:8px"><div class="row"><button class="btn sec" id="auto">Build for me</button><button class="btn" id="back">Done</button></div></div></div>');
     var grid = el.querySelector(".grid");
@@ -553,7 +578,8 @@
         if (filter === "deck" && !d) return;
         if (filter === "missing" ? o : !o) return;
         if (c.set === 2 && !o && !starOpen()) return;
-        if (["glod", "taage", "rod"].indexOf(filter) >= 0 && !D.hasLight(c, filter)) return;
+        if (c.set === 3 && !o && !S.seen.deep) return;
+        if (["glod", "taage", "rod", "dyb"].indexOf(filter) >= 0 && !D.hasLight(c, filter)) return;
         var wrap = h('<div style="position:relative">' + cardHTML(c.id, { cls: (o ? (d ? "" : "notin") : "unowned") + (focus && o && focus !== c.id && syn(D.BY[focus], c) ? " syn" : "") + (focus === c.id ? " focus" : ""), badge: o ? d + "/" + o : "?" }) + "</div>");
         if (d) {
           var minus = h('<button class="chip" style="position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);padding:0 16px;line-height:24px;font-size:18px;background:#5a1f12">−</button>');
@@ -577,8 +603,8 @@
         var rc = STARS.reach(S.deck).filter(function (id) { return (!STARS.BY[id].set2 || starOpen()) && ["sweep", "strike", "lastlight"].indexOf(id) < 0; }), nw = rc.filter(function (id) { return !(S.stars || {})[id]; });
         el.querySelector("#reach").innerHTML = "✦ " + (nw.length ? "Undiscovered in reach: " + nw.map(function (id) { return "<b>" + esc(STARS.BY[id].n) + "</b>"; }).join(", ") : "No undiscovered constellations in reach — try other spirits.");
       }
-      var ec = { glod: 0, taage: 0, rod: 0 }; S.deck.forEach(function (id) { ec[D.BY[id].el]++; });
-      el.querySelector("#elmix").innerHTML = "<span class='e glod'>🔥 " + ec.glod + "</span><span class='e taage'>🌫 " + ec.taage + "</span><span class='e rod'>🌱 " + ec.rod + "</span>";
+      var ec = { glod: 0, taage: 0, rod: 0, dyb: 0 }; S.deck.forEach(function (id) { ec[D.BY[id].el]++; });
+      el.querySelector("#elmix").innerHTML = "<span class='e glod'>🔥 " + ec.glod + "</span><span class='e taage'>🌫 " + ec.taage + "</span><span class='e rod'>🌱 " + ec.rod + "</span>" + (ec.dyb ? "<span class='e dyb'>🐚 " + ec.dyb + "</span>" : "");
       var cv = [0, 0, 0, 0, 0, 0, 0]; S.deck.forEach(function (id) { cv[Math.min(6, D.BY[id].c - 1 < 0 ? 0 : D.BY[id].c - 1)]++; });
       var mx = Math.max.apply(null, cv) || 1;
       el.querySelector(".curve").innerHTML = cv.map(function (v) { return '<div style="height:' + (v / mx * 100) + '%"></div>'; }).join("");
@@ -635,6 +661,9 @@
   function battleScreen(enc) {
     var wild = !!enc, isl = enc || E.warden(S.island, S.dark), opt = null;
     if (!wild && S.voy && S.voy.to === S.island && S.voy.boon) { opt = S.voy.boon; S.voy.boon = null; save(); }
+    var glass = (S.ship && S.ship.glass) || 0; // Lantern Glass (skibet): +1 lygteliv pr. niveau i alle kampe
+    var boonOpt = opt;
+    if (glass) { var o2 = {}; for (var ok in (opt || {})) o2[ok] = opt[ok]; o2.hp = (o2.hp || 0) + glass; opt = o2; }
     var b = E.newBattle(S.deck, isl, (R() * 1e9) >>> 0, opt);
     E.startTurn(b);
     var sel = -1, busy = false;
@@ -694,7 +723,7 @@
     function previewHTML(id, slot) {
       var c = D.BY[id], side = { board: view.s[0].board.slice() };
       side.board[slot] = { id: id, a: c.a, h: c.h, mh: c.h, shield: !!c.kw.taage, el: c.el };
-      var a = E.attackOf(side, slot), up = a > c.a, foe = view.s[1].board[slot], amb = foe && D.BY[foe.id].kw.ambush;
+      var a = E.attackOf(side, slot), up = a > c.a, foe = view.s[1].board[slot], amb = foe && E.kwOf(b, 1, foe.id, "ambush");
       var boost = 0; side.board.forEach(function (v, j) { if (v && j !== slot) boost += E.attackOf(side, j) - E.attackOf(view.s[0], j); });
       var nb = c.kw.shine ? [slot - 1, slot + 1].filter(function (j) { return view.s[0].board[j]; }).length : 0;
       var line = amb && !c.kw.taage && amb >= c.h ? "<span style='color:#ff8a8a'>ambush kills it</span>" : nb ? "<span style='color:var(--gold)'>✧ +" + c.kw.shine + "/+" + c.kw.shine + " to " + nb + "</span>" : boost > 0 ? "<span style='color:var(--gold)'>+" + boost + " ⚔ to allies</span>" : "";
@@ -724,7 +753,7 @@
           else if (!theirs) txt = "<b style='color:var(--gold)'>↑" + am + "</b><br><span class='dim'>lantern</span>";
           else if (theirs.shield) txt = "↑" + am + "<br><span style='color:var(--taage)'>veiled</span>";
           else txt = "↑" + am + "<br>" + (am >= theirs.h ? "<span style='color:#8dffb0'>kills</span>" : "<span class='dim'>" + theirs.h + " life</span>");
-        } else if (theirs && (theirs.a > 0 || D.BY[theirs.id].kw.ambush)) { var amb = D.BY[theirs.id].kw.ambush; var fa = E.attackOf(view.s[1], L); txt = "<span style='color:#ff8a8a'>↓" + (fa + (b.trait === "dive" && fa > 0 ? 1 : 0)) + "</span><br><span class='" + (amb ? "trait" : "dim") + "'>" + (amb ? "ambush " + amb : "open") + "</span>"; }
+        } else if (theirs && (theirs.a > 0 || E.kwOf(b, 1, theirs.id, "ambush"))) { var amb = E.kwOf(b, 1, theirs.id, "ambush"); var fa = E.attackOf(view.s[1], L); txt = "<span style='color:#ff8a8a'>↓" + (fa + (b.trait === "dive" && fa > 0 ? 1 : 0)) + "</span><br><span class='" + (amb ? "trait" : "dim") + "'>" + (amb ? "ambush " + amb : "open") + "</span>"; }
         else if (gh === "?") txt = "<span style='color:#ff8a8a'>⚠ ?</span><br><span class='dim'>shrouded</span>";
         else if (gh && D.BY[gh].a > 0) txt = "<span style='color:#ff8a8a'>⚠ ↓" + (D.BY[gh].a + (b.trait === "dive" ? 1 : 0)) + "</span><br><span class='dim'>next turn</span>";
         lanes += "<div>" + txt + "</div>";
@@ -774,7 +803,7 @@
     window.addEventListener("resize", fanHand);
     function full() { snap(); drawBoards(); drawHand(); teachKw(); }
     // Første gang et nøgleord er på hånden: forklar det i info-feltet (dommer, nat 2: "Kin, Veil, Devour forklares ikke").
-    var KWN = { gnist: "Spark", taage: "Veil", flok: "Kin", rod: "Mend", sluger: "Devour", rally: "Rally", ambush: "Ambush", bloom: "Bloom", shine: "Shine" };
+    var KWN = { gnist: "Spark", taage: "Veil", flok: "Kin", rod: "Mend", sluger: "Devour", rally: "Rally", ambush: "Ambush", bloom: "Bloom", shine: "Shine", echo: "Echo", glow: "Afterglow" };
     function teachKw() {
       if (sel >= 0 || b.over || b.who !== 0) return;
       for (var i = 0; i < b.s[0].hand.length; i++) {
@@ -844,6 +873,8 @@
           if (e.t === "face") { V[e.si].hp -= e.n; drawBoards(); var he = el.querySelector(e.si ? ".hero.foe" : ".hero.me"); he.classList.remove("hit"); void he.offsetWidth; he.classList.add("hit"); floatTxt(he, "−" + e.n + (e.si === 0 && b.trait === "dive" && e.n > 1 ? " dive!" : "")); SFX.face();
             if (e.si === 0) { var vg = h('<div class="vignette"></div>'); document.body.appendChild(vg); setTimeout(function () { vg.remove(); }, 520); app.classList.remove("quake"); void app.offsetWidth; app.classList.add("quake"); }
             else particles(he, ["#ffc861", "#fff1c9", "#ff9a3d"], 10, 60); if (navigator.vibrate && e.si === 0) try { navigator.vibrate(30); } catch (x) {} return wait(300); }
+          if (e.t === "echo") { if (e.si === 0) drawHand(); floatTxt(el.querySelector(e.si ? ".hero.foe" : ".hero.me"), "echo ↺", "b"); SFX.dodge(); return wait(280); }
+          if (e.t === "glow") { floatTxt(el.querySelector(e.si ? ".hero.foe" : ".hero.me"), "afterglow", "g"); return wait(160); }
           if (e.t === "regrow") { var u5 = V[e.si].board[e.slot]; if (u5) u5.h = Math.min(u5.mh, u5.h + 1); drawBoards(); floatTxt(slotEl(e.si, e.slot), "+1", "g"); SFX.heal(); return wait(200); }
           if (e.t === "heal") { V[e.si].hp = Math.min(V[e.si].mhp, V[e.si].hp + e.n); drawBoards(); floatTxt(el.querySelector(e.si ? ".hero.foe" : ".hero.me"), "+" + e.n, "g"); SFX.heal(); return wait(220); }
           return null;
@@ -883,7 +914,7 @@
       busy = true; mid.textContent = ""; lanesEl.innerHTML = "";
       if (b.over === "win") el.querySelector(".scene").classList.add("lit");
       var won = b.over === "win";
-      T("battle_end", { won: won, fled: !!fled, island: S.island, turns: b.turn, deck: S.deck, hp: b.s[0].hp, wild: wild ? enc.el : undefined });
+      T("battle_end", { won: won, fled: !!fled, island: S.island, sea: S.sea || 0, turns: b.turn, deck: S.deck, hp: b.s[0].hp, wild: wild ? enc.el : undefined });
       if (wild) return finishWild(won, enc, won || fled ? "" : recapHTML());
       var msg;
       if (won) {
@@ -892,21 +923,24 @@
         SFX.win();
         if (S.island >= D.ISLANDS.length) {
           var was = S.dark || 0;
-          T("progress", { step: "victory", runs: S.runs, dark: was });
-          S.island = 0; S.flames = 3; S.runs++; S.packs += 2 + was; S.voy = null;
+          T("progress", { step: "victory", runs: S.runs, dark: was, sea: S.sea || 0 });
+          S.island = 0; S.flames = E.maxFlames(S); S.runs++; S.packs += 2 + was; S.voy = null;
           S.dark = Math.min(E.MAXDARK, was + 1); S.bestDark = Math.max(S.bestDark || 0, was + 1);
-          msg = "<h1>The Black Lighthouse burns!</h1><p style='text-align:center'>You lit the whole Dark Sea" + (was ? " — even in Darkness " + ROMAN[was] : "") + ". The spirits sing.<br>You get <b>" + (3 + was) + " packs</b>.</p>" +
+          var deepWin = D.SEA.id === "deep";
+          if (deepWin) { S.packq = S.packq || []; for (var dq = 0; dq < 2; dq++) S.packq.unshift("deep"); }
+          msg = (deepWin ? "<h1 style='color:var(--dyb)'>The Trench glows!</h1><p style='text-align:center'>You lit the whole Deepreach" : "<h1>The Black Lighthouse burns!</h1><p style='text-align:center'>You lit the whole Dark Sea") + (was ? " — even in Darkness " + ROMAN[was] : "") + ". The spirits sing.<br>You get <b>" + (3 + was) + " packs</b>" + (deepWin ? " (2 of them Deep)" : "") + ".</p>" +
+            (!was && !deepWin && !shipDeepReady() ? "<p class='dim' style='text-align:center;font-size:14px'>⚓ Far beyond the lighthouse lies another sea. Build your ship to reach it.</p>" : "") +
             (was < E.MAXDARK ? "<p class='quote'>“…then I will sink deeper.”</p><p style='text-align:center'>The Dark returns as <b class='darkpill'>Darkness " + ROMAN[S.dark] + "</b>.<br>New rule — <b>" + D.DARK[S.dark].n + ":</b> " + D.DARK[S.dark].t + "<br><span class='dim'>Wardens have a little more life. Wild spirits are tougher. Every victory pays more glimmer.</span></p>"
               : "<p style='text-align:center'>You have driven the Dark to its very bottom. Darkness V is yours to sail, again and again.</p>");
         } else {
-          T("progress", { island: S.island });
+          T("progress", { island: S.island, sea: S.sea || 0 });
           msg = "<h1>Victory!</h1><p style='text-align:center'>" + esc(isl.foe) + " is defeated, and the lighthouse on " + esc(isl.n) + " is lit.<br>You get <b>1 pack</b>.</p>" + (dg ? "<p class='dim' style='text-align:center;margin:0'>Darkness bonus: +" + dg + " ✦</p>" : "") + (isl.beaten ? "<p class='quote'>“" + esc(isl.beaten) + "”</p>" : "");
         }
       } else {
         S.losses++; S.flames--; SFX.lose();
         if (S.flames <= 0) {
           T("progress", { step: "voyage_lost", reached: S.island });
-          S.island = 0; S.flames = 3; S.runs++; S.voy = null;
+          S.island = 0; S.flames = E.maxFlames(S); S.runs++; S.voy = null;
           msg = "<h1 style='color:#b46bff'>The lantern goes out</h1><p style='text-align:center'>Your last flame died. The Dark takes the islands back, and the voyage must begin again.<br><br>But the spirits are still yours.</p>" + (fled ? "" : recapHTML()) + tipHTML(isl);
         } else {
           msg = "<h1 style='color:#b46bff'>Defeat</h1><p style='text-align:center'>" + esc(isl.foe) + " put out one of your flames.<br>" + S.flames + " flame" + (S.flames === 1 ? "" : "s") + " left.</p>" + (fled ? "" : recapHTML()) + tipHTML(isl);
@@ -918,6 +952,7 @@
           // Vælg selv belønningen: en temapakke, så man kan bygge mod et lys (Kin) — Rosewater: lad spillerne vælge deres spil.
           msg = msg.replace("<br>You get <b>1 pack</b>.", "") + "<p style='text-align:center;margin:10px 0 0'><b>Choose your pack:</b></p><p class='dim' style='text-align:center;font-size:13px;margin:0'>Commons and uncommons of that light. The rare can be anything.</p>";
           var pbs = [{ t: "🔥 Blaze", v: "glod", cls: "pb-glod" }, { t: "🌫 Mist", v: "taage", cls: "pb-taage" }, { t: "🌱 Root", v: "rod", cls: "pb-rod" }];
+          if (D.SEA.id === "deep") pbs.push({ t: "🐚 Deep", v: "deep", cls: "pb-deep" });
           if (starOpen()) { pbs.push({ t: "★ Starfall", v: "star", cls: "pb-star" }); msg = msg.replace("The rare can be anything.", "The rare can be anything. ★ Starfall: only Starfall spirits."); }
           modal(msg, pbs).then(function (v) {
             S.packq = S.packq || []; S.packq.unshift(v); save(); T("pack_choice", { el: v, island: S.island }); packScreen(false);
@@ -926,7 +961,7 @@
       }, 500);
     }
     show(el); full();
-    if (opt && VOY.boonText(opt)) toast("✧ Voyage: " + VOY.boonText(opt));
+    if (boonOpt && VOY.boonText(boonOpt)) toast("✧ Voyage: " + VOY.boonText(boonOpt));
     if (!wild && isl.say) { var sp = h('<div class="speech"><b>' + esc(isl.foe) + ':</b> “' + esc(isl.say) + '”</div>'); var mw = el.querySelector(".midwrap"); mw.appendChild(sp); mw.classList.add("talking"); setTimeout(function () { sp.classList.add("gone"); }, 4200); setTimeout(function () { sp.remove(); mw.classList.remove("talking"); }, 4800); }
     if (wild) mid.innerHTML = "<div>Win, and one of them joins you.</div>";
     else if (b.trait || b.dark >= 2) { mid.innerHTML = (b.trait ? "<div><span class='trait'>⚑ " + D.TRAITS[b.trait].n + ":</span> " + esc(D.TRAITS[b.trait].t) + "</div>" : "") + (b.trait === "dive" && !S.wins ? "<div class='dim' style='font-size:12px;margin-top:2px'>Put spirits in front of its faded cards.</div>" : "") + (b.dark >= 2 ? "<div class='dim' style='font-size:12px;margin-top:2px'>Darkness " + ROMAN[b.dark] + ": " + darkRules(b.dark) + "</div>" : ""); }
@@ -1129,11 +1164,82 @@
     var msg;
     if (S.flames <= 0) {
       T("progress", { step: "voyage_lost", reached: S.island, at: "sea" });
-      S.island = 0; S.flames = 3; S.runs++; S.voy = null;
+      S.island = 0; S.flames = E.maxFlames(S); S.runs++; S.voy = null;
       msg = "<h1 style='color:#b46bff'>The lantern goes out</h1><p style='text-align:center'>The wild spirits put out your last flame. The Dark takes the islands back, and the voyage must begin again.<br><br>But the spirits are still yours.</p>";
     } else msg = "<h1 style='color:#b46bff'>Driven off</h1><p style='text-align:center'>The wild spirits put out one of your flames.<br>" + S.flames + " flame" + (S.flames === 1 ? "" : "s") + " left. You sail on, shaken.</p>" + (recap || "");
     save();
     setTimeout(function () { modal(msg, [{ t: S.voy ? "Sail on" : "To the map", v: 1 }]).then(function () { if (S.voy) voyageScreen(); else home(); }); }, 500);
+  }
+
+  // ---------- skibet (0.15.0): glimmer får et formål, og vejen til et nyt hav ----------
+  // Mathias (18/11): "vildt meget glimmer og ikke så meget man kan bruge det på … rejse til nye steder".
+  var SHIP = [
+    { k: "glass", i: "🏮", n: "Lantern Glass", t: "+1 lantern life in every battle.", cost: [40, 90, 160] },
+    { k: "wick", i: "🔥", n: "Spare Wick", t: "A 4th flame on every voyage.", cost: [150] },
+    { k: "hull", i: "🪵", n: "Deep Hull", t: "Thick enough for deep water.", cost: [100], deep: 1 },
+    { k: "sails", i: "⛵", n: "Storm Sails", t: "Catch the wind beyond the edge of the map.", cost: [150], deep: 1 },
+    { k: "compass", i: "🧭", n: "Star Compass", t: "Points past the Black Lighthouse.", cost: [200], deep: 1, need: function () { return (S.bestDark || 0) >= 1; }, needT: "Light the Black Lighthouse first." },
+  ];
+  function shipLv(k) { return (S.ship && S.ship[k]) || 0; }
+  function shipDeepReady() { return SHIP.every(function (u) { return !u.deep || shipLv(u.k) > 0; }); }
+  function seasOpen() { return shipDeepReady(); }
+  function nextCost(u) { var lv = shipLv(u.k); return lv < u.cost.length ? u.cost[lv] : 0; }
+  function shipReady() { return SHIP.some(function (u) { var c = nextCost(u); return c && S.embers >= c && (!u.need || u.need()); }); }
+  function boatSVG() {
+    var on = function (k) { return shipLv(k) > 0; };
+    return '<svg viewBox="0 0 120 70" class="boatsvg"><defs><radialGradient id="lg"><stop offset="0" stop-color="#fff6d8"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient></defs>' +
+      '<path d="M0 58 Q15 54 30 58 T60 58 T90 58 T120 58 V70 H0Z" fill="#14204a"/>' +
+      '<path d="M22 50 L98 50 L88 62 L32 62Z" fill="' + (on("hull") ? "#7a5a3a" : "#3a3a4a") + '" stroke="' + (on("hull") ? "#c9a86a" : "#555") + '" stroke-width="1"/>' +
+      (on("hull") ? '<path d="M28 55 H92" stroke="#c9a86a" stroke-width=".6" stroke-dasharray="2 2"/>' : "") +
+      '<rect x="59" y="12" width="2" height="38" fill="#c9a86a"/>' +
+      (on("sails") ? '<path d="M61 14 Q84 28 61 46Z" fill="#eef0ff"/><path d="M59 16 Q40 30 59 44Z" fill="#dfe3ff"/>' : '<path d="M61 18 L72 34 L61 40Z" fill="#555a70" opacity=".7"/>') +
+      (on("compass") ? '<circle cx="60" cy="9" r="3" fill="#fff1a8"/><path d="M60 5 L61 9 L60 13 L59 9Z" fill="#ff7a3d"/>' : "") +
+      '<circle cx="36" cy="44" r="' + (6 + 3 * shipLv("glass")) + '" fill="url(#lg)" opacity="' + (0.35 + 0.2 * shipLv("glass")) + '"/><rect x="34" y="40" width="4" height="7" rx="1" fill="#ffd27a"/>' +
+      (on("wick") ? '<circle cx="86" cy="45" r="5" fill="url(#lg)" opacity=".6"/><path d="M86 41 q2 3 0 5 q-2 -2 0 -5" fill="#ff9a3d"/>' : "") + "</svg>";
+  }
+  function shipScreen() {
+    var parts = SHIP.filter(function (u) { return u.deep; }), have = parts.filter(function (u) { return shipLv(u.k); }).length;
+    var el = h('<div class="screen ship"><div class="hud"><h2 style="margin:0">⚓ Your ship</h2><span class="pill" id="emb">✦ ' + S.embers + ' glimmer</span></div>' +
+      '<div class="boatbox">' + boatSVG() + '</div>' +
+      '<div class="goal">' + (have < parts.length ? "<b>Goal:</b> ready the ship for the <b style='color:var(--dyb)'>Deepreach</b> — a sea beyond the Black Lighthouse. <b>" + have + "/" + parts.length + "</b> parts" : "<b style='color:var(--dyb)'>Your ship can reach the Deepreach.</b>") + "</div>" +
+      '<div class="ups"></div><div class="bottom" style="margin-top:8px"><button class="btn" id="back">Back</button></div></div>');
+    var ups = el.querySelector(".ups");
+    SHIP.forEach(function (u) {
+      var lv = shipLv(u.k), c = nextCost(u), locked = c && u.need && !u.need(), maxed = !c;
+      var lvTxt = u.cost.length > 1 ? " <span class='dim'>" + lv + "/" + u.cost.length + "</span>" : "";
+      var row = h('<div class="up' + (maxed ? " done" : "") + (u.deep ? " deep" : "") + '"><span class="ui">' + u.i + '</span><div class="ut"><b>' + u.n + "</b>" + lvTxt + "<br><span class='dim'>" + (locked ? u.needT : u.t) + "</span></div>" +
+        (maxed ? '<span class="built">Built ✓</span>' : '<button class="btn ubtn"' + (locked || S.embers < c ? " disabled" : "") + ">" + c + " ✦</button>") + "</div>");
+      var bt = row.querySelector("button");
+      if (bt) bt.onclick = function () {
+        if (S.embers < c || locked) return;
+        var wasReady = shipDeepReady();
+        S.embers -= c; S.ship = S.ship || {}; S.ship[u.k] = lv + 1;
+        if (u.k === "wick") S.flames = Math.min(E.maxFlames(S), S.flames + 1);
+        save(); T("ship", { k: u.k, lv: lv + 1, cost: c });
+        SFX.chime(); particles(row, ["#ffc861", "#fff1c9", "#ff9a3d"], 14, 90); bt.disabled = true;
+        setTimeout(function () {
+          shipScreen();
+          if (!wasReady && shipDeepReady()) {
+            T("progress", { step: "ship_ready" });
+            modal("<h1 style='color:var(--dyb)'>The ship is ready</h1><div style='width:200px;margin:0 auto'>" + boatSVG() + "</div><p style='text-align:center'>Hull, sails and compass. For the first time, your boat can sail past the Black Lighthouse — into the <b style='color:var(--dyb)'>Deepreach</b>.</p><p class='dim' style='text-align:center;font-size:13px'>Your voyage on the Dark Sea is kept. You can sail back any time.</p>",
+              [{ t: "Set sail!", v: 1 }, { t: "Later", v: 0, sec: true }]).then(function (v) { if (v) goSea(1); });
+          }
+        }, 450);
+      };
+      ups.appendChild(row);
+    });
+    if (seasOpen()) { var sb = h('<button class="btn sec" id="seas" style="margin-top:10px">🧭 Choose a sea</button>'); sb.onclick = function () { SFX.tap(); seasModal(); }; ups.appendChild(sb); }
+    el.querySelector("#back").onclick = function () { SFX.tap(); home(); };
+    show(el);
+  }
+  function seaProgress(k) { var o = k === S.sea ? S : S.seas && S.seas[k]; if (!o) return "Not yet visited"; return "Island " + (o.island + 1) + "/" + D.SEAS[k].islands.length + (o.dark ? " · Darkness " + ROMAN[o.dark] : ""); }
+  function seasModal() {
+    var btns = D.SEAS.map(function (sea, k) { return { t: (k === 0 ? "🏮 " : "🐚 ") + sea.n + "<br><small style='font-weight:400;opacity:.8'>" + seaProgress(k) + (k === S.sea ? " · you are here" : "") + "</small>", v: k, sec: k === S.sea, cls: "seabtn" }; });
+    modal("<h2>🧭 Choose a sea</h2><p class='dim' style='text-align:center;font-size:14px'>Each sea keeps its own voyage — islands, flames and Darkness. Your spirits, deck and glimmer come with you.</p>", btns).then(function (v) { if (v !== S.sea) goSea(v); else home(); });
+  }
+  function goSea(k) {
+    E.switchSea(S, k); save(); T("progress", { step: "sea", sea: k });
+    SFX.sail(); home();
   }
 
   // ---------- start ----------

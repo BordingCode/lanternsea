@@ -1,4 +1,4 @@
-:root{--bg:#0b1020;--bg2:#141b33;--ink:#eef0ff;--dim:#8d95b8;--gold:#ffc861;--glod:#ff7a3d;--taage:#6fc3ff;--rod:#6fdc8c;--c:#b8bfd8;--u:#5fe0a0;--r:#ffc861;--m:#d48bff;--safe:env(safe-area-inset-bottom,0px)}
+:root{--bg:#0b1020;--bg2:#141b33;--ink:#eef0ff;--dim:#8d95b8;--gold:#ffc861;--glod:#ff7a3d;--taage:#6fc3ff;--rod:#6fdc8c;--c:#b8bfd8;--u:#5fe0a0;--r:#ffc861;--m:#d48bff;--dyb:#f06bd0;--safe:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;overscroll-behavior:none}
 body{background:radial-gradient(120% 70% at 50% 110%,#2a1f3a 0%,#0b1020 60%) fixed}
@@ -353,3 +353,31 @@ button.pill{font-family:inherit;color:inherit;cursor:pointer;border:1px solid #f
 .recap .adv{color:var(--gold);margin-top:3px}
 .reach{font-size:13px;color:#d9d2ff;background:#1a1440aa;border:1px solid #c9a2ff33;border-radius:10px;padding:6px 10px;margin:0 0 8px;line-height:1.35;cursor:pointer}
 .reach b{color:#fff1a8}
+/* 0.15.0 — The Deep (fjerde lys) + skibet + Deepreach */
+.card.dyb{--el:var(--dyb)}.card.tw-dyb{--el2:var(--dyb)}
+.pack.p-deep{background:radial-gradient(circle at 70% 75%,#f06bd055,transparent 35%),linear-gradient(135deg,#3a1450,#0e1328 50%,#4a1a5a);border-color:#ffa8e8;box-shadow:0 0 50px #f06bd066}
+.pack.p-deep .lbl{color:#ffd0f2}
+.btn.pb-deep{background:linear-gradient(#ffd0f2,#c03aa8);color:#2a0a26;box-shadow:0 4px 0 #6a1a5a;padding:14px 8px;font-size:16px}
+.row:has(>.pb-deep){flex-wrap:wrap}
+.row:has(>.pb-deep)>.pb-deep,.row:has(>.pb-deep)>.pb-star{flex-basis:calc(50% - 6px)!important}
+.row:has(>.pb-deep)>.pb-deep:last-child{flex-basis:100%!important}
+.ebar.dyb i{background:var(--dyb)}.elmix .dyb{color:#ffb8ea}
+.seaswap{font-size:16px;color:var(--dyb);background:#2a1a3a;border-radius:10px;padding:1px 8px;vertical-align:middle;border:1px solid #f06bd066}
+#seaname{cursor:pointer}
+#ship{position:relative}#ship .dot{position:absolute;top:6px;right:8px;width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold)}
+.ship .boatbox{width:min(100%,360px);margin:6px auto 0}.boatsvg{width:100%;display:block}
+.ship .goal{text-align:center;font-size:15px;margin:6px 0 10px;padding:8px 10px;background:#1a1530;border-radius:12px;border:1px solid #f06bd033}
+.ship .ups{display:flex;flex-direction:column;gap:8px;overflow:auto;flex:1;min-height:0}
+.ship .up{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:14px;padding:10px 12px;border:1px solid #ffffff14}
+.ship .up.deep{border-color:#f06bd055}.ship .up.done{opacity:.75}
+.ship .ui{font-size:26px;width:34px;text-align:center}.ship .ut{flex:1;font-size:15px;line-height:1.35}
+.ship .ubtn{padding:10px 14px;font-size:16px;min-width:84px}.ship .ubtn:disabled{opacity:.45}
+.ship .built{color:var(--u);font-weight:800;font-size:14px}
+.row:has(>.seabtn){flex-direction:column}
+.btn.seabtn{line-height:1.25}
+.bubbles{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+.bubbles i{position:absolute;bottom:-20px;width:12px;height:12px;border-radius:50%;border:2px solid #ffa8e8;box-shadow:0 0 10px #f06bd0;animation:bubrise 2.4s ease-in forwards;opacity:0}
+@keyframes bubrise{0%{opacity:0;transform:translateY(0)}15%{opacity:1}100%{opacity:0;transform:translateY(-105vh) translateX(20px)}}
+.flames{white-space:nowrap;letter-spacing:0;font-size:0}.flames .flame{margin-right:3px}
+.hud .pill{white-space:nowrap}
+.bottom .row .btn.sec{white-space:nowrap;padding:14px 8px;font-size:16px}
